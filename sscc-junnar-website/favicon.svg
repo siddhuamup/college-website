@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="100%" stop-color="#6366f1" />
+    </linearGradient>
+  </defs>
+  <!-- Academic Shield -->
+  <path d="M32 4 L52 14 V36 C52 46 44 54 32 58 C20 54 12 46 12 36 V14 Z" fill="url(#grad1)" />
+  <!-- Inner White Shield Shape -->
+  <path d="M32 8 L48 16 V34 C48 42 42 49 32 53 C22 49 16 42 16 34 V16 Z" fill="#0b1020" />
+  <!-- Graduation Cap Icon in Center -->
+  <path d="M32 18 L44 24 L32 30 L20 24 Z" fill="#38bdf8" />
+  <path d="M24 26 V32 C24 35 27 36 32 36 C37 36 40 35 40 32 V26" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" />
+  <path d="M41 24.5 V33" fill="none" stroke="#22c55e" stroke-width="2" />
+  <circle cx="41" cy="33.5" r="1.5" fill="#22c55e" />
+</svg>

@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Notice board — SSC College, Junnar</title>
+  <link rel="stylesheet" href="css/styles.css"/>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
+</head>
+<body>
+  <div id="site-header"></div>
+
+  <section class="container mt-4">
+    <div class="card">
+      <h2>Notice board</h2>
+      <p class="small">Circulars and announcements. PDF attachments open in a new tab. Notices from the last 7 days show a <span class="badge-new">New</span> tag.</p>
+      <div class="mt-3">
+        <label class="field-label" for="notice-filter">Filter by title or text</label>
+        <input class="input" id="notice-filter" type="search" placeholder="Search notices…" autocomplete="off"/>
+      </div>
+    </div>
+  </section>
+
+  <section class="container mt-4" id="notices-list"></section>
+  <p id="notices-note" class="container small"></p>
+
+  <div id="site-footer"></div>
+  <script src="js/layout.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    const NEW_DAYS = 7;
+
+    function escapeHtml(s) {
+      const d = document.createElement('div');
+      d.textContent = s == null ? '' : String(s);
+      return d.innerHTML;
+    }
+
+    function attr(s) {
+      return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+    }
+
+    function isNew(createdAt) {
+      if (!createdAt) return false;
+      const t = new Date(createdAt).getTime();
+      if (Number.isNaN(t)) return false;
+      return (Date.now() - t) / 86400000 <= NEW_DAYS;
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      const list = document.getElementById('notices-list');
+      const note = document.getElementById('notices-note');
+      const filterEl = document.getElementById('notice-filter');
+      let items = [];
+
+      function render(filtered) {
+        list.innerHTML = '';
+        if (!filtered.length) {
+          note.textContent = items.length ? 'No notices match your search.' : 'No notices published yet.';
+          return;
+        }
+        note.textContent = '';
+        filtered.forEach((n) => {
+          const card = document.createElement('div');
+          card.className = 'card mt-3 fade-in';
+          const date = n.createdAt ? new Date(n.createdAt).toLocaleString() : '';
+          const pdf = n.pdfUrl
+            ? `<p class="small mt-2"><a class="btn small secondary" href="${attr(n.pdfUrl)}" target="_blank" rel="noopener">Download PDF</a></p>`
+            : '';
+          const badge = isNew(n.createdAt) ? '<span class="badge-new">New</span>' : '';
+          card.innerHTML = `<h3>${escapeHtml(n.title)} ${badge}</h3><p class="small">${escapeHtml(date)}</p><p class="small mt-2">${escapeHtml(n.body || '')}</p>${pdf}`;
+          list.appendChild(card);
+        });
+      }
+
+      try {
+        const res = await fetch('/api/public/notices');
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || res.statusText || 'Request failed');
+        items = Array.isArray(data) ? data : [];
+        render(items);
+      } catch (e) {
+        note.textContent = e.message || 'Connect to the API server to load notices (run npm start in the server folder).';
+      }
+
+      filterEl.addEventListener('input', () => {
+        const q = filterEl.value.trim().toLowerCase();
+        if (!q) return render(items);
+        render(
+          items.filter((n) =>
+            `${n.title || ''} ${n.body || ''}`.toLowerCase().includes(q)
+          )
+        );
+      });
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Shri Shiv Chhatrapati College, Junnar — Home</title>
+  <meta name="description" content="Shri Shiv Chhatrapati College, Junnar — SPPU affiliated, NAAC B+, UG, PG and Ph.D. programmes."/>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css"/>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
+</head>
+<body>
+  <div id="site-header"></div>
+
+<section class="hero">
+  <div class="card fade-in">
+    <span class="badge">Since 1970</span>
+    <h2>Shri Shiv Chhatrapati College, Junnar</h2>
+    <p>Permanently affiliated to Savitribai Phule Pune University (SPPU) • NAAC accredited with <strong class="highlight">B+</strong> grade • DST-FIST sponsored • Best College award (SPPU)</p>
+    <div class="cta-row">
+      <a href="admissions.html" class="btn">Apply online</a>
+      <a href="courses.html" class="btn secondary">View courses</a>
+      <a href="login.html" class="btn secondary">Portal login</a>
+    </div>
+  </div>
+</section>
+
+<section class="container mt-4">
+  <div class="grid grid-3">
+    <div class="card fade-in">
+      <h3>Quick facts</h3>
+      <ul class="small">
+        <li><strong class="highlight">Established:</strong> 2 Jan 1970 (Junnar Taluka Shivner Shikshan Prasarak Mandal)</li>
+        <li><strong class="highlight">Campus:</strong> ~10 acres, Bodkenagar, Junnar — 410502</li>
+        <li><strong class="highlight">Strength:</strong> ~2,300–2,400 students; ~70–75 faculty</li>
+      </ul>
+    </div>
+    <div class="card fade-in">
+      <h3>Why choose us?</h3>
+      <ul class="small">
+        <li>20+ programmes across Arts, Commerce, Science &amp; IT (UG, PG, Ph.D.)</li>
+        <li>Library: 1,09,000+ books, journals, e-learning zone</li>
+        <li>Sports complex, hostel, 17 labs, medical centre, IT infrastructure</li>
+      </ul>
+    </div>
+    <div class="card fade-in">
+      <h3>Contact</h3>
+      <p class="small">Bodkenagar, Junnar – 410502, Pune District, Maharashtra<br/>Phone: 02132‑222094, 9529104933, 9028735794<br/>Email: info@junnarcollege.com</p>
+    </div>
+  </div>
+</section>
+
+<section class="container mt-4">
+  <div class="card">
+    <h3>Notice board</h3>
+    <p class="small">Latest updates from the college. <a href="notices.html">View all notices</a></p>
+    <ul id="home-notices" class="small mt-3" style="list-style:disc;padding-left:1.25rem;"></ul>
+    <p id="home-notices-empty" class="small mt-2" hidden>No notices yet — check back soon.</p>
+  </div>
+</section>
+
+<section class="container mt-4">
+  <div class="card">
+    <h3>Highlights</h3>
+    <ul class="small">
+      <li>Co-educational grant-in-aid institution; major educational hub for rural students</li>
+      <li>Merit-based UG admissions (12th: Maharashtra Board, CBSE, ISC)</li>
+      <li>Ph.D. centres: Commerce &amp; Zoology</li>
+    </ul>
+  </div>
+</section>
+
+  <div id="site-footer"></div>
+  <script src="js/layout.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      const list = document.getElementById('home-notices');
+      const empty = document.getElementById('home-notices-empty');
+      try {
+        const res = await fetch('/api/public/notices');
+        if (!res.ok) throw new Error();
+        const items = await res.json();
+        const top = items.slice(0, 5);
+        if (!top.length) { empty.hidden = false; return; }
+        top.forEach((n) => {
+          const li = document.createElement('li');
+          const date = n.createdAt ? new Date(n.createdAt).toLocaleDateString() : '';
+          const isNew =
+            n.createdAt && (Date.now() - new Date(n.createdAt).getTime()) / 86400000 <= 7;
+          const badge = isNew ? ' <span class="badge-new">New</span>' : '';
+          li.innerHTML = `<strong>${escapeHtml(n.title)}</strong>${badge}${date ? ` — ${date}` : ''}`;
+          list.appendChild(li);
+        });
+      } catch {
+        empty.textContent = 'Connect to the college server to load live notices (run npm start in /server).';
+        empty.hidden = false;
+      }
+    });
+    function escapeHtml(s) {
+      const d = document.createElement('div');
+      d.textContent = s;
+      return d.innerHTML;
+    }
+  </script>
+</body>
+</html>

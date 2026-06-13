@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Portal login — SSC College, Junnar</title>
+  <link rel="stylesheet" href="css/styles.css"/>
+</head>
+<body>
+  <div id="site-header"></div>
+  <section class="container mt-4" style="max-width:480px">
+    <div class="card">
+      <h2>Portal login</h2>
+      <p class="small">Use your credentials to access your portal.</p>
+      <div class="steps mt-3" aria-label="Portal roles">
+        <button type="button" class="step-pill active" data-role="teacher">Teacher login</button>
+        <button type="button" class="step-pill" data-role="student">Student login</button>
+      </div>
+      <p id="role-msg" class="small mt-2">Use credentials provided by the college.</p>
+      <form id="login-form" class="mt-3 form-grid">
+        <div>
+          <label class="field-label" for="email">Email</label>
+          <input class="input" id="email" name="email" type="email" autocomplete="username" required/>
+        </div>
+        <div>
+          <label class="field-label" for="password">Password</label>
+          <input class="input" id="password" name="password" type="password" autocomplete="current-password" required/>
+        </div>
+        <button class="btn" type="submit">Continue</button>
+      </form>
+      <p id="login-msg" class="small mt-3" role="status"></p>
+      <div id="student-start" class="mt-3" style="display:none">
+        <button id="student-start-toggle" class="btn secondary" type="button">First time student? Start here</button>
+        <form id="student-start-form" class="mt-2 form-grid" style="display:none">
+          <div>
+            <label class="field-label" for="student-name">Full name</label>
+            <input class="input" id="student-name" name="name" autocomplete="name"/>
+          </div>
+          <div>
+            <label class="field-label" for="student-email">Email</label>
+            <input class="input" id="student-email" name="email" type="email" autocomplete="username"/>
+          </div>
+          <div>
+            <label class="field-label" for="student-password">Password</label>
+            <input class="input" id="student-password" name="password" type="password" minlength="6" autocomplete="new-password"/>
+          </div>
+          <button class="btn" type="submit">Continue</button>
+        </form>
+        <p id="student-start-msg" class="small mt-2" role="status"></p>
+      </div>
+      <p class="small mt-3">
+        Teachers are onboarded by the administrator. Students can continue with their own email and password.
+        After successful sign-in you are automatically redirected to the correct portal.
+      </p>
+      <p class="small mt-2">For account setup or access issues, contact the administrator.</p>
+    </div>
+  </section>
+  <div id="site-footer"></div>
+  <script src="js/layout.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    let selectedRole = 'teacher';
+    const roleMsg = document.getElementById('role-msg');
+    const loginMsg = document.getElementById('login-msg');
+    const studentStartWrap = document.getElementById('student-start');
+    const studentStartToggle = document.getElementById('student-start-toggle');
+    const studentStartForm = document.getElementById('student-start-form');
+    const studentStartMsg = document.getElementById('student-start-msg');
+
+    function roleHint(role) {
+      if (role === 'student') return 'Enter your email to continue.';
+      return 'Use credentials provided by the college.';
+    }
+
+    function buildStudentNameFromEmail(email) {
+      const local = String(email || '').split('@')[0] || 'Student';
+      const words = local.replace(/[._-]+/g, ' ').trim().split(/\s+/).filter(Boolean);
+      if (!words.length) return 'Student';
+      return words.map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+    }
+
+    document.querySelectorAll('.step-pill').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        selectedRole = btn.getAttribute('data-role') || 'teacher';
+        document.querySelectorAll('.step-pill').forEach((b) => b.classList.remove('active'));
+        btn.classList.add('active');
+        roleMsg.textContent = roleHint(selectedRole);
+        loginMsg.textContent = '';
+        loginMsg.className = 'small mt-3';
+        studentStartWrap.style.display = selectedRole === 'student' ? '' : 'none';
+        if (selectedRole !== 'student') {
+          studentStartForm.style.display = 'none';
+          studentStartMsg.textContent = '';
+          studentStartMsg.className = 'small mt-2';
+        }
+      });
+    });
+
+    studentStartToggle.addEventListener('click', () => {
+      const open = studentStartForm.style.display !== 'none';
+      studentStartForm.style.display = open ? 'none' : '';
+      studentStartMsg.textContent = '';
+      studentStartMsg.className = 'small mt-2';
+      if (!open) {
+        document.getElementById('student-email').value = document.getElementById('email').value.trim();
+      }
+    });
+
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      loginMsg.textContent = '';
+      loginMsg.className = 'small mt-3';
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+
+      const endpoint = selectedRole === 'student' ? '/student/login' : '/teacher/login';
+      try {
+        let data;
+        try {
+          data = await SSC_API.post(endpoint, { email, password });
+        } catch (loginErr) {
+          if (selectedRole !== 'student' || ![401, 404].includes(Number(loginErr.status))) throw loginErr;
+          const created = await SSC_API.post('/auth/register-student', {
+            email,
+            password,
+            name: buildStudentNameFromEmail(email),
+            phone: '',
+          });
+          data = created;
+        }
+
+        SSC_API.setToken(data.token);
+        const role = String(data.user && data.user.role != null ? data.user.role : '').toLowerCase();
+        if (role === 'teacher') location.href = 'teacher/index.html';
+        else if (role === 'student') location.href = 'student/index.html';
+        else {
+          SSC_API.setToken(null);
+          loginMsg.textContent = 'Unrecognised role on this account. Contact the administrator.';
+          loginMsg.className = 'small mt-3 alert error';
+        }
+      } catch (err) {
+        const detail = err.data && err.data.error ? err.data.error : err.message;
+        loginMsg.textContent = detail || 'Sign in failed';
+        loginMsg.className = 'small mt-3 alert error';
+      }
+    });
+
+    document.getElementById('student-start-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      studentStartMsg.textContent = '';
+      studentStartMsg.className = 'small mt-2';
+      const name = document.getElementById('student-name').value.trim();
+      const email = document.getElementById('student-email').value.trim();
+      const password = document.getElementById('student-password').value;
+      if (!name || !email || !password) {
+        studentStartMsg.textContent = 'Please enter full name, email and password.';
+        studentStartMsg.className = 'small mt-2 alert error';
+        return;
+      }
+      try {
+        const data = await SSC_API.post('/auth/register-student', { name, email, phone: '', password });
+        SSC_API.setToken(data.token);
+        studentStartMsg.textContent = 'Done. Redirecting...';
+        studentStartMsg.className = 'small mt-2 alert success';
+        setTimeout(() => { location.href = 'student/index.html'; }, 300);
+      } catch (err) {
+        const detail = err.data && err.data.error ? err.data.error : err.message;
+        studentStartMsg.textContent = detail || 'Unable to continue.';
+        studentStartMsg.className = 'small mt-2 alert error';
+      }
+    });
+  </script>
+</body>
+</html>

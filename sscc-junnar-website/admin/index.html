@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Admin — SSC College, Junnar</title>
+  <link rel="stylesheet" href="../css/styles.css"/>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
+</head>
+<body class="dashboard-body">
+  <div id="admin-gate" class="container" style="max-width:420px;margin:2rem auto;padding:0 1rem;">
+    <div class="card">
+      <h2 style="margin:0 0 .5rem;">Admin access</h2>
+      <p class="small">Enter the access key configured on the server.</p>
+      <form id="admin-gate-form" class="mt-3 form-grid">
+        <div>
+          <label class="field-label" for="admin-access-key">Access key</label>
+          <input class="input" id="admin-access-key" name="accessKey" type="password" autocomplete="off" required/>
+        </div>
+        <button class="btn" type="submit">Continue</button>
+      </form>
+      <p id="admin-gate-msg" class="small mt-3" role="status"></p>
+    </div>
+  </div>
+  <div id="admin-shell" class="dash-layout" style="display:none">
+    <aside class="dash-side">
+      <h2>Admin</h2>
+      <nav class="dash-nav" id="dash-nav">
+        <button type="button" data-panel="overview" class="active">Dashboard</button>
+        <button type="button" data-panel="students">Students</button>
+        <button type="button" data-panel="teachers">Faculty</button>
+        <button type="button" data-panel="admissions">Admissions</button>
+        <button type="button" data-panel="notices">Notices</button>
+        <button type="button" data-panel="departments">Departments</button>
+        <button type="button" data-panel="courses">Courses</button>
+        <button type="button" data-panel="gallery">Gallery</button>
+        <button type="button" data-panel="feedback">Feedback</button>
+        <button type="button" data-panel="study-materials">Study Materials</button>
+        <button type="button" data-panel="settings">Settings</button>
+      </nav>
+      <a class="btn secondary small mt-3" href="../index.html" style="display:inline-block;text-decoration:none;">Public site</a>
+      <button type="button" class="btn danger small mt-2" id="logout-btn">Logout</button>
+    </aside>
+    <main class="dash-main">
+      <div class="dash-top">
+        <h1 id="dash-title" style="margin:0;font-size:1.25rem;">Dashboard</h1>
+        <span class="small" id="admin-user"></span>
+      </div>
+
+      <section class="dash-panel active" data-panel="overview">
+        <div class="stat-grid" id="stat-grid"></div>
+      </section>
+
+      <section class="dash-panel" data-panel="students">
+        <div class="card">
+          <h3>Add student</h3>
+          <form id="form-student" class="form-grid two">
+            <div><label class="field-label">Email</label><input class="input" name="email" type="email" required/></div>
+            <div><label class="field-label">Password</label><input class="input" name="password" type="text" required/></div>
+            <div><label class="field-label">Name</label><input class="input" name="name" required/></div>
+            <div><label class="field-label">Phone</label><input class="input" name="phone"/></div>
+            <div><label class="field-label">Roll</label><input class="input" name="rollNumber"/></div>
+            <div><label class="field-label">Class</label><input class="input" name="className" placeholder="FY-BA-A"/></div>
+            <div><label class="field-label">Course</label><input class="input" name="courseName"/></div>
+            <div><label class="field-label">Year</label><input class="input" name="year"/></div>
+            <div><button class="btn" type="submit">Create</button></div>
+          </form>
+        </div>
+        <div class="card mt-4">
+          <h3>All students</h3>
+          <div class="table-wrap"><table class="table small" id="tbl-students"><thead><tr><th>Name</th><th>Email</th><th>Class</th><th></th></tr></thead><tbody></tbody></table></div>
+        </div>
+      </section>
+
+      <section class="dash-panel" data-panel="teachers">
+        <div class="card">
+          <h3>Add teacher</h3>
+          <p class="small" style="margin:0 0 1rem;">Teacher signs in on the main site using <strong>Email</strong> (login ID) and the <strong>Password</strong> you set here. Share these with the teacher only.</p>
+          <form id="form-teacher" class="form-grid two">
+            <div><label class="field-label">Email (login ID)</label><input class="input" name="email" type="email" required autocomplete="off"/></div>
+            <div><label class="field-label">Password</label><input class="input" name="password" type="password" required autocomplete="new-password"/></div>
+            <div><label class="field-label">Name</label><input class="input" name="name" required/></div>
+            <div><label class="field-label">Employee ID</label><input class="input" name="employeeId"/></div>
+            <div><label class="field-label">Department</label><input class="input" name="department"/></div>
+            <div><label class="field-label">Subject / class (JSON array)</label><input class="input" name="assignments" placeholder='[{"subject":"English","className":"FY-BA-A"}]'/></div>
+            <div><button class="btn" type="submit">Create</button></div>
+          </form>
+        </div>
+        <div class="card mt-4">
+          <h3>Faculty</h3>
+          <div class="table-wrap"><table class="table small" id="tbl-teachers"><thead><tr><th>Name</th><th>Email</th><th>Dept</th><th></th></tr></thead><tbody></tbody></table></div>
+        </div>
+      </section>
+
+      <section class="dash-panel" data-panel="admissions">
+        <div class="card">
+          <h3>Applications</h3>
+          <div class="table-wrap"><table class="table small" id="tbl-admissions"><thead><tr><th>#</th><th>Name</th><th>Course</th><th>Marks</th><th>Status</th><th></th></tr></thead><tbody></tbody></table></div>
+        </div>
+      </section>
+
+      <section class="dash-panel" data-panel="notices">
+        <div class="card">
+          <h3>New notice</h3>
+          <form id="form-notice" class="form-grid">
+            <div><label class="field-label">Title</label><input class="input" name="title" required/></div>
+            <div><label class="field-label">Body</label><textarea class="input" name="body" rows="3"></textarea></div>
+            <div><label class="field-label">PDF (optional)</label><input type="file" name="pdf" accept=".pdf"/></div>
+            <div><button class="btn" type="submit">Publish</button></div>
+          </form>
+        </div>
+        <div class="card mt-4">
+          <h3>Published</h3>
+          <div id="notice-list"></div>
+        </div>
+      </section>
+
+      <section class="dash-panel" data-panel="departments">
+        <div class="card">
+          <h3>Add department</h3>
+          <form id="form-dept" class="form-grid two">
+            <div><label class="field-label">Name</label><input class="input" name="name" required/></div>
+            <div><label class="field-label">Stream</label>
+              <select class="select input" name="stream">
+                <option>Arts</option><option>Commerce</option><option>Science</option><option>IT</option><option>Other</option>
+              </select>
+            </div>
+            <div><label class="field-label">HOD</label><input class="input" name="hodName"/></div>
+            <div><button class="btn" type="submit">Save</button></div>
+          </form>
+        </div>
+        <div class="table-wrap card mt-4"><table class="table small" id="tbl-dept"><thead><tr><th>Name</th><th>Stream</th><th></th></tr></thead><tbody></tbody></table></div>
+      </section>
+
+      <section class="dash-panel" data-panel="courses">
+        <div class="card">
+          <h3>Add course</h3>
+          <form id="form-course" class="form-grid two">
+            <div><label class="field-label">Name</label><input class="input" name="name" required/></div>
+            <div><label class="field-label">Level</label>
+              <select class="select input" name="level"><option>UG</option><option>PG</option><option>PhD</option></select>
+            </div>
+            <div><label class="field-label">Duration</label><input class="input" name="duration"/></div>
+            <div><label class="field-label">Eligibility</label><input class="input" name="eligibility"/></div>
+            <div style="grid-column:1/-1"><label class="field-label">Description</label><textarea class="input" name="description" rows="2"></textarea></div>
+            <div><button class="btn" type="submit">Save</button></div>
+          </form>
+        </div>
+        <div class="table-wrap card mt-4"><table class="table small" id="tbl-courses"><thead><tr><th>Name</th><th>Level</th><th></th></tr></thead><tbody></tbody></table></div>
+      </section>
+
+      <section class="dash-panel" data-panel="gallery">
+        <div class="card">
+          <h3>Upload image</h3>
+          <form id="form-gallery" class="form-grid">
+            <div><label class="field-label">Caption</label><input class="input" name="caption"/></div>
+            <div><label class="field-label">Image</label><input type="file" name="image" accept="image/*" required/></div>
+            <div><button class="btn" type="submit">Upload</button></div>
+          </form>
+        </div>
+        <div id="gallery-admin" class="mt-4 grid grid-3"></div>
+      </section>
+
+      <section class="dash-panel" data-panel="feedback">
+        <div class="card">
+          <h3>Feedback &amp; contact messages</h3>
+          <div id="feedback-list" class="small"></div>
+        </div>
+      </section>
+
+      <section class="dash-panel" data-panel="settings">
+        <div class="card">
+          <h3>System settings</h3>
+          <form id="form-settings" class="form-grid">
+            <div><label class="field-label">Google Maps embed URL</label><input class="input" name="mapEmbedUrl" id="set-map"/></div>
+            <div><label class="field-label">Site tagline</label><input class="input" name="siteTagline" id="set-tag"/></div>
+            <div><label class="field-label">Syllabus PDF URL (public downloads page)</label><input class="input" name="syllabusPdfUrl" id="set-syllabus" placeholder="https://… or /uploads/…"/></div>
+            <div><label class="field-label">Prospectus PDF URL</label><input class="input" name="prospectusPdfUrl" id="set-prospectus" placeholder="https://… or /uploads/…"/></div>
+            <div><button class="btn" type="submit">Save settings</button></div>
+          </form>
+        </div>
+      </section>
+
+      <section class="dash-panel" data-panel="study-materials">
+        <div class="card">
+          <h3>Study Materials Moderation</h3>
+          <p class="small" style="margin: 0 0 1rem;">View and manage study materials uploaded by all teachers.</p>
+          <div class="table-wrap">
+            <table class="table small" id="tbl-study-materials">
+              <thead>
+                <tr>
+                  <th>Title</th>
+                  <th>Subject</th>
+                  <th>Class</th>
+                  <th>Uploaded By</th>
+                  <th>Date</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <p id="dash-msg" class="small mt-3"></p>
+    </main>
+  </div>
+  <script src="../js/api.js"></script>
+  <script src="../js/admin-app.js"></script>
+</body>
+</html>

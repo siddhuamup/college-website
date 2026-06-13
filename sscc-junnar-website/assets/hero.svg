@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900">
+  <defs>
+    <linearGradient id="grad" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#0ea5e9"/>
+      <stop offset="1" stop-color="#6366f1"/>
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="900" fill="url(#grad)"/>
+  <g fill="white" opacity="0.2">
+    <circle cx="200" cy="200" r="120"/>
+    <circle cx="1400" cy="250" r="160"/>
+    <circle cx="900" cy="700" r="120"/>
+  </g>
+  <text x="120" y="460" font-family="Segoe UI, Roboto, Arial" font-size="72" fill="white" opacity="0.95">
+    Shri Shiv Chhatrapati College, Junnar
+  </text>
+  <text x="120" y="540" font-family="Segoe UI, Roboto, Arial" font-size="36" fill="white" opacity="0.9">
+    Affiliated to Savitribai Phule Pune University
+  </text>
+</svg>

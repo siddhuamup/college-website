@@ -1,0 +1,28 @@
+{
+  "name": "sscc-junnar-cms-api",
+  "version": "1.0.0",
+  "private": true,
+  "description": "SSC Junnar CMS — SQLite + Prisma. Copy .env.example to .env, npx prisma db push, npm run seed, npm start.",
+  "type": "module",
+  "scripts": {
+    "postinstall": "prisma generate",
+    "db:push": "prisma db push",
+    "db:studio": "prisma studio",
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "seed": "node src/seed.js"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.3.0",
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.0",
+    "express-async-errors": "^3.1.1",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^1.4.5-lts.1"
+  },
+  "devDependencies": {
+    "prisma": "^6.3.0"
+  }
+}

@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Contact — SSC College, Junnar</title>
+  <link rel="stylesheet" href="css/styles.css"/>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
+</head>
+<body>
+  <div id="site-header"></div>
+
+  <section class="container mt-4">
+    <div class="grid grid-2">
+      <div class="card">
+        <h3>Get in touch</h3>
+        <p class="small">Bodkenagar, Junnar – 410502, Pune District, Maharashtra, India</p>
+        <p class="small">Phone: 02132‑222094, 9529104933, 9028735794<br/>Email: info@junnarcollege.com</p>
+        <form id="contact-form" class="mt-3 form-grid">
+          <div>
+            <label class="field-label" for="cname">Your name</label>
+            <input class="input" id="cname" required/>
+          </div>
+          <div>
+            <label class="field-label" for="cemail">Email</label>
+            <input class="input" id="cemail" type="email" required/>
+          </div>
+          <div style="grid-column:1/-1">
+            <label class="field-label" for="cmsg">Message</label>
+            <textarea class="input" id="cmsg" rows="4" required></textarea>
+          </div>
+          <button class="btn" type="submit">Send message</button>
+        </form>
+        <p id="contact-msg" class="small mt-3" role="status"></p>
+      </div>
+      <div class="card">
+        <h3>Location</h3>
+        <iframe id="map-frame" class="map-embed" title="College map" loading="lazy"
+          src="https://www.google.com/maps?q=Shri+Shiv+Chhatrapati+College+Junnar&output=embed"></iframe>
+        <p class="small mt-2">Map embed URL can be updated under Admin → Settings (<code>mapEmbedUrl</code>).</p>
+      </div>
+    </div>
+  </section>
+
+  <div id="site-footer"></div>
+  <script src="js/layout.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      try {
+        const res = await fetch('/api/public/settings');
+        if (res.ok) {
+          const s = await res.json();
+          if (s.mapEmbedUrl) document.getElementById('map-frame').src = s.mapEmbedUrl;
+        }
+      } catch { /* default iframe */ }
+    });
+    document.getElementById('contact-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const msg = document.getElementById('contact-msg');
+      msg.textContent = '';
+      msg.className = 'small mt-3';
+      const body = {
+        name: document.getElementById('cname').value.trim(),
+        email: document.getElementById('cemail').value.trim().toLowerCase(),
+        message: document.getElementById('cmsg').value.trim(),
+        rating: 5,
+      };
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(body.email)) {
+        msg.textContent = 'Please enter a valid email address.';
+        msg.className = 'small mt-3 alert error';
+        return;
+      }
+      try {
+        const res = await fetch('/api/public/feedback', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || res.statusText || 'Failed');
+        msg.textContent = 'Thank you. Your message has been recorded.';
+        msg.className = 'small mt-3 alert success';
+        e.target.reset();
+      } catch (err) {
+        msg.textContent = err.message || 'Could not send. Start the server.';
+        msg.className = 'small mt-3 alert error';
+      }
+    });
+  </script>
+</body>
+</html>

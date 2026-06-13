@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Student portal — SSC College, Junnar</title>
+  <link rel="stylesheet" href="../css/styles.css"/>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
+</head>
+<body class="dashboard-body">
+  <div class="dash-layout">
+    <aside class="dash-side">
+      <h2>Student</h2>
+      <nav class="dash-nav">
+        <button type="button" data-panel="profile" class="active">Profile</button>
+        <button type="button" data-panel="marks">Marks</button>
+        <button type="button" data-panel="attendance">Attendance</button>
+        <button type="button" data-panel="materials">Materials</button>
+        <button type="button" data-panel="notices">Notices</button>
+        <button type="button" data-panel="admission">Admission status</button>
+        <button type="button" data-panel="feedback">Feedback</button>
+        <button type="button" data-panel="edit-profile">Edit Profile</button>
+      </nav>
+      <a class="btn secondary small mt-3" href="../index.html" style="display:inline-block;text-decoration:none;">Public site</a>
+      <button type="button" class="btn danger small mt-2" id="logout-btn">Logout</button>
+    </aside>
+    <main class="dash-main">
+      <div class="dash-top">
+        <h1 style="margin:0;font-size:1.25rem;">Student dashboard</h1>
+        <span class="small" id="who"></span>
+      </div>
+
+      <section class="dash-panel active" data-panel="profile">
+        <div class="card" id="profile-card"></div>
+      </section>
+
+      <section class="dash-panel" data-panel="marks">
+        <div class="card"><h3>Results</h3><div class="table-wrap"><table class="table small" id="tbl-marks"><thead><tr><th>Subject</th><th>Exam</th><th>Marks</th></tr></thead><tbody></tbody></table></div></div>
+      </section>
+
+      <section class="dash-panel" data-panel="attendance">
+        <div class="card"><h3>Attendance log</h3><div class="table-wrap"><table class="table small" id="tbl-att"><thead><tr><th>Date</th><th>Subject</th><th>Status</th></tr></thead><tbody></tbody></table></div></div>
+      </section>
+
+      <section class="dash-panel" data-panel="materials">
+        <div class="card"><h3>Study materials</h3><ul id="mat-list" class="small"></ul></div>
+      </section>
+
+      <section class="dash-panel" data-panel="notices">
+        <div class="card"><div id="stu-notices"></div></div>
+      </section>
+
+      <section class="dash-panel" data-panel="admission">
+        <div class="card"><pre id="adm-pre" class="small" style="white-space:pre-wrap;"></pre></div>
+      </section>
+
+      <section class="dash-panel" data-panel="feedback">
+        <div class="card">
+          <h3>Submit feedback</h3>
+          <form id="form-fb" class="form-grid">
+            <div><label class="field-label">Message</label><textarea class="input" id="fb-msg" rows="4" required></textarea></div>
+            <div><label class="field-label">Rating (1–5)</label><input class="input" id="fb-rate" type="number" min="1" max="5" value="5"/></div>
+            <div><button class="btn" type="submit">Submit</button></div>
+          </form>
+        </div>
+      </section>
+
+      <section class="dash-panel" data-panel="edit-profile">
+        <div class="card">
+          <h3>Edit Profile</h3>
+          <form id="form-edit-profile" class="form-grid">
+            <div style="display:flex;align-items:center;gap:1.5rem;margin-bottom:1rem;flex-wrap:wrap;">
+              <div id="student-avatar-preview-wrap">
+                <div class="faculty-avatar-placeholder" id="student-avatar-placeholder" style="width:80px;height:80px;border-radius:50%;border:1px solid rgba(56,189,248,0.2);background:rgba(0,0,0,0.25);display:grid;place-items:center;"></div>
+                <img id="student-avatar-img" src="" alt="Profile picture" style="width:80px;height:80px;border-radius:50%;object-fit:cover;display:none;margin:0;border:1px solid rgba(56,189,248,0.2);"/>
+              </div>
+              <div>
+                <label class="field-label" for="student-avatar-upload">Upload profile picture</label>
+                <input type="file" id="student-avatar-upload" name="avatar" accept="image/*"/>
+              </div>
+            </div>
+            <div>
+              <label class="field-label" for="student-profile-name">Full Name</label>
+              <input class="input" id="student-profile-name" name="name" required/>
+            </div>
+            <div>
+              <label class="field-label" for="student-profile-phone">Phone number</label>
+              <input class="input" id="student-profile-phone" name="phone"/>
+            </div>
+            <div>
+              <label class="field-label" for="student-profile-bio">Bio / Statement</label>
+              <textarea class="input" id="student-profile-bio" name="bio" rows="3"></textarea>
+            </div>
+            <div>
+              <button class="btn" type="submit">Save Changes</button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <p id="dash-msg" class="small mt-3"></p>
+    </main>
+  </div>
+  <script src="../js/api.js"></script>
+  <script src="../js/student-app.js"></script>
+</body>
+</html>

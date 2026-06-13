@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Downloads — SSC College, Junnar</title>
+  <link rel="stylesheet" href="css/styles.css"/>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
+</head>
+<body>
+  <div id="site-header"></div>
+
+  <section class="container mt-4">
+    <div class="card">
+      <h2>Downloads</h2>
+      <p class="small">Syllabus, prospectus, and other documents. Links below use URLs set in Admin → Settings when available.</p>
+      <ul class="small mt-3" id="dl-list" style="line-height:1.8;"></ul>
+      <p id="dl-note" class="small mt-3"></p>
+    </div>
+  </section>
+
+  <div id="site-footer"></div>
+  <script src="js/layout.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      const list = document.getElementById('dl-list');
+      const note = document.getElementById('dl-note');
+      function row(label, url) {
+        const li = document.createElement('li');
+        if (url && String(url).trim()) {
+          li.innerHTML = `<strong>${label}:</strong> <a href="${encodeURI(url)}" target="_blank" rel="noopener">Open / download</a>`;
+        } else {
+          li.innerHTML = `<strong>${label}:</strong> <span class="small" style="color:var(--muted)">Not linked yet — contact the office or ask admin to add the URL in settings.</span>`;
+        }
+        list.appendChild(li);
+      }
+      try {
+        const res = await fetch('/api/public/settings');
+        if (!res.ok) throw new Error();
+        const s = await res.json();
+        row('Syllabus (PDF)', s.syllabusPdfUrl);
+        row('Prospectus (PDF)', s.prospectusPdfUrl);
+      } catch {
+        note.textContent = 'Could not load settings. Ensure the API server is running.';
+        row('Syllabus (PDF)', '');
+        row('Prospectus (PDF)', '');
+      }
+    });
+  </script>
+</body>
+</html>

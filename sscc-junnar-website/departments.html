@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Departments — SSC College, Junnar</title>
+  <link rel="stylesheet" href="css/styles.css"/>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
+</head>
+<body>
+  <div id="site-header"></div>
+
+  <section class="container mt-4">
+    <div class="card">
+      <h2>Academic departments</h2>
+      <p class="small">Arts, Commerce and Science streams with dedicated subject expertise. Live rows below load from the college database when the API is available.</p>
+    </div>
+  </section>
+
+  <section class="container mt-4">
+    <div class="grid grid-3" id="dept-static">
+      <div class="card">
+        <h3>Arts</h3>
+        <ul class="small">
+          <li>English</li><li>Marathi</li><li>Hindi</li><li>Psychology</li><li>Geography</li><li>Economics</li><li>Politics</li><li>History</li><li>Education</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Commerce</h3>
+        <ul class="small">
+          <li>Accountancy</li><li>Cost Accounting</li><li>Banking &amp; Finance</li><li>Marketing</li><li>Business Law</li><li>Auditing</li><li>Taxation</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Science</h3>
+        <ul class="small">
+          <li>Chemistry</li><li>Physics</li><li>Botany</li><li>Zoology</li><li>Mathematics</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="container mt-4">
+    <div class="card">
+      <h3>Departments (database)</h3>
+      <div class="mt-3 grid grid-2" style="margin-bottom:1.2rem;">
+        <div>
+          <label class="field-label" for="dept-search">Search by department name or HOD</label>
+          <input class="input" id="dept-search" placeholder="Type to search..." autocomplete="off"/>
+        </div>
+        <div>
+          <label class="field-label" for="dept-stream-filter">Filter by Stream</label>
+          <select class="select input" id="dept-stream-filter">
+            <option value="">All Streams</option>
+            <option value="Arts">Arts</option>
+            <option value="Commerce">Commerce</option>
+            <option value="Science">Science</option>
+            <option value="IT">IT</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="table small" id="dept-table">
+          <thead><tr><th>Name</th><th>Stream</th><th>HOD</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <p id="dept-note" class="small mt-2"></p>
+    </div>
+  </section>
+
+  <div id="site-footer"></div>
+  <script src="js/layout.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      const tbody = document.querySelector('#dept-table tbody');
+      const note = document.getElementById('dept-note');
+      const searchInput = document.getElementById('dept-search');
+      const streamFilter = document.getElementById('dept-stream-filter');
+      let departments = [];
+
+      function render(list) {
+        tbody.innerHTML = '';
+        if (!list.length) {
+          tbody.innerHTML = '<tr><td colspan="3" class="small">No departments found matching criteria.</td></tr>';
+          return;
+        }
+        list.forEach((d) => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `<td>${esc(d.name)}</td><td>${esc(d.stream)}</td><td>${esc(d.hodName || '')}</td>`;
+          tbody.appendChild(tr);
+        });
+      }
+
+      function filterList() {
+        const query = searchInput.value.trim().toLowerCase();
+        const streamVal = streamFilter.value;
+        const filtered = departments.filter((d) => {
+          const matchesSearch = !query || `${d.name} ${d.hodName || ''} ${d.description || ''}`.toLowerCase().includes(query);
+          const matchesStream = !streamVal || d.stream === streamVal;
+          return matchesSearch && matchesStream;
+        });
+        render(filtered);
+      }
+
+      try {
+        const res = await fetch('/api/public/departments');
+        if (!res.ok) throw new Error();
+        departments = await res.json();
+        if (!departments.length) {
+          note.textContent = 'No department rows yet — seed or add via Admin.';
+          return;
+        }
+        render(departments);
+        searchInput.addEventListener('input', filterList);
+        streamFilter.addEventListener('change', filterList);
+      } catch {
+        note.textContent = 'Run the server to load departments from SQLite via Prisma.';
+      }
+    });
+    function esc(s) {
+      const d = document.createElement('div');
+      d.textContent = s == null ? '' : String(s);
+      return d.innerHTML;
+    }
+  </script>
+</body>
+</html>

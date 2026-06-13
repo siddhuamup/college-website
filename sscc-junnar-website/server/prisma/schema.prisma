@@ -1,0 +1,187 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  admin
+  teacher
+  student
+}
+
+model User {
+  id             String   @id @default(cuid())
+  email          String   @unique
+  passwordHash   String
+  role           Role
+  name           String
+  phone          String   @default("")
+  avatarUrl      String   @default("")
+  bio            String   @default("")
+  teacherProfile Json?
+  studentProfile Json?
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  noticesCreated           Notice[]
+  marksAsTeacher           Mark[]                 @relation("MarkTeacher")
+  marksAsStudent           Mark[]                 @relation("MarkStudent")
+  attendanceAsTeacher      Attendance[]           @relation("AttTeacher")
+  attendanceAsStudent      Attendance[]           @relation("AttStudent")
+  studyMaterials           StudyMaterial[]
+  feedbacks                Feedback[]
+  admissionsReviewed       AdmissionApplication[] @relation("AdmReviewedBy")
+  admissionsCreatedStudent AdmissionApplication[] @relation("AdmCreatedStudent")
+}
+
+model AdmissionApplication {
+  id                   String    @id @default(cuid())
+  applicationNumber    String    @unique
+  fullName             String
+  email                String
+  phone                String
+  address              String
+  courseApplied        String
+  board12              String    @default("")
+  marks12              Float
+  maxMarks12           Float     @default(600)
+  documentFiles        Json      @default("[]")
+  status               String    @default("pending")
+  verificationNotes    String    @default("")
+  documentsVerified    Boolean   @default(false)
+  reviewedById         String?
+  reviewedBy           User?     @relation("AdmReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
+  reviewedAt           DateTime?
+  createdStudentUserId String?
+  createdStudentUser   User?     @relation("AdmCreatedStudent", fields: [createdStudentUserId], references: [id], onDelete: SetNull)
+  tempPasswordHint     String    @default("")
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  @@index([email])
+}
+
+model Notice {
+  id          String   @id @default(cuid())
+  title       String
+  body        String   @default("")
+  pdfFile     Json?
+  isPublished Boolean  @default(true)
+  createdById String?
+  createdBy   User?    @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Department {
+  id          String   @id @default(cuid())
+  name        String
+  stream      String   @default("Other")
+  hodName     String   @default("")
+  description String   @default("")
+  subjects    Json     @default("[]")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  courses     Course[]
+}
+
+model Course {
+  id           String      @id @default(cuid())
+  name         String
+  level        String
+  duration     String      @default("")
+  eligibility  String      @default("")
+  description  String      @default("")
+  seatsApprox  Int         @default(0)
+  departmentId String?
+  department   Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+}
+
+model GalleryItem {
+  id        String   @id @default(cuid())
+  caption   String   @default("")
+  imageFile Json
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Feedback {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @default("")
+  message   String
+  rating    Int      @default(5)
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  category  String   @default("general")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model StudyMaterial {
+  id        String   @id @default(cuid())
+  teacherId String
+  teacher   User     @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  title     String
+  subject   String
+  className String
+  file      Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Mark {
+  id            String   @id @default(cuid())
+  studentId     String
+  student       User     @relation("MarkStudent", fields: [studentId], references: [id], onDelete: Cascade)
+  teacherId     String
+  teacher       User     @relation("MarkTeacher", fields: [teacherId], references: [id], onDelete: Cascade)
+  subject       String
+  examName      String
+  marksObtained Float
+  maxMarks      Float
+  term          String   @default("")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([studentId, subject, examName])
+}
+
+model Attendance {
+  id        String   @id @default(cuid())
+  studentId String
+  student   User     @relation("AttStudent", fields: [studentId], references: [id], onDelete: Cascade)
+  teacherId String
+  teacher   User     @relation("AttTeacher", fields: [teacherId], references: [id], onDelete: Cascade)
+  subject   String
+  date      DateTime
+  status    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([studentId, subject, date])
+}
+
+model CollegeSettings {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Counter {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  value     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

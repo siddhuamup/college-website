@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Gallery — SSC College, Junnar</title>
+  <link rel="stylesheet" href="css/styles.css"/>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
+</head>
+<body>
+  <div id="site-header"></div>
+
+  <section class="container mt-4">
+    <div class="card">
+      <h2>Gallery</h2>
+      <p class="small">Campus moments and events. Administrators can upload images from the admin panel.</p>
+    </div>
+  </section>
+
+  <section class="container mt-4 grid grid-3" id="gallery-grid"></section>
+  <p id="gallery-note" class="container small"></p>
+
+  <div id="site-footer"></div>
+  <script src="js/layout.js"></script>
+  <script src="js/app.js"></script>
+  <style>
+    .gal-img { width:100%; height:200px; object-fit:cover; border-radius:12px; border:1px solid rgba(56,189,248,0.2); }
+  </style>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      const grid = document.getElementById('gallery-grid');
+      const note = document.getElementById('gallery-note');
+      try {
+        const res = await fetch('/api/public/gallery');
+        if (!res.ok) throw new Error();
+        const items = await res.json();
+        if (!items.length) {
+          note.textContent = 'No gallery images yet — add them from Admin → Gallery.';
+          return;
+        }
+        items.forEach((g) => {
+          const wrap = document.createElement('div');
+          wrap.className = 'card';
+          const cap = document.createElement('p');
+          cap.className = 'small';
+          cap.textContent = g.caption || 'Campus';
+          if (g.imageUrl) {
+            const img = document.createElement('img');
+            img.className = 'gal-img';
+            img.src = g.imageUrl;
+            img.alt = g.caption || 'Gallery';
+            wrap.appendChild(img);
+          }
+          wrap.appendChild(cap);
+          grid.appendChild(wrap);
+        });
+      } catch {
+        note.textContent = 'Run the server to load the gallery from the database.';
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Student directory — SSC College, Junnar</title>
+  <link rel="stylesheet" href="css/styles.css"/>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
+</head>
+<body>
+  <div id="site-header"></div>
+
+  <section class="container mt-4">
+    <div class="card">
+      <h2>Student directory</h2>
+      <p class="small">Active student records from the college database (name, roll, class, course). No email or phone is shown here.</p>
+      <div class="mt-3">
+        <label class="field-label" for="stu-filter">Search by name, roll, class or course</label>
+        <input class="input" id="stu-filter" type="search" placeholder="Type to filter…" autocomplete="off"/>
+      </div>
+    </div>
+  </section>
+
+  <section class="container mt-4">
+    <div class="card table-wrap">
+      <table class="table small" id="stu-table">
+        <thead>
+          <tr><th>Name</th><th>Roll</th><th>Class</th><th>Course</th><th>Year</th></tr>
+        </thead>
+        <tbody id="stu-tbody"></tbody>
+      </table>
+      <p id="stu-note" class="small mt-3"></p>
+    </div>
+  </section>
+
+  <div id="site-footer"></div>
+  <script src="js/layout.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      const tbody = document.getElementById('stu-tbody');
+      const note = document.getElementById('stu-note');
+      const filter = document.getElementById('stu-filter');
+      let rows = [];
+
+      function render(list) {
+        tbody.innerHTML = '';
+        if (!list.length) {
+          note.textContent = rows.length ? 'No students match your search.' : 'No student records yet. Admins can add students from the portal.';
+          return;
+        }
+        note.textContent = '';
+        list.forEach((r) => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `<td>${esc(r.name)}</td><td>${esc(r.rollNumber)}</td><td>${esc(r.className)}</td><td>${esc(r.courseName)}</td><td>${esc(r.year)}</td>`;
+          tbody.appendChild(tr);
+        });
+      }
+
+      function esc(s) {
+        const d = document.createElement('div');
+        d.textContent = s == null ? '' : String(s);
+        return d.innerHTML;
+      }
+
+      try {
+        const res = await fetch('/api/public/student-directory');
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || res.statusText);
+        rows = Array.isArray(data) ? data : [];
+        render(rows);
+      } catch (e) {
+        note.textContent = e.message || 'Could not load directory. Start the server (npm start in server/) and try again.';
+      }
+
+      filter.addEventListener('input', () => {
+        const q = filter.value.trim().toLowerCase();
+        if (!q) return render(rows);
+        const list = rows.filter((r) =>
+          [r.name, r.rollNumber, r.className, r.courseName, r.year].some((f) => String(f || '').toLowerCase().includes(q))
+        );
+        render(list);
+      });
+    });
+  </script>
+</body>
+</html>

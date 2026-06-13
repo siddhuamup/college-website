@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Courses — SSC College, Junnar</title>
+  <link rel="stylesheet" href="css/styles.css"/>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
+</head>
+<body>
+  <div id="site-header"></div>
+
+  <section class="container mt-4">
+    <div class="card">
+      <h2>Courses offered</h2>
+      <p class="small">The college offers <strong class="highlight">more than 20 courses</strong> across Arts, Commerce, Science, and IT at Undergraduate (UG), Postgraduate (PG), and Doctoral (Ph.D.) levels. Below is the official catalogue summary; the live list from the admissions office loads when the portal server is running.</p>
+    </div>
+  </section>
+
+  <section class="container mt-4">
+    <div class="card">
+      <h3>Undergraduate (UG — 3 years)</h3>
+      <ul class="small">
+        <li><strong>B.A.</strong> — History, Geography, English, Marathi, Hindi, Psychology, and allied subjects</li>
+        <li><strong>B.Sc.</strong> — Chemistry, Physics, Botany, Mathematics, and related combinations</li>
+        <li><strong>B.Com</strong></li>
+        <li><strong>BBA</strong> and <strong>BBA (Computer Applications)</strong></li>
+      </ul>
+    </div>
+    <div class="card mt-4">
+      <h3>Postgraduate (PG — 2 years)</h3>
+      <ul class="small">
+        <li><strong>M.A.</strong> — English, Geography, History</li>
+        <li><strong>M.Sc.</strong> — Various specializations</li>
+        <li><strong>M.Com</strong> — Advanced Accounting &amp; Taxation; Banking &amp; Finance</li>
+      </ul>
+    </div>
+    <div class="card mt-4">
+      <h3>Ph.D. programmes</h3>
+      <p class="small">Recognized research centres for <strong class="highlight">Ph.D. in Commerce</strong> and <strong class="highlight">Ph.D. in Zoology</strong>, as per Savitribai Phule Pune University norms.</p>
+    </div>
+  </section>
+
+  <section class="container mt-4">
+    <div class="card">
+      <h3>Programme table (from database)</h3>
+      <div class="mt-3 grid grid-2" style="margin-bottom:1.2rem;">
+        <div>
+          <label class="field-label" for="course-search">Search by program name or details</label>
+          <input class="input" id="course-search" placeholder="Type to search..." autocomplete="off"/>
+        </div>
+        <div>
+          <label class="field-label" for="course-level-filter">Filter by Level</label>
+          <select class="select input" id="course-level-filter">
+            <option value="">All Levels</option>
+            <option value="UG">Undergraduate (UG)</option>
+            <option value="PG">Postgraduate (PG)</option>
+            <option value="PhD">Doctoral (PhD)</option>
+          </select>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="table small" id="courses-api-table">
+          <thead><tr><th>Programme</th><th>Level</th><th>Duration</th><th>Eligibility</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <p id="courses-api-note" class="small mt-2"></p>
+    </div>
+  </section>
+
+  <div id="site-footer"></div>
+  <script src="js/layout.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      const tbody = document.querySelector('#courses-api-table tbody');
+      const note = document.getElementById('courses-api-note');
+      const searchInput = document.getElementById('course-search');
+      const levelFilter = document.getElementById('course-level-filter');
+      let courses = [];
+
+      function render(list) {
+        tbody.innerHTML = '';
+        if (!list.length) {
+          tbody.innerHTML = '<tr><td colspan="4" class="small">No courses found matching criteria.</td></tr>';
+          return;
+        }
+        list.forEach((c) => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `<td>${escape(c.name)}</td><td>${escape(c.level)}</td><td>${escape(c.duration || '')}</td><td>${escape(c.eligibility || '')}</td>`;
+          tbody.appendChild(tr);
+        });
+      }
+
+      function filterList() {
+        const query = searchInput.value.trim().toLowerCase();
+        const levelVal = levelFilter.value;
+        const filtered = courses.filter((c) => {
+          const matchesSearch = !query || `${c.name} ${c.eligibility} ${c.description || ''}`.toLowerCase().includes(query);
+          const matchesLevel = !levelVal || c.level === levelVal;
+          return matchesSearch && matchesLevel;
+        });
+        render(filtered);
+      }
+
+      try {
+        const res = await fetch('/api/public/courses');
+        if (!res.ok) throw new Error();
+        courses = await res.json();
+        if (!courses.length) {
+          note.textContent = 'No rows in database yet — run npm run seed in /server.';
+          return;
+        }
+        render(courses);
+        searchInput.addEventListener('input', filterList);
+        levelFilter.addEventListener('change', filterList);
+      } catch {
+        note.textContent = 'Start the API server to load dynamic courses.';
+      }
+    });
+    function escape(s) {
+      const d = document.createElement('div');
+      d.textContent = s == null ? '' : String(s);
+      return d.innerHTML;
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Facilities — SSC College, Junnar</title>
+  <link rel="stylesheet" href="css/styles.css"/>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
+</head>
+<body>
+  <div id="site-header"></div>
+
+  <section class="container mt-4">
+    <div class="card">
+      <h2>Infrastructure &amp; facilities</h2>
+      <p class="small">The campus is spread over a lush green area of about <strong class="highlight">10 acres</strong> at Bodkenagar, Junnar.</p>
+    </div>
+  </section>
+
+  <section class="container mt-4 grid grid-2">
+    <div class="card">
+      <h3>Library</h3>
+      <p class="small" id="fac-library">Highly enriched central library with over 1,09,000 books, 14 daily newspapers, e-books, and reputed journals; dedicated reading hall and e-learning / computer section.</p>
+    </div>
+    <div class="card">
+      <h3>Sports complex</h3>
+      <p class="small" id="fac-sports">Multi-activity indoor sports stadium, gymnasium, and large outdoor playground. Table tennis, badminton, basketball, and wrestling are encouraged.</p>
+    </div>
+    <div class="card">
+      <h3>Hostel</h3>
+      <p class="small" id="fac-hostel">Boys' hostel on campus with capacity of about 40 students; reading room and purified drinking water.</p>
+    </div>
+    <div class="card">
+      <h3>Laboratories</h3>
+      <p class="small" id="fac-labs">17 advanced, well-equipped laboratories for Science and Computer / IT students.</p>
+    </div>
+    <div class="card" style="grid-column:1/-1">
+      <h3>Other facilities</h3>
+      <p class="small" id="fac-other">Primary medical health centre, two cafeterias / canteens, and strong IT infrastructure.</p>
+    </div>
+  </section>
+
+  <div id="site-footer"></div>
+  <script src="js/layout.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      try {
+        const res = await fetch('/api/public/facilities');
+        if (!res.ok) return;
+        const f = await res.json();
+        if (f.library) document.getElementById('fac-library').textContent = f.library;
+        if (f.sports) document.getElementById('fac-sports').textContent = f.sports;
+        if (f.hostel) document.getElementById('fac-hostel').textContent = f.hostel;
+        if (f.laboratories) document.getElementById('fac-labs').textContent = f.laboratories;
+        if (f.other) document.getElementById('fac-other').textContent = f.other;
+      } catch { /* static copy remains */ }
+    });
+  </script>
+</body>
+</html>
