@@ -124,9 +124,64 @@
 
   async function loadAttendance() {
     const rows = await SSC_API.get('/student/attendance');
+    const list = Array.isArray(rows) ? rows : [];
+    
+    // Stats calculation
+    const total = list.length;
+    const present = list.filter(a => a.status === 'present').length;
+    const missed = total - present;
+    const pct = total ? Math.round((present / total) * 100) : 100;
+    
+    document.getElementById('stu-att-total').textContent = total;
+    document.getElementById('stu-att-present').textContent = present;
+    const missedEl = document.getElementById('stu-att-missed');
+    if (missedEl) missedEl.textContent = missed;
+    document.getElementById('stu-att-percent').textContent = pct + '%';
+    
+    const warn = document.getElementById('att-warn-banner');
+    if (total > 0 && pct < 75) {
+      warn.style.display = 'block';
+    } else {
+      warn.style.display = 'none';
+    }
+
+    // Render subject breakdown
+    const subBreakdown = {};
+    list.forEach(a => {
+      const sub = a.subject || 'General';
+      if (!subBreakdown[sub]) {
+        subBreakdown[sub] = { present: 0, total: 0 };
+      }
+      subBreakdown[sub].total += 1;
+      if (a.status === 'present') {
+        subBreakdown[sub].present += 1;
+      }
+    });
+
+    const tblBreakdown = document.querySelector('#tbl-subject-breakdown tbody');
+    tblBreakdown.innerHTML = '';
+    const subjects = Object.keys(subBreakdown).sort();
+    if (!subjects.length) {
+      tblBreakdown.innerHTML = '<tr><td colspan="4" class="small">No attendance data to summarize.</td></tr>';
+    } else {
+      subjects.forEach(sub => {
+        const stats = subBreakdown[sub];
+        const subPct = stats.total ? Math.round((stats.present / stats.total) * 100) : 100;
+        const color = subPct < 75 ? 'color: #ef4444; font-weight: bold;' : '';
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${esc(sub)}</td>
+          <td>${stats.present}</td>
+          <td>${stats.total}</td>
+          <td style="${color}">${subPct}%</td>
+        `;
+        tblBreakdown.appendChild(tr);
+      });
+    }
+
+    // Render detailed logs
     const tb = document.querySelector('#tbl-att tbody');
     tb.innerHTML = '';
-    const list = Array.isArray(rows) ? rows : [];
     if (!list.length) {
       tb.innerHTML = '<tr><td colspan="3" class="small">No attendance records yet.</td></tr>';
       return;
@@ -193,6 +248,8 @@
     ]
       .filter(Boolean)
       .join('\n');
+  }
+
   async function loadEditProfile() {
     const u = await SSC_API.get('/student/profile');
     document.getElementById('student-profile-name').value = u.name || '';

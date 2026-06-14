@@ -495,5 +495,130 @@ export function adminRouter({ jwtSecret }) {
     res.json({ ok: true });
   });
 
+  r.get('/attendance/analytics', async (_req, res) => {
+    const students = await prisma.user.findMany({
+      where: { role: Role.student, isActive: true },
+      select: { id: true, name: true, email: true, studentProfile: true },
+    });
+
+    const logs = await prisma.attendance.findMany();
+
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const todayEnd = new Date();
+    todayEnd.setHours(23, 59, 59, 999);
+
+    const presentToday = await prisma.attendance.count({
+      where: {
+        date: { gte: todayStart, lte: todayEnd },
+        status: 'present',
+      },
+    });
+
+    const absentToday = await prisma.attendance.count({
+      where: {
+        date: { gte: todayStart, lte: todayEnd },
+        status: 'absent',
+      },
+    });
+
+    // Compute student logs breakdown
+    const lowAttendanceList = [];
+    students.forEach((student) => {
+      const studentLogs = logs.filter(l => l.studentId === student.id);
+      const total = studentLogs.length;
+      const present = studentLogs.filter(l => l.status === 'present').length;
+      const pct = total ? Math.round((present / total) * 100) : 100;
+      if (total > 0 && pct < 75) {
+        lowAttendanceList.push({
+          id: student.id,
+          name: student.name,
+          email: student.email,
+          rollNumber: student.studentProfile?.rollNumber || '',
+          className: student.studentProfile?.className || 'Unassigned',
+          percentage: pct,
+          attended: present,
+          totalClasses: total,
+        });
+      }
+    });
+
+    // Compute class-wise breakdown
+    const classStats = {};
+    logs.forEach((log) => {
+      const student = students.find((s) => s.id === log.studentId);
+      if (!student) return;
+      const cls = student.studentProfile?.className || 'Unassigned';
+      if (!classStats[cls]) {
+        classStats[cls] = { present: 0, total: 0 };
+      }
+      classStats[cls].total += 1;
+      if (log.status === 'present') {
+        classStats[cls].present += 1;
+      }
+    });
+    const classSummary = Object.entries(classStats).map(([className, stat]) => ({
+      className,
+      percentage: stat.total ? Math.round((stat.present / stat.total) * 100) : 0,
+      totalLogs: stat.total,
+    })).sort((a, b) => a.className.localeCompare(b.className));
+
+    // Compute subject-wise breakdown
+    const subjectStats = {};
+    logs.forEach((log) => {
+      const subj = log.subject || 'Other';
+      if (!subjectStats[subj]) {
+        subjectStats[subj] = { present: 0, total: 0 };
+      }
+      subjectStats[subj].total += 1;
+      if (log.status === 'present') {
+        subjectStats[subj].present += 1;
+      }
+    });
+    const subjectSummary = Object.entries(subjectStats).map(([subject, stat]) => ({
+      subject,
+      percentage: stat.total ? Math.round((stat.present / stat.total) * 100) : 0,
+      totalLogs: stat.total,
+    })).sort((a, b) => a.subject.localeCompare(b.subject));
+
+    const totalLogsCount = logs.length;
+    const totalPresentCount = logs.filter(l => l.status === 'present').length;
+    const globalPercentage = totalLogsCount ? Math.round((totalPresentCount / totalLogsCount) * 100) : 100;
+
+    // Compute monthly breakdown (last 6 months)
+    const monthlyStats = {};
+    logs.forEach((log) => {
+      const d = new Date(log.date);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      if (!monthlyStats[key]) monthlyStats[key] = { present: 0, absent: 0 };
+      if (log.status === 'present') monthlyStats[key].present += 1;
+      else monthlyStats[key].absent += 1;
+    });
+    const monthlySummary = Object.entries(monthlyStats)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .slice(-6)
+      .map(([month, stat]) => {
+        const total = stat.present + stat.absent;
+        return {
+          month,
+          present: stat.present,
+          absent: stat.absent,
+          percentage: total ? Math.round((stat.present / total) * 100) : 0,
+        };
+      });
+
+    res.json({
+      totalStudents: students.length,
+      presentToday,
+      absentToday,
+      globalPercentage,
+      lowAttendanceCount: lowAttendanceList.length,
+      lowAttendanceList,
+      classSummary,
+      subjectSummary,
+      monthlySummary,
+    });
+  });
+
   return r;
 }

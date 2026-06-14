@@ -57,10 +57,20 @@
 
       <section class="dash-panel" data-panel="attendance">
         <div class="card">
-          <h3>Mark attendance</h3>
-          <div class="form-grid two">
-            <div><label class="field-label">Subject</label><input class="input" id="att-subject"/></div>
-            <div><label class="field-label">Date</label><input class="input" id="att-date" type="date"/></div>
+          <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:1rem;">
+            <h3 style="margin:0;">Mark attendance</h3>
+            <span id="att-loaded-status" class="small highlight" style="display:none; font-weight:600;"></span>
+          </div>
+          <div class="form-grid two mt-2">
+            <div><label class="field-label">Subject</label><input class="input" id="att-subject" required/></div>
+            <div><label class="field-label">Date</label><input class="input" id="att-date" type="date" required/></div>
+          </div>
+          <div class="mt-3" style="display:flex; gap:1rem; align-items:center; justify-content:space-between; flex-wrap:wrap; border-bottom:1px solid rgba(56,189,248,0.15); padding-bottom:0.75rem;">
+            <div>
+              <label class="field-label" for="att-student-search">Search student name or roll</label>
+              <input class="input" id="att-student-search" placeholder="Type to filter list..." style="max-width:260px; padding:0.45rem 0.75rem; border-radius:8px;" autocomplete="off"/>
+            </div>
+            <button type="button" class="btn secondary small" id="btn-att-toggle-all">Mark All Present</button>
           </div>
           <div id="att-rows" class="mt-3"></div>
           <button type="button" class="btn mt-3" id="att-save">Save attendance</button>

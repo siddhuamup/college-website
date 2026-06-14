@@ -39,7 +39,49 @@
       </section>
 
       <section class="dash-panel" data-panel="attendance">
-        <div class="card"><h3>Attendance log</h3><div class="table-wrap"><table class="table small" id="tbl-att"><thead><tr><th>Date</th><th>Subject</th><th>Status</th></tr></thead><tbody></tbody></table></div></div>
+        <div id="att-warn-banner" class="alert error" style="display:none;margin-bottom:1.25rem;">
+          <strong>⚠️ Low Attendance Warning:</strong> Your overall attendance is currently below the required 75%. Please contact your course coordinator.
+        </div>
+
+        <div class="stat-grid" style="margin-bottom:1.5rem;">
+          <div class="stat-card"><span class="small">Total Classes Logged</span><strong id="stu-att-total">0</strong></div>
+          <div class="stat-card"><span class="small">Classes Attended</span><strong id="stu-att-present">0</strong></div>
+          <div class="stat-card"><span class="small">Classes Missed</span><strong id="stu-att-missed" style="color:#ef4444;">0</strong></div>
+          <div class="stat-card"><span class="small">Overall Percentage</span><strong id="stu-att-percent">0%</strong></div>
+        </div>
+
+        <div class="card">
+          <h3>Subject-wise Attendance Breakdown</h3>
+          <div class="table-wrap">
+            <table class="table small" id="tbl-subject-breakdown">
+              <thead>
+                <tr>
+                  <th>Subject</th>
+                  <th>Attended</th>
+                  <th>Total Classes</th>
+                  <th>Percentage</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card mt-4">
+          <h3>Date-wise Attendance Log</h3>
+          <div class="table-wrap">
+            <table class="table small" id="tbl-att">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Subject</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
       </section>
 
       <section class="dash-panel" data-panel="materials">

@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import { prisma } from './db/client.js';
 import { performSeed } from './seedLogic.js';
+import { performDemoSeed } from './demoSeed.js';
 
 function printDbHelp(err) {
   console.error('\n========== Database setup ==========\n');
@@ -24,7 +25,9 @@ async function main() {
   console.log('Connected. Seeding...');
   try {
     await performSeed();
-    console.log('Seed complete.');
+    console.log('Base seed complete.');
+    await performDemoSeed();
+    console.log('All seeding complete.');
   } finally {
     await prisma.$disconnect();
   }

@@ -36,6 +36,7 @@
         <button type="button" data-panel="gallery">Gallery</button>
         <button type="button" data-panel="feedback">Feedback</button>
         <button type="button" data-panel="study-materials">Study Materials</button>
+        <button type="button" data-panel="attendance-analytics">Attendance</button>
         <button type="button" data-panel="settings">Settings</button>
       </nav>
       <a class="btn secondary small mt-3" href="../index.html" style="display:inline-block;text-decoration:none;">Public site</a>
@@ -195,6 +196,86 @@
                   <th>Uploaded By</th>
                   <th>Date</th>
                   <th></th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="dash-panel" data-panel="attendance-analytics">
+        <div class="stat-grid" id="att-stats-grid"></div>
+
+        <div style="display: flex; gap: 0.75rem; margin-top: 1.5rem; justify-content: flex-end;">
+          <button class="btn small" id="btn-export-csv">Export CSV</button>
+          <button class="btn small" id="btn-export-excel">Export Excel</button>
+          <button class="btn small secondary" id="btn-print-att">Print Report</button>
+        </div>
+
+        <div class="card mt-4">
+          <h3>Low Attendance Students (&lt;75%)</h3>
+          <div class="table-wrap">
+            <table class="table small" id="tbl-low-att">
+              <thead>
+                <tr>
+                  <th>Roll No</th>
+                  <th>Name</th>
+                  <th>Class</th>
+                  <th>Attended</th>
+                  <th>Total Classes</th>
+                  <th>Percentage</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="grid grid-2 mt-4">
+          <div class="card">
+            <h3>Class-wise Attendance</h3>
+            <div class="table-wrap">
+              <table class="table small" id="tbl-class-att">
+                <thead>
+                  <tr>
+                    <th>Class</th>
+                    <th>Records</th>
+                    <th>Attendance %</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>Subject-wise Attendance</h3>
+            <div class="table-wrap">
+              <table class="table small" id="tbl-subject-att">
+                <thead>
+                  <tr>
+                    <th>Subject</th>
+                    <th>Records</th>
+                    <th>Attendance %</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="card mt-4">
+          <h3>Monthly Attendance Summary</h3>
+          <div class="table-wrap">
+            <table class="table small" id="tbl-monthly-att">
+              <thead>
+                <tr>
+                  <th>Month</th>
+                  <th>Present</th>
+                  <th>Absent</th>
+                  <th>Attendance %</th>
                 </tr>
               </thead>
               <tbody></tbody>

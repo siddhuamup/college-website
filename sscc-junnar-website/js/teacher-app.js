@@ -59,9 +59,22 @@
       loadMarks();
     });
 
-    document.getElementById('att-save').addEventListener('click', async () => {
+    document.getElementById('att-save').addEventListener('click', async (e) => {
+      const btn = e.target;
+      if (btn.disabled) return;
+      btn.disabled = true;
+      const originalText = btn.textContent;
+      btn.textContent = 'Saving...';
+      
       const subject = document.getElementById('att-subject').value.trim();
       const date = document.getElementById('att-date').value;
+      if (!subject || !date) {
+        msg('Subject and Date are required', true);
+        btn.disabled = false;
+        btn.textContent = originalText;
+        return;
+      }
+      
       const entries = [];
       document.querySelectorAll('#att-rows input[type="checkbox"]').forEach((cb) => {
         entries.push({
@@ -69,9 +82,32 @@
           status: cb.checked ? 'present' : 'absent',
         });
       });
-      await SSC_API.post('/teacher/attendance', { subject, date, entries });
-      msg('Attendance saved');
+      try {
+        await SSC_API.post('/teacher/attendance', { subject, date, entries });
+        msg('Attendance saved');
+        await checkExistingAttendance();
+      } catch (err) {
+        msg(err.message || 'Could not save attendance', true);
+      } finally {
+        btn.disabled = false;
+      }
     });
+
+    document.getElementById('att-student-search').addEventListener('input', () => {
+      filterAttendanceStudents();
+    });
+
+    let toggleAllState = true;
+    document.getElementById('btn-att-toggle-all').addEventListener('click', (e) => {
+      e.preventDefault();
+      const visibleCbs = document.querySelectorAll('#att-rows label:not([style*="display: none"]) input[type="checkbox"]');
+      visibleCbs.forEach(cb => cb.checked = toggleAllState);
+      e.target.textContent = toggleAllState ? 'Unmark All' : 'Mark All Present';
+      toggleAllState = !toggleAllState;
+    });
+
+    document.getElementById('att-subject').addEventListener('change', checkExistingAttendance);
+    document.getElementById('att-date').addEventListener('change', checkExistingAttendance);
 
     document.getElementById('form-mat').addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -239,6 +275,56 @@
       placeholder.style.display = 'grid';
     }
     document.getElementById('teacher-avatar-upload').value = '';
+  }
+
+  function filterAttendanceStudents() {
+    const query = document.getElementById('att-student-search').value.trim().toLowerCase();
+    document.querySelectorAll('#att-rows label').forEach((label) => {
+      const text = label.textContent.toLowerCase();
+      if (!query || text.includes(query)) {
+        label.style.display = 'flex';
+      } else {
+        label.style.display = 'none';
+      }
+    });
+  }
+
+  async function checkExistingAttendance() {
+    const subject = document.getElementById('att-subject').value.trim();
+    const date = document.getElementById('att-date').value;
+    const statusSpan = document.getElementById('att-loaded-status');
+    const saveBtn = document.getElementById('att-save');
+    
+    if (!subject || !date) {
+      statusSpan.style.display = 'none';
+      saveBtn.textContent = 'Save attendance';
+      return;
+    }
+    
+    try {
+      const query = new URLSearchParams({ subject, from: date, to: date });
+      const existing = await SSC_API.get('/teacher/attendance?' + query.toString());
+      
+      if (Array.isArray(existing) && existing.length > 0) {
+        const map = Object.fromEntries(existing.map(e => [String(e.studentId), e.status]));
+        document.querySelectorAll('#att-rows input[type="checkbox"]').forEach(cb => {
+          const sid = cb.getAttribute('data-sid');
+          cb.checked = map[sid] === 'present';
+        });
+        statusSpan.textContent = 'Loaded existing logs';
+        statusSpan.style.display = 'inline';
+        saveBtn.textContent = 'Update attendance';
+      } else {
+        document.querySelectorAll('#att-rows input[type="checkbox"]').forEach(cb => {
+          cb.checked = true;
+        });
+        statusSpan.style.display = 'none';
+        saveBtn.textContent = 'Save attendance';
+      }
+    } catch (err) {
+      console.error('Failed to check existing logs:', err);
+    }
+  }
 
   function esc(s) {
     const d = document.createElement('div');

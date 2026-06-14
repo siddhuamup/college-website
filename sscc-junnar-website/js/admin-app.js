@@ -83,6 +83,10 @@
     });
 
     loadPanel('overview');
+
+    document.getElementById('btn-export-csv').addEventListener('click', exportCSV);
+    document.getElementById('btn-export-excel').addEventListener('click', exportExcel);
+    document.getElementById('btn-print-att').addEventListener('click', printReport);
   }
 
   async function loadPanel(id) {
@@ -98,6 +102,7 @@
       if (id === 'gallery') await loadGalleryAdmin();
       if (id === 'feedback') await loadFeedback();
       if (id === 'study-materials') await loadStudyMaterials();
+      if (id === 'attendance-analytics') await loadAttendanceAnalytics();
       if (id === 'settings') await loadSettings();
     } catch (e) {
       msg(e.message || 'Load failed', true);
@@ -519,6 +524,149 @@
         }
       });
     });
+  }
+
+  let lastAnalyticsData = null;
+
+  async function loadAttendanceAnalytics() {
+    const data = await SSC_API.get('/admin/attendance/analytics');
+    lastAnalyticsData = data;
+
+    const statsGrid = document.getElementById('att-stats-grid');
+    statsGrid.innerHTML = `
+      <div class="stat-card"><span class="small">Total Students</span><strong>${data.totalStudents}</strong></div>
+      <div class="stat-card"><span class="small">Present Today</span><strong>${data.presentToday}</strong></div>
+      <div class="stat-card"><span class="small">Absent Today</span><strong>${data.absentToday}</strong></div>
+      <div class="stat-card"><span class="small">Global Avg %</span><strong>${data.globalPercentage}%</strong></div>
+      <div class="stat-card"><span class="small">Students &lt;75%</span><strong style="color: #ef4444">${data.lowAttendanceCount}</strong></div>
+    `;
+
+    const tblLow = document.querySelector('#tbl-low-att tbody');
+    tblLow.innerHTML = '';
+    if (!data.lowAttendanceList.length) {
+      tblLow.innerHTML = '<tr><td colspan="6" class="small">No students have low attendance.</td></tr>';
+    } else {
+      data.lowAttendanceList.forEach((s) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${esc(s.rollNumber)}</td>
+          <td>${esc(s.name)}</td>
+          <td>${esc(s.className)}</td>
+          <td>${s.attended}</td>
+          <td>${s.totalClasses}</td>
+          <td style="color: #ef4444; font-weight: bold;">${s.percentage}%</td>
+        `;
+        tblLow.appendChild(tr);
+      });
+    }
+
+    const tblClass = document.querySelector('#tbl-class-att tbody');
+    tblClass.innerHTML = '';
+    if (!data.classSummary.length) {
+      tblClass.innerHTML = '<tr><td colspan="3" class="small">No records found.</td></tr>';
+    } else {
+      data.classSummary.forEach((c) => {
+        const tr = document.createElement('tr');
+        const color = c.percentage < 75 ? 'color: #ef4444; font-weight: bold;' : '';
+        tr.innerHTML = `
+          <td>${esc(c.className)}</td>
+          <td>${c.totalLogs}</td>
+          <td style="${color}">${c.percentage}%</td>
+        `;
+        tblClass.appendChild(tr);
+      });
+    }
+
+    const tblSubject = document.querySelector('#tbl-subject-att tbody');
+    tblSubject.innerHTML = '';
+    if (!data.subjectSummary.length) {
+      tblSubject.innerHTML = '<tr><td colspan="3" class="small">No records found.</td></tr>';
+    } else {
+      data.subjectSummary.forEach((s) => {
+        const tr = document.createElement('tr');
+        const color = s.percentage < 75 ? 'color: #ef4444; font-weight: bold;' : '';
+        tr.innerHTML = `
+          <td>${esc(s.subject)}</td>
+          <td>${s.totalLogs}</td>
+          <td style="${color}">${s.percentage}%</td>
+        `;
+        tblSubject.appendChild(tr);
+      });
+    }
+
+    // Render Monthly Summary
+    const tblMonthly = document.querySelector('#tbl-monthly-att tbody');
+    if (tblMonthly) {
+      tblMonthly.innerHTML = '';
+      const monthly = data.monthlySummary || [];
+      if (!monthly.length) {
+        tblMonthly.innerHTML = '<tr><td colspan="4" class="small">No monthly data available yet.</td></tr>';
+      } else {
+        monthly.forEach((m) => {
+          const tr = document.createElement('tr');
+          const color = m.percentage < 75 ? 'color: #ef4444; font-weight: bold;' : 'color: #22c55e;';
+          // Format month label e.g. "2025-11" → "Nov 2025"
+          const [yr, mo] = m.month.split('-');
+          const label = new Date(Number(yr), Number(mo) - 1, 1)
+            .toLocaleDateString('en-IN', { month: 'short', year: 'numeric' });
+          tr.innerHTML = `
+            <td>${esc(label)}</td>
+            <td style="color: #22c55e;">${m.present}</td>
+            <td style="color: #ef4444;">${m.absent}</td>
+            <td style="${color}; font-weight: bold;">${m.percentage}%</td>
+          `;
+          tblMonthly.appendChild(tr);
+        });
+      }
+    }
+  }
+
+  function downloadCSV(csvContent, fileName) {
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", fileName);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  function exportCSV() {
+    if (!lastAnalyticsData) {
+      msg('No analytics data to export', true);
+      return;
+    }
+    let csv = 'Roll Number,Name,Class,Attended,Total Classes,Percentage\n';
+    lastAnalyticsData.lowAttendanceList.forEach(s => {
+      csv += `"${s.rollNumber}","${s.name}","${s.className}",${s.attended},${s.totalClasses},${s.percentage}%\n`;
+    });
+    downloadCSV(csv, 'low_attendance_report.csv');
+  }
+
+  function exportExcel() {
+    if (!lastAnalyticsData) {
+      msg('No analytics data to export', true);
+      return;
+    }
+    let xls = 'Roll Number\tName\tClass\tAttended\tTotal Classes\tPercentage\n';
+    lastAnalyticsData.lowAttendanceList.forEach(s => {
+      xls += `"${s.rollNumber}"\t"${s.name}"\t"${s.className}"\t${s.attended}\t${s.totalClasses}\t${s.percentage}%\n`;
+    });
+    const blob = new Blob([xls], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", 'low_attendance_report.xls');
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  function printReport() {
+    window.print();
   }
 
   function esc(s) {
