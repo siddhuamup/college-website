@@ -10,6 +10,10 @@ import { publicRouter } from './routes/public.js';
 import { adminRouter } from './routes/admin.js';
 import { teacherRouter } from './routes/teacher.js';
 import { studentRouter } from './routes/student.js';
+import { adminPlacementRouter, studentPlacementRouter } from './routes/placement.js';
+import { adminTimetableRouter, teacherTimetableRouter, studentTimetableRouter } from './routes/timetable.js';
+import { adminLibraryRouter, studentLibraryRouter } from './routes/library.js';
+import { adminExamRouter, teacherExamRouter, studentExamRouter } from './routes/exam.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { prisma } from './db/client.js';
 
@@ -46,8 +50,18 @@ app.get('/api/health', async (_req, res) => {
 app.use('/api/auth', authRouter({ jwtSecret: JWT_SECRET, jwtExpiresIn: JWT_EXPIRES_IN }));
 app.use('/api/public', publicRouter());
 app.use('/api/admin', adminRouter({ jwtSecret: JWT_SECRET }));
+app.use('/api/admin/placement', adminPlacementRouter({ jwtSecret: JWT_SECRET }));
+app.use('/api/admin/timetable', adminTimetableRouter({ jwtSecret: JWT_SECRET }));
+app.use('/api/admin/library', adminLibraryRouter({ jwtSecret: JWT_SECRET }));
+app.use('/api/admin/exams', adminExamRouter({ jwtSecret: JWT_SECRET }));
 app.use('/api/teacher', teacherRouter({ jwtSecret: JWT_SECRET, jwtExpiresIn: JWT_EXPIRES_IN }));
+app.use('/api/teacher/timetable', teacherTimetableRouter({ jwtSecret: JWT_SECRET }));
+app.use('/api/teacher/exams', teacherExamRouter({ jwtSecret: JWT_SECRET }));
 app.use('/api/student', studentRouter({ jwtSecret: JWT_SECRET, jwtExpiresIn: JWT_EXPIRES_IN }));
+app.use('/api/student/placement', studentPlacementRouter({ jwtSecret: JWT_SECRET, jwtExpiresIn: JWT_EXPIRES_IN }));
+app.use('/api/student/timetable', studentTimetableRouter({ jwtSecret: JWT_SECRET }));
+app.use('/api/student/library', studentLibraryRouter({ jwtSecret: JWT_SECRET }));
+app.use('/api/student/exams', studentExamRouter({ jwtSecret: JWT_SECRET }));
 
 app.use((req, res, next) => {
   if (req.originalUrl.startsWith('/api')) {

@@ -37,6 +37,9 @@ model User {
   feedbacks                Feedback[]
   admissionsReviewed       AdmissionApplication[] @relation("AdmReviewedBy")
   admissionsCreatedStudent AdmissionApplication[] @relation("AdmCreatedStudent")
+  placementApplications    PlacementApplication[] @relation("PlacementAppStudent")
+  leaveRequests            LeaveRequest[]         @relation("TeacherLeave")
+  libraryIssues            LibraryIssue[]         @relation("LibraryIssueStudent")
 }
 
 model AdmissionApplication {
@@ -185,3 +188,130 @@ model Counter {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+model Company {
+  id                  String           @id @default(cuid())
+  companyName         String
+  industry            String           @default("")
+  website             String           @default("")
+  description         String           @default("")
+  packageOffered      String           @default("")
+  eligibilityCriteria String           @default("")
+  location            String           @default("")
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+  placementDrives     PlacementDrive[]
+}
+
+model PlacementDrive {
+  id                  String                 @id @default(cuid())
+  companyId           String
+  company             Company                @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  title               String
+  description         String                 @default("")
+  driveDate           DateTime?
+  applicationDeadline DateTime?
+  status              String                 @default("active")
+  createdAt           DateTime               @default(now())
+  updatedAt           DateTime               @updatedAt
+  applications        PlacementApplication[]
+
+  @@index([companyId])
+}
+
+model PlacementApplication {
+  id                String         @id @default(cuid())
+  studentId         String
+  student           User           @relation("PlacementAppStudent", fields: [studentId], references: [id], onDelete: Cascade)
+  driveId           String
+  drive             PlacementDrive @relation(fields: [driveId], references: [id], onDelete: Cascade)
+  applicationStatus String         @default("applied")
+  appliedAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  @@unique([studentId, driveId])
+  @@index([driveId])
+}
+
+model LeaveRequest {
+  id          String   @id @default(cuid())
+  teacherId   String
+  teacher     User     @relation("TeacherLeave", fields: [teacherId], references: [id], onDelete: Cascade)
+  fromDate    DateTime
+  toDate      DateTime
+  reason      String
+  leaveType   String   @default("casual")
+  status      String   @default("pending")
+  adminNote   String   @default("")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([teacherId])
+}
+
+model Timetable {
+  id        String   @id @default(cuid())
+  className String
+  weekLabel String   @default("current")
+  slots     Json     @default("[]")
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([className, weekLabel])
+  @@index([className])
+}
+
+model LibraryBook {
+  id            String         @id @default(cuid())
+  title         String
+  author        String         @default("")
+  category      String         @default("")
+  isbn          String         @default("")
+  totalQty      Int            @default(1)
+  availableQty  Int            @default(1)
+  shelfLocation String         @default("")
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  issues        LibraryIssue[]
+
+  @@index([isbn])
+}
+
+model LibraryIssue {
+  id         String      @id @default(cuid())
+  bookId     String
+  book       LibraryBook @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  studentId  String
+  student    User        @relation("LibraryIssueStudent", fields: [studentId], references: [id], onDelete: Cascade)
+  issuedAt   DateTime    @default(now())
+  dueDate    DateTime
+  returnedAt DateTime?
+  status     String      @default("issued")
+  fine       Float       @default(0)
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  @@index([studentId])
+  @@index([bookId])
+}
+
+model Exam {
+  id          String    @id @default(cuid())
+  title       String
+  examType    String    @default("internal")
+  className   String
+  subject     String
+  examDate    DateTime?
+  startTime   String    @default("")
+  duration    String    @default("")
+  venue       String    @default("")
+  maxMarks    Float     @default(100)
+  isPublished Boolean   @default(false)
+  resultsPublished Boolean @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([className])
+}
+

@@ -4,6 +4,7 @@
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>Admin — SSC College, Junnar</title>
+  <script src="/js/theme.js"></script>
   <link rel="stylesheet" href="../css/styles.css"/>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
 </head>
@@ -24,32 +25,235 @@
   </div>
   <div id="admin-shell" class="dash-layout" style="display:none">
     <aside class="dash-side">
-      <h2>Admin</h2>
-      <nav class="dash-nav" id="dash-nav">
-        <button type="button" data-panel="overview" class="active">Dashboard</button>
-        <button type="button" data-panel="students">Students</button>
-        <button type="button" data-panel="teachers">Faculty</button>
-        <button type="button" data-panel="admissions">Admissions</button>
-        <button type="button" data-panel="notices">Notices</button>
-        <button type="button" data-panel="departments">Departments</button>
-        <button type="button" data-panel="courses">Courses</button>
-        <button type="button" data-panel="gallery">Gallery</button>
-        <button type="button" data-panel="feedback">Feedback</button>
-        <button type="button" data-panel="study-materials">Study Materials</button>
-        <button type="button" data-panel="attendance-analytics">Attendance</button>
-        <button type="button" data-panel="settings">Settings</button>
-      </nav>
-      <a class="btn secondary small mt-3" href="../index.html" style="display:inline-block;text-decoration:none;">Public site</a>
-      <button type="button" class="btn danger small mt-2" id="logout-btn">Logout</button>
-    </aside>
-    <main class="dash-main">
-      <div class="dash-top">
-        <h1 id="dash-title" style="margin:0;font-size:1.25rem;">Dashboard</h1>
-        <span class="small" id="admin-user"></span>
+      <!-- Sidebar Brand -->
+      <div class="sidebar-brand">
+        <div class="sidebar-brand-icon">SSC</div>
+        <div class="sidebar-brand-text">
+          <span class="sidebar-brand-title">SSC College</span>
+          <span class="sidebar-brand-sub">Admin Portal</span>
+        </div>
       </div>
 
+      <!-- Navigation -->
+      <div class="sidebar-category">Main</div>
+      <nav class="dash-nav" id="dash-nav">
+        <button type="button" data-panel="overview" class="active">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+          Dashboard
+        </button>
+        <button type="button" data-panel="students">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          Students
+        </button>
+        <button type="button" data-panel="teachers">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          Faculty
+        </button>
+        <button type="button" data-panel="admissions">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
+          Admissions
+        </button>
+      </nav>
+
+      <div class="sidebar-category">Academics</div>
+      <nav class="dash-nav">
+        <button type="button" data-panel="notices">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          Notices
+        </button>
+        <button type="button" data-panel="departments">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+          Departments
+        </button>
+        <button type="button" data-panel="courses">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+          Courses
+        </button>
+        <button type="button" data-panel="study-materials">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          Study Materials
+        </button>
+        <button type="button" data-panel="attendance-analytics">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          Attendance
+        </button>
+        <button type="button" data-panel="timetable">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          Timetable
+        </button>
+        <button type="button" data-panel="exams">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 10 3 12 0v-5"/></svg>
+          Examinations
+        </button>
+        <button type="button" data-panel="library">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M8 7h8"/><path d="M8 11h6"/></svg>
+          Library
+        </button>
+      </nav>
+
+      <div class="sidebar-category">Management</div>
+      <nav class="dash-nav">
+        <button type="button" data-panel="gallery">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          Gallery
+        </button>
+        <button type="button" data-panel="feedback">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          Feedback
+        </button>
+        <button type="button" data-panel="placement">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+          Placement Cell
+        </button>
+        <button type="button" data-panel="leaves">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M16 14h.01"/></svg>
+          Teacher Leaves
+        </button>
+        <button type="button" data-panel="settings">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          Settings
+        </button>
+      </nav>
+
+      <!-- Sidebar Bottom Utility -->
+      <div class="sidebar-bottom">
+        <div class="sidebar-status">
+          <span class="sidebar-status-dot"></span>
+          System Online
+        </div>
+        <div class="sidebar-bottom-actions">
+          <button type="button" class="theme-toggle-btn" onclick="window.ThemeManager.toggle()" id="theme-toggle-sidebar" aria-label="Toggle Theme">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+            Light
+          </button>
+          <a class="btn secondary small" href="../index.html" style="text-decoration:none; flex: 1; justify-content: center;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            Site
+          </a>
+          <button type="button" class="btn danger small" id="logout-btn" style="flex: 1; justify-content: center;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            Logout
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <main class="dash-main">
+      <!-- Topbar -->
+      <div class="dash-topbar">
+        <div class="topbar-left">
+          <button type="button" class="topbar-bell" id="mobile-menu-btn" style="display:none;" aria-label="Menu">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          </button>
+          <h1 class="topbar-title" id="dash-title">Dashboard</h1>
+        </div>
+        <div class="topbar-right">
+          <div class="topbar-search" id="global-search-wrap">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="global-search" placeholder="Search students, faculty, notices..." autocomplete="off"/>
+            <div class="search-results" id="search-results"></div>
+          </div>
+          <button type="button" class="topbar-bell" id="topbar-notif-btn" aria-label="Notifications">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            <span class="topbar-bell-badge" id="notif-badge" style="display:none;">0</span>
+          </button>
+          <div class="topbar-profile">
+            <div class="topbar-avatar" id="admin-avatar">A</div>
+            <div class="topbar-profile-info">
+              <span class="topbar-profile-name" id="admin-user">Admin</span>
+              <span class="topbar-profile-role">Administrator</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="dash-content">
+      <div class="dash-top" style="display:none;"><!-- legacy --></div>
+
+      <!-- ══ OVERVIEW / DASHBOARD PANEL ═════════════════════════════════ -->
       <section class="dash-panel active" data-panel="overview">
         <div class="stat-grid" id="stat-grid"></div>
+
+        <!-- Analytics Widgets Row -->
+        <div class="dash-widgets" id="dash-analytics">
+          <div class="widget-card" id="widget-admissions-trend">
+            <h3>
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+              Admissions Overview
+            </h3>
+            <div id="admissions-trend-content"></div>
+          </div>
+          <div class="widget-card" id="widget-course-dist">
+            <h3>
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+              Course Distribution
+            </h3>
+            <div id="course-dist-content"></div>
+          </div>
+        </div>
+
+        <!-- Recent Notices + Quick Actions Row -->
+        <div class="dash-widgets" id="dash-notices-actions">
+          <div class="widget-card" id="widget-recent-notices">
+            <h3>
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+              Recent Notices
+            </h3>
+            <div id="recent-notices-content"></div>
+          </div>
+          <div class="widget-card" id="widget-quick-actions">
+            <h3>
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+              Quick Actions
+            </h3>
+            <div class="quick-actions" id="quick-actions-grid">
+              <button type="button" class="quick-action-btn" data-goto="students">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+                Add Student
+              </button>
+              <button type="button" class="quick-action-btn" data-goto="notices">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                Add Notice
+              </button>
+              <button type="button" class="quick-action-btn" data-goto="courses">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                Manage Courses
+              </button>
+              <button type="button" class="quick-action-btn" data-goto="attendance-analytics">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                View Attendance
+              </button>
+              <button type="button" class="quick-action-btn" data-goto="admissions">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
+                Review Admissions
+              </button>
+              <button type="button" class="quick-action-btn" data-goto="exams">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 10 3 12 0v-5"/></svg>
+                Examinations
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Admissions Table + Activity Feed -->
+        <div class="dash-widgets" id="dash-bottom-widgets">
+          <div class="widget-card" id="widget-recent-admissions">
+            <h3>
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
+              Recent Admissions
+            </h3>
+            <div class="table-wrap" id="recent-admissions-content"></div>
+          </div>
+          <div class="widget-card" id="widget-attendance-summary">
+            <h3>
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              Attendance Alerts
+            </h3>
+            <div id="attendance-summary-content"></div>
+          </div>
+        </div>
+
+        <p id="dash-msg" class="small mt-3"></p>
       </section>
 
       <section class="dash-panel" data-panel="students">
@@ -285,9 +489,389 @@
       </section>
 
       <p id="dash-msg" class="small mt-3"></p>
+
+      <!-- ══ PLACEMENT CELL PANEL ══════════════════════════════════════════ -->
+      <section class="dash-panel" data-panel="placement">
+
+        <!-- Analytics Cards -->
+        <div class="stat-grid" id="placement-stat-grid"></div>
+
+        <!-- Export / Print bar -->
+        <div style="display:flex;gap:0.75rem;margin-top:1.5rem;justify-content:flex-end;flex-wrap:wrap;">
+          <button class="btn small" id="btn-pl-export-csv">Export CSV</button>
+          <button class="btn small secondary" id="btn-pl-print">Print Report</button>
+        </div>
+
+        <!-- Companies -->
+        <div class="card mt-4">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;">
+            <h3 style="margin:0;">Companies</h3>
+            <button class="btn small" id="btn-add-company">+ Add Company</button>
+          </div>
+          <div id="form-company-wrap" style="display:none;" class="mt-3">
+            <form id="form-company" class="form-grid two">
+              <div><label class="field-label">Company Name</label><input class="input" name="companyName" required/></div>
+              <div><label class="field-label">Industry</label><input class="input" name="industry"/></div>
+              <div><label class="field-label">Package Offered</label><input class="input" name="packageOffered" placeholder="e.g. 3.5 LPA"/></div>
+              <div><label class="field-label">Location</label><input class="input" name="location"/></div>
+              <div><label class="field-label">Website</label><input class="input" name="website" type="url" placeholder="https://"/></div>
+              <div><label class="field-label">Eligibility Criteria</label><input class="input" name="eligibilityCriteria" placeholder="e.g. 60% aggregate, BCA/BSc"/></div>
+              <div style="grid-column:1/-1"><label class="field-label">Description</label><textarea class="input" name="description" rows="2"></textarea></div>
+              <div style="display:flex;gap:0.75rem;">
+                <button class="btn" type="submit">Save Company</button>
+                <button class="btn secondary" type="button" id="btn-cancel-company">Cancel</button>
+              </div>
+            </form>
+          </div>
+          <div class="table-wrap mt-3">
+            <table class="table small" id="tbl-companies">
+              <thead><tr><th>Company</th><th>Industry</th><th>Package</th><th>Location</th><th>Drives</th><th></th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Drives -->
+        <div class="card mt-4">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;">
+            <h3 style="margin:0;">Placement Drives</h3>
+            <button class="btn small" id="btn-add-drive">+ Add Drive</button>
+          </div>
+          <div id="form-drive-wrap" style="display:none;" class="mt-3">
+            <form id="form-drive" class="form-grid two">
+              <div><label class="field-label">Company</label><select class="select input" id="drive-company-select" name="companyId" required></select></div>
+              <div><label class="field-label">Drive Title</label><input class="input" name="title" required/></div>
+              <div><label class="field-label">Drive Date</label><input class="input" name="driveDate" type="date"/></div>
+              <div><label class="field-label">Application Deadline</label><input class="input" name="applicationDeadline" type="date"/></div>
+              <div><label class="field-label">Status</label>
+                <select class="select input" name="status">
+                  <option value="active">Active</option>
+                  <option value="closed">Closed</option>
+                  <option value="cancelled">Cancelled</option>
+                </select>
+              </div>
+              <div style="grid-column:1/-1"><label class="field-label">Description</label><textarea class="input" name="description" rows="2"></textarea></div>
+              <div style="display:flex;gap:0.75rem;">
+                <button class="btn" type="submit">Save Drive</button>
+                <button class="btn secondary" type="button" id="btn-cancel-drive">Cancel</button>
+              </div>
+            </form>
+          </div>
+          <div class="table-wrap mt-3">
+            <table class="table small" id="tbl-drives">
+              <thead><tr><th>Company</th><th>Drive Title</th><th>Date</th><th>Deadline</th><th>Status</th><th>Apps</th><th></th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Applications -->
+        <div class="card mt-4">
+          <h3>All Applications</h3>
+          <div style="display:flex;gap:0.75rem;flex-wrap:wrap;margin-bottom:1rem;align-items:flex-end;">
+            <div>
+              <label class="field-label" style="display:block;margin-bottom:0.25rem;">Filter by Status</label>
+              <select class="select input" id="filter-app-status" style="padding:0.45rem 0.75rem;">
+                <option value="">All Statuses</option>
+                <option value="applied">Applied</option>
+                <option value="shortlisted">Shortlisted</option>
+                <option value="interview_scheduled">Interview Scheduled</option>
+                <option value="selected">Selected</option>
+                <option value="rejected">Rejected</option>
+              </select>
+            </div>
+            <button class="btn small" id="btn-filter-apps">Apply Filter</button>
+          </div>
+          <div class="table-wrap">
+            <table class="table small" id="tbl-pl-applications">
+              <thead><tr><th>Student</th><th>Roll</th><th>Class</th><th>Company</th><th>Drive</th><th>Status</th><th>Applied On</th><th></th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Company-wise Stats -->
+        <div class="card mt-4">
+          <h3>Company-wise Placement Stats</h3>
+          <div class="table-wrap">
+            <table class="table small" id="tbl-company-stats">
+              <thead><tr><th>Company</th><th>Industry</th><th>Drives</th><th>Applications</th><th>Selected</th><th>Success Rate</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
+      </section>
+      <!-- ══ END PLACEMENT PANEL ══════════════════════════════════════════ -->
+
+      <!-- ══ TIMETABLE PANEL ════════════════════════════════════════════ -->
+      <section class="dash-panel" data-panel="timetable">
+        <div class="card">
+          <h3>Manage Timetable</h3>
+          <p class="small">Select a class to view and edit its weekly schedule.</p>
+          <div class="form-grid two mt-2">
+            <div>
+              <label class="field-label">Select Class</label>
+              <select class="select input" id="tt-class-select">
+                <option value="">-- Choose Class --</option>
+              </select>
+            </div>
+            <div style="display: flex; align-items: flex-end; gap: 0.5rem;">
+              <button class="btn" id="tt-load-btn" type="button" style="margin-top: 0; min-height: 42px;">Load Timetable</button>
+              <button class="btn danger" id="tt-delete-btn" type="button" style="margin-top: 0; display: none; min-height: 42px;">Delete Timetable</button>
+            </div>
+          </div>
+          
+          <div id="tt-grid-container" style="display: none;" class="mt-4">
+            <h4 id="tt-grid-title" style="margin: 0 0 1rem 0;"></h4>
+            
+            <div id="tt-conflict-warning" class="alert error mt-2 mb-2" style="display: none;">
+              <strong>⚠️ Instant Conflict Warning:</strong> <span id="tt-conflict-msg"></span>
+            </div>
+            
+            <div class="table-wrap">
+              <table class="table small" style="width: 100%; min-width: 800px;">
+                <thead>
+                  <tr>
+                    <th>Day / Period</th>
+                    <th>Period 1<br><small>09:00 - 10:00</small></th>
+                    <th>Period 2<br><small>10:00 - 11:00</small></th>
+                    <th>Period 3<br><small>11:00 - 12:00</small></th>
+                    <th>Period 4<br><small>12:00 - 01:00</small></th>
+                    <th>Period 5<br><small>01:30 - 02:30</small></th>
+                    <th>Period 6<br><small>02:30 - 03:30</small></th>
+                  </tr>
+                </thead>
+                <tbody id="tt-grid-body">
+                  <!-- Monday to Saturday rows dynamically generated -->
+                </tbody>
+              </table>
+            </div>
+            
+            <button class="btn mt-3" id="tt-save-btn" type="button">Save Timetable</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══ LIBRARY PANEL ══════════════════════════════════════════════ -->
+      <section class="dash-panel" data-panel="library">
+        <div class="steps">
+          <button type="button" class="step-pill active" id="lib-tab-books">Books Catalogue</button>
+          <button type="button" class="step-pill" id="lib-tab-issue">Issue Book</button>
+          <button type="button" class="step-pill" id="lib-tab-active">Active Issues</button>
+          <button type="button" class="step-pill" id="lib-tab-analytics">Library Analytics</button>
+        </div>
+
+        <!-- Tab 1: Books Catalogue -->
+        <div id="lib-books-view" class="card">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:0.5rem;">
+            <h3 style="margin: 0;">Books Catalogue</h3>
+            <button class="btn small" id="lib-add-book-btn" type="button" style="color: #000;">Add New Book</button>
+          </div>
+          
+          <div id="lib-book-form-card" class="card mt-2 mb-4" style="display: none;">
+            <h4 id="lib-book-form-title">Add New Book</h4>
+            <form id="lib-book-form" class="form-grid two">
+              <input type="hidden" id="lib-book-id"/>
+              <div><label class="field-label">Title</label><input class="input" id="lib-book-title" required/></div>
+              <div><label class="field-label">Author</label><input class="input" id="lib-book-author" required/></div>
+              <div><label class="field-label">ISBN</label><input class="input" id="lib-book-isbn"/></div>
+              <div><label class="field-label">Category</label><input class="input" id="lib-book-category" placeholder="e.g. Computer Science"/></div>
+              <div><label class="field-label">Quantity</label><input class="input" id="lib-book-qty" type="number" min="1" value="1" required/></div>
+              <div><label class="field-label">Shelf Location</label><input class="input" id="lib-book-shelf" placeholder="e.g. Row A, Shelf 3"/></div>
+              <div style="grid-column: span 2; display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                <button class="btn small" type="submit" style="color: #000;">Save Book</button>
+                <button class="btn secondary small" id="lib-book-cancel-btn" type="button">Cancel</button>
+              </div>
+            </form>
+          </div>
+
+          <div class="table-wrap">
+            <table class="table small" id="tbl-lib-books">
+              <thead>
+                <tr>
+                  <th>Title</th>
+                  <th>Author</th>
+                  <th>Category</th>
+                  <th>ISBN</th>
+                  <th>Shelf</th>
+                  <th>Qty (Avail/Total)</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Tab 2: Issue Book Form -->
+        <div id="lib-issue-view" class="card" style="display: none;">
+          <h3>Issue Book to Student</h3>
+          <form id="lib-issue-form" class="form-grid two mt-2" style="max-width: 600px;">
+            <div>
+              <label class="field-label">Select Student</label>
+              <select class="select input" id="lib-issue-student" required>
+                <option value="">-- Choose Student --</option>
+              </select>
+            </div>
+            <div>
+              <label class="field-label">Select Book</label>
+              <select class="select input" id="lib-issue-book" required>
+                <option value="">-- Choose Book --</option>
+              </select>
+            </div>
+            <div>
+              <label class="field-label">Due Date</label>
+              <input class="input" id="lib-issue-duedate" type="date" required/>
+            </div>
+            <div style="grid-column: span 2; margin-top: 1rem;">
+              <button class="btn" type="submit" style="color: #000;">Issue Book</button>
+            </div>
+          </form>
+          <p id="lib-issue-msg" class="small mt-3"></p>
+        </div>
+
+        <!-- Tab 3: Active Issues & Returns -->
+        <div id="lib-active-view" class="card" style="display: none;">
+          <h3>Currently Issued Books</h3>
+          <div class="table-wrap">
+            <table class="table small" id="tbl-lib-issues">
+              <thead>
+                <tr>
+                  <th>Student</th>
+                  <th>Book</th>
+                  <th>Issued Date</th>
+                  <th>Due Date</th>
+                  <th>Status</th>
+                  <th>Fine</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Tab 4: Library Analytics -->
+        <div id="lib-analytics-view" style="display: none;">
+          <div class="stat-grid mb-4">
+            <div class="stat-card">
+              <span class="small">Active Borrowings</span>
+              <strong id="lib-stat-active">0</strong>
+            </div>
+            <div class="stat-card">
+              <span class="small">Overdue Books</span>
+              <strong id="lib-stat-overdue">0</strong>
+            </div>
+          </div>
+
+          <div class="grid grid-2">
+            <div class="card">
+              <h3>Overdue Borrowers List</h3>
+              <div class="table-wrap">
+                <table class="table small" id="tbl-lib-overdue-list">
+                  <thead><tr><th>Student</th><th>Book</th><th>Due Date</th><th>Fine</th></tr></thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </div>
+            <div class="card">
+              <h3>Popular / Most Issued Books</h3>
+              <div class="table-wrap">
+                <table class="table small" id="tbl-lib-popular-books">
+                  <thead><tr><th>Title</th><th>Author</th><th>Category</th><th>Times Issued</th></tr></thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══ EXAMINATIONS PANEL ═════════════════════════════════════════ -->
+      <section class="dash-panel" data-panel="exams">
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem;">
+            <h3 style="margin: 0;">Exam Schedules & Results</h3>
+            <button class="btn small" id="exam-add-btn" type="button" style="color: #000;">Add Exam Schedule</button>
+          </div>
+
+          <div id="exam-form-card" class="card mt-2 mb-4" style="display: none;">
+            <h4 id="exam-form-title">Create Exam Schedule</h4>
+            <form id="exam-form" class="form-grid two">
+              <input type="hidden" id="exam-id"/>
+              <div><label class="field-label">Exam Title / Name</label><input class="input" id="exam-title" placeholder="Unit Test 1" required/></div>
+              <div><label class="field-label">Exam Type</label>
+                <select class="select input" id="exam-type">
+                  <option value="internal">Internal Assessment</option>
+                  <option value="semester">Semester Exam</option>
+                  <option value="practical">Practical / Viva</option>
+                </select>
+              </div>
+              <div><label class="field-label">Class</label><select class="select input" id="exam-class" required></select></div>
+              <div><label class="field-label">Subject</label><input class="input" id="exam-subject" required/></div>
+              <div><label class="field-label">Exam Date</label><input class="input" id="exam-date" type="date" required/></div>
+              <div><label class="field-label">Start Time</label><input class="input" id="exam-time" placeholder="e.g. 10:00 AM"/></div>
+              <div><label class="field-label">Duration</label><input class="input" id="exam-duration" placeholder="e.g. 2 Hours"/></div>
+              <div><label class="field-label">Venue / Room</label><input class="input" id="exam-venue" placeholder="e.g. Hall 2"/></div>
+              <div><label class="field-label">Max Marks</label><input class="input" id="exam-maxmarks" type="number" min="1" value="100" required/></div>
+              <div style="grid-column: span 2; display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                <button class="btn small" type="submit" style="color: #000;">Save Exam</button>
+                <button class="btn secondary small" id="exam-cancel-btn" type="button">Cancel</button>
+              </div>
+            </form>
+          </div>
+
+          <div class="table-wrap">
+            <table class="table small" id="tbl-exams">
+              <thead>
+                <tr>
+                  <th>Exam Title</th>
+                  <th>Type</th>
+                  <th>Class</th>
+                  <th>Subject</th>
+                  <th>Date</th>
+                  <th>Max Marks</th>
+                  <th>Schedule</th>
+                  <th>Results</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══ TEACHER LEAVES PANEL ═══════════════════════════════════════ -->
+      <section class="dash-panel" data-panel="leaves">
+        <div class="card">
+          <h3>Teacher Leave Requests</h3>
+          <p class="small">Review leave applications from faculty members.</p>
+          <div class="table-wrap mt-3">
+            <table class="table small" id="tbl-admin-leaves">
+              <thead>
+                <tr>
+                  <th>Teacher</th>
+                  <th>Leave Type</th>
+                  <th>Duration</th>
+                  <th>Reason</th>
+                  <th>Status</th>
+                  <th>Admin Note</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      </div><!-- /dash-content -->
     </main>
   </div>
   <script src="../js/api.js"></script>
   <script src="../js/admin-app.js"></script>
 </body>
 </html>
+

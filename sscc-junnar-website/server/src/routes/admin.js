@@ -620,5 +620,38 @@ export function adminRouter({ jwtSecret }) {
     });
   });
 
+  // Get all leave requests
+  r.get('/leave', async (_req, res) => {
+    const leaves = await prisma.leaveRequest.findMany({
+      include: {
+        teacher: { select: { id: true, name: true, email: true } }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+    res.json(leaves.map(withMongoId));
+  });
+
+  // Review a leave request
+  r.patch('/leave/:id', async (req, res) => {
+    const { status, adminNote } = req.body || {};
+    if (!['approved', 'rejected'].includes(status)) {
+      return res.status(400).json({ error: 'Status must be either approved or rejected' });
+    }
+    const exists = await prisma.leaveRequest.findUnique({ where: { id: req.params.id } });
+    if (!exists) return res.status(404).json({ error: 'Leave request not found' });
+
+    const updated = await prisma.leaveRequest.update({
+      where: { id: req.params.id },
+      data: {
+        status,
+        adminNote: adminNote || ''
+      },
+      include: {
+        teacher: { select: { id: true, name: true, email: true } }
+      }
+    });
+    res.json(withMongoId(updated));
+  });
+
   return r;
 }

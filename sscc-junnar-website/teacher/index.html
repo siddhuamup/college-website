@@ -4,6 +4,7 @@
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>Teacher portal — SSC College, Junnar</title>
+  <script src="/js/theme.js"></script>
   <link rel="stylesheet" href="../css/styles.css"/>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
 </head>
@@ -14,14 +15,19 @@
       <nav class="dash-nav">
         <button type="button" data-panel="subjects" class="active">My subjects</button>
         <button type="button" data-panel="students">Students</button>
+        <button type="button" data-panel="timetable">Timetable</button>
         <button type="button" data-panel="marks">Marks</button>
+        <button type="button" data-panel="leave">Leave Request</button>
         <button type="button" data-panel="attendance">Attendance</button>
         <button type="button" data-panel="materials">Study materials</button>
         <button type="button" data-panel="notices">Notices</button>
         <button type="button" data-panel="edit-profile">Edit Profile</button>
       </nav>
       <a class="btn secondary small mt-3" href="../index.html" style="display:inline-block;text-decoration:none;">Public site</a>
-      <button type="button" class="btn danger small mt-2" id="logout-btn">Logout</button>
+      <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem; align-items: center;">
+        <button type="button" class="theme-toggle-btn" onclick="window.ThemeManager.cycle()" aria-label="Toggle Theme">🌙 Dark</button>
+        <button type="button" class="btn danger small" id="logout-btn" style="flex: 1; margin-top: 0 !important;">Logout</button>
+      </div>
     </aside>
     <main class="dash-main">
       <div class="dash-top">
@@ -46,12 +52,57 @@
           <form id="form-marks" class="form-grid two">
             <div><label class="field-label">Student</label><select class="select input" id="mark-student" required></select></div>
             <div><label class="field-label">Subject</label><input class="input" id="mark-subject" required/></div>
-            <div><label class="field-label">Exam name</label><input class="input" id="mark-exam" placeholder="Unit 1" required/></div>
+            <div>
+              <label class="field-label">Exam name / Select Scheduled Exam</label>
+              <input class="input" id="mark-exam" placeholder="Unit 1" list="exams-datalist" required/>
+              <datalist id="exams-datalist"></datalist>
+            </div>
             <div><label class="field-label">Marks obtained</label><input class="input" id="mark-obt" type="number" step="0.01" required/></div>
             <div><label class="field-label">Max marks</label><input class="input" id="mark-max" type="number" value="50" required/></div>
-            <div><button class="btn" type="submit">Save marks</button></div>
+            <div><button class="btn" type="submit" style="color: #000; margin-top: 1.25rem;">Save marks</button></div>
           </form>
         </div>
+        
+        <div class="card mt-4">
+          <h3>Generate Result Sheet</h3>
+          <p class="small">Generate a print-optimized result sheet for a scheduled exam.</p>
+          <div class="form-grid two mt-2">
+            <div>
+              <label class="field-label">Select Exam</label>
+              <select class="select input" id="res-exam-select">
+                <option value="">-- Choose Exam --</option>
+              </select>
+            </div>
+            <div style="display: flex; align-items: flex-end;">
+              <button class="btn" id="res-generate-btn" type="button" style="margin-top: 0; min-height: 42px; color: #000;">Generate Sheet</button>
+            </div>
+          </div>
+          
+          <div id="res-sheet-container" style="display: none;" class="mt-4">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+              <h4 id="res-sheet-title" style="margin: 0;"></h4>
+              <button class="btn small" onclick="window.print()" style="color: #000;">Print / Save as PDF</button>
+            </div>
+            
+            <div class="table-wrap">
+              <table class="table small" id="tbl-res-sheet" style="width: 100%;">
+                <thead>
+                  <tr>
+                    <th>Roll No</th>
+                    <th>Student Name</th>
+                    <th>Marks</th>
+                    <th>Percentage</th>
+                    <th>Grade</th>
+                    <th>Pass / Fail</th>
+                    <th>Class Rank</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
         <div class="card mt-4"><h3>Recent entries</h3><div class="table-wrap"><table class="table small" id="tbl-marks"><thead><tr><th>Student</th><th>Subject</th><th>Exam</th><th>Score</th></tr></thead><tbody></tbody></table></div></div>
       </section>
 
@@ -129,6 +180,85 @@
               <button class="btn" type="submit">Save Changes</button>
             </div>
           </form>
+        </div>
+      </section>
+
+      <!-- ══ TIMETABLE PANEL ════════════════════════════════════════════ -->
+      <section class="dash-panel" data-panel="timetable">
+        <div class="card">
+          <h3>Your Weekly Timetable</h3>
+          <p class="small">Below is your teaching schedule across all classes.</p>
+          <div class="table-wrap mt-3">
+            <table class="table small" style="width: 100%; min-width: 800px;">
+              <thead>
+                <tr>
+                  <th>Period / Time</th>
+                  <th>Monday</th>
+                  <th>Tuesday</th>
+                  <th>Wednesday</th>
+                  <th>Thursday</th>
+                  <th>Friday</th>
+                  <th>Saturday</th>
+                </tr>
+              </thead>
+              <tbody id="tbl-teacher-timetable">
+                <!-- Row-by-row timetable slots -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══ LEAVE REQUEST PANEL ════════════════════════════════════════ -->
+      <section class="dash-panel" data-panel="leave">
+        <div class="card">
+          <h3>Apply for Leave</h3>
+          <form id="form-leave" class="form-grid two mt-2">
+            <div>
+              <label class="field-label">Leave Type</label>
+              <select class="select input" id="leave-type" required>
+                <option value="casual">Casual Leave</option>
+                <option value="sick">Sick Leave</option>
+                <option value="maternity">Maternity Leave</option>
+                <option value="duty">On Duty Leave</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div>
+              <label class="field-label">Reason</label>
+              <input class="input" id="leave-reason" placeholder="Medical checkup / family function" required/>
+            </div>
+            <div>
+              <label class="field-label">From Date</label>
+              <input class="input" id="leave-from" type="date" required/>
+            </div>
+            <div>
+              <label class="field-label">To Date</label>
+              <input class="input" id="leave-to" type="date" required/>
+            </div>
+            <div style="grid-column: span 2; margin-top: 0.5rem;">
+              <button class="btn" type="submit" style="color: #000;">Apply Leave</button>
+            </div>
+          </form>
+          <p id="leave-msg" class="small mt-3"></p>
+        </div>
+
+        <div class="card mt-4">
+          <h3>My Leave Applications</h3>
+          <div class="table-wrap">
+            <table class="table small" id="tbl-teacher-leaves">
+              <thead>
+                <tr>
+                  <th>Leave Type</th>
+                  <th>Duration</th>
+                  <th>Reason</th>
+                  <th>Status</th>
+                  <th>Admin Note</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
         </div>
       </section>
 

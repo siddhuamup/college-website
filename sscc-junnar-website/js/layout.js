@@ -5,7 +5,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   try {
     if (header) {
       const res = await fetch('/partials/nav.html');
-      if (res.ok) header.innerHTML = await res.text();
+      if (res.ok) {
+        header.innerHTML = await res.text();
+        if (window.ThemeManager) window.ThemeManager.updateToggles();
+      }
     }
     if (footer) {
       const res = await fetch('/partials/footer.html');

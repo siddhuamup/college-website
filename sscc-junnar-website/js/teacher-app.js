@@ -152,7 +152,9 @@
     try {
       if (id === 'subjects') await loadSubjects();
       if (id === 'students') await loadStudents();
+      if (id === 'timetable') await loadTimetablePanel();
       if (id === 'marks') await loadMarksPanel();
+      if (id === 'leave') await loadLeavePanel();
       if (id === 'attendance') await loadAttendancePanel();
       if (id === 'materials') await loadMaterials();
       if (id === 'notices') await loadNotices();
@@ -186,6 +188,8 @@
     });
   }
 
+  let teacherExamsCache = [];
+
   async function loadMarksPanel() {
     await loadStudents();
     const sel = document.getElementById('mark-student');
@@ -196,6 +200,44 @@
       o.textContent = s.name + ' (' + (s.studentProfile?.rollNumber || s._id) + ')';
       sel.appendChild(o);
     });
+
+    teacherExamsCache = await SSC_API.get('/teacher/exams');
+    
+    const dl = document.getElementById('exams-datalist');
+    dl.innerHTML = '';
+    
+    const resSelect = document.getElementById('res-exam-select');
+    resSelect.innerHTML = '<option value="">-- Choose Exam --</option>';
+    
+    teacherExamsCache.forEach(ex => {
+      const optDl = document.createElement('option');
+      optDl.value = ex.title;
+      dl.appendChild(optDl);
+      
+      const optSel = document.createElement('option');
+      optSel.value = ex.id;
+      optSel.textContent = `${ex.title} (${ex.subject} - ${ex.className})`;
+      resSelect.appendChild(optSel);
+    });
+
+    const examInput = document.getElementById('mark-exam');
+    if (!examInput.dataset.bound) {
+      examInput.dataset.bound = '1';
+      examInput.addEventListener('change', () => {
+        const match = teacherExamsCache.find(ex => ex.title === examInput.value);
+        if (match) {
+          document.getElementById('mark-subject').value = match.subject;
+          document.getElementById('mark-max').value = match.maxMarks;
+        }
+      });
+    }
+
+    const resBtn = document.getElementById('res-generate-btn');
+    if (!resBtn.dataset.bound) {
+      resBtn.dataset.bound = '1';
+      resBtn.addEventListener('click', generateResultSheet);
+    }
+
     await loadMarks();
   }
 
@@ -321,10 +363,150 @@
         statusSpan.style.display = 'none';
         saveBtn.textContent = 'Save attendance';
       }
+  // ═══════════════════════════════════════════════════════════════════════════
+  // TIMETABLE MODULE
+  // ═══════════════════════════════════════════════════════════════════════════
+  const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const periodTimes = [
+    { period: 1, label: 'Period 1 (09:00 - 10:00)' },
+    { period: 2, label: 'Period 2 (10:00 - 11:00)' },
+    { period: 3, label: 'Period 3 (11:00 - 12:00)' },
+    { period: 4, label: 'Period 4 (12:00 - 01:00)' },
+    { period: 5, label: 'Period 5 (01:30 - 02:30)' },
+    { period: 6, label: 'Period 6 (02:30 - 03:30)' }
+  ];
+
+  async function loadTimetablePanel() {
+    const slots = await SSC_API.get('/teacher/timetable');
+    const tbody = document.getElementById('tbl-teacher-timetable');
+    tbody.innerHTML = '';
+    
+    periodTimes.forEach(p => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td><strong>${p.label}</strong></td>`;
+      
+      daysOfWeek.forEach(day => {
+        const cellSlots = slots.filter(s => s.day === day && Number(s.period) === p.period);
+        const td = document.createElement('td');
+        if (cellSlots.length > 0) {
+          td.innerHTML = cellSlots.map(s => `
+            <div style="font-weight:600;color:var(--primary);">${esc(s.subject)}</div>
+            <div class="small" style="font-size:0.8rem;opacity:0.85;">${esc(s.className)} • Room ${esc(s.room)}</div>
+          `).join('<hr style="margin:4px 0;opacity:0.2;">');
+        } else {
+          td.innerHTML = '<span class="small" style="opacity:0.35;">-</span>';
+        }
+        tr.appendChild(td);
+      });
+      tbody.appendChild(tr);
+    });
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // LEAVE MODULE
+  // ═══════════════════════════════════════════════════════════════════════════
+  async function loadLeavePanel() {
+    const form = document.getElementById('form-leave');
+    if (!form.dataset.bound) {
+      form.dataset.bound = '1';
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const msgEl = document.getElementById('leave-msg');
+        msgEl.textContent = '';
+        msgEl.className = 'small mt-3';
+        
+        const fromDate = document.getElementById('leave-from').value;
+        const toDate = document.getElementById('leave-to').value;
+        const reason = document.getElementById('leave-reason').value.trim();
+        const leaveType = document.getElementById('leave-type').value;
+        
+        try {
+          await SSC_API.post('/teacher/leave', { fromDate, toDate, reason, leaveType });
+          msgEl.textContent = 'Leave request submitted successfully!';
+          msgEl.className = 'small mt-3 alert success';
+          form.reset();
+          loadTeacherLeaves();
+        } catch (err) {
+          msgEl.textContent = err.data && err.data.error ? err.data.error : err.message;
+          msgEl.className = 'small mt-3 alert error';
+        }
+      });
+    }
+    await loadTeacherLeaves();
+  }
+
+  async function loadTeacherLeaves() {
+    const leaves = await SSC_API.get('/teacher/leave');
+    const tbody = document.querySelector('#tbl-teacher-leaves tbody');
+    tbody.innerHTML = '';
+    
+    if (!leaves.length) {
+      tbody.innerHTML = '<tr><td colspan="5" class="center small">No leave requests yet</td></tr>';
+      return;
+    }
+
+    leaves.forEach(lv => {
+      const tr = document.createElement('tr');
+      const start = new Date(lv.fromDate).toLocaleDateString();
+      const end = new Date(lv.toDate).toLocaleDateString();
+      
+      let statusStr = lv.status;
+      if (lv.status === 'pending') statusStr = '<span class="highlight">Pending</span>';
+      else if (lv.status === 'approved') statusStr = '<span style="color:var(--accent);">Approved</span>';
+      else if (lv.status === 'rejected') statusStr = '<span style="color:#ef4444;">Rejected</span>';
+
+      tr.innerHTML = `
+        <td><span style="text-transform: capitalize;">${lv.leaveType}</span></td>
+        <td>${start} to ${end}</td>
+        <td>${esc(lv.reason)}</td>
+        <td>${statusStr}</td>
+        <td>${esc(lv.adminNote || 'None')}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  async function generateResultSheet() {
+    const examId = document.getElementById('res-exam-select').value;
+    if (!examId) return alert('Please select a scheduled exam.');
+    
+    try {
+      const { exam, results } = await SSC_API.get(`/teacher/exams/${examId}/result-sheet`);
+      const container = document.getElementById('res-sheet-container');
+      const title = document.getElementById('res-sheet-title');
+      const tbody = document.querySelector('#tbl-res-sheet tbody');
+      
+      title.innerHTML = `<strong>Result Sheet:</strong> ${esc(exam.title)} — ${esc(exam.subject)} (${esc(exam.className)})`;
+      tbody.innerHTML = '';
+      
+      if (!results.length) {
+        tbody.innerHTML = '<tr><td colspan="7" class="center small">No students in this class</td></tr>';
+      } else {
+        results.forEach(r => {
+          const tr = document.createElement('tr');
+          
+          let statusColor = '';
+          if (r.passFail === 'PASS') statusColor = 'color:var(--accent);font-weight:600;';
+          else if (r.passFail === 'FAIL') statusColor = 'color:#ef4444;font-weight:600;';
+
+          tr.innerHTML = `
+            <td>${esc(r.rollNumber || 'N/A')}</td>
+            <td><strong>${esc(r.name)}</strong></td>
+            <td>${r.marksObtained !== null ? `${r.marksObtained} / ${r.maxMarks}` : '<span class="small" style="opacity:0.5;">Not entered</span>'}</td>
+            <td>${r.percentage !== null ? `${r.percentage}%` : '-'}</td>
+            <td>${r.grade !== null ? `<strong>${r.grade}</strong>` : '-'}</td>
+            <td><span style="${statusColor}">${r.passFail || '-'}</span></td>
+            <td>${r.rank !== null ? `<strong>${r.rank}</strong>` : '-'}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+      }
+      container.style.display = 'block';
     } catch (err) {
-      console.error('Failed to check existing logs:', err);
+      alert(err.message || 'Failed to generate result sheet.');
     }
   }
+  // ═══════════════════════════════════════════════════════════════════════════
 
   function esc(s) {
     const d = document.createElement('div');

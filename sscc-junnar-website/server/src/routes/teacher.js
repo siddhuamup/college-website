@@ -315,5 +315,33 @@ export function teacherRouter({ jwtSecret, jwtExpiresIn }) {
     res.json(withMongoId(updatedUser));
   });
 
+  // Apply for leave request
+  r.post('/leave', async (req, res) => {
+    const { fromDate, toDate, reason, leaveType } = req.body || {};
+    if (!fromDate || !toDate || !reason) {
+      return res.status(400).json({ error: 'fromDate, toDate, and reason are required' });
+    }
+    const leave = await prisma.leaveRequest.create({
+      data: {
+        teacherId: req.user.id,
+        fromDate: new Date(fromDate),
+        toDate: new Date(toDate),
+        reason,
+        leaveType: leaveType || 'casual',
+        status: 'pending'
+      }
+    });
+    res.status(201).json(withMongoId(leave));
+  });
+
+  // Get teacher's own leave requests
+  r.get('/leave', async (req, res) => {
+    const leaves = await prisma.leaveRequest.findMany({
+      where: { teacherId: req.user.id },
+      orderBy: { createdAt: 'desc' }
+    });
+    res.json(leaves.map(withMongoId));
+  });
+
   return r;
 }

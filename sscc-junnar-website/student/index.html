@@ -4,6 +4,7 @@
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>Student portal — SSC College, Junnar</title>
+  <script src="/js/theme.js"></script>
   <link rel="stylesheet" href="../css/styles.css"/>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
 </head>
@@ -13,16 +14,22 @@
       <h2>Student</h2>
       <nav class="dash-nav">
         <button type="button" data-panel="profile" class="active">Profile</button>
-        <button type="button" data-panel="marks">Marks</button>
+        <button type="button" data-panel="timetable">Timetable</button>
+        <button type="button" data-panel="library">Library</button>
+        <button type="button" data-panel="exams">Exams & Results</button>
         <button type="button" data-panel="attendance">Attendance</button>
         <button type="button" data-panel="materials">Materials</button>
         <button type="button" data-panel="notices">Notices</button>
+        <button type="button" data-panel="placement">Placement Cell</button>
         <button type="button" data-panel="admission">Admission status</button>
         <button type="button" data-panel="feedback">Feedback</button>
         <button type="button" data-panel="edit-profile">Edit Profile</button>
       </nav>
       <a class="btn secondary small mt-3" href="../index.html" style="display:inline-block;text-decoration:none;">Public site</a>
-      <button type="button" class="btn danger small mt-2" id="logout-btn">Logout</button>
+      <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem; align-items: center;">
+        <button type="button" class="theme-toggle-btn" onclick="window.ThemeManager.cycle()" aria-label="Toggle Theme">🌙 Dark</button>
+        <button type="button" class="btn danger small" id="logout-btn" style="flex: 1; margin-top: 0 !important;">Logout</button>
+      </div>
     </aside>
     <main class="dash-main">
       <div class="dash-top">
@@ -34,8 +41,162 @@
         <div class="card" id="profile-card"></div>
       </section>
 
-      <section class="dash-panel" data-panel="marks">
-        <div class="card"><h3>Results</h3><div class="table-wrap"><table class="table small" id="tbl-marks"><thead><tr><th>Subject</th><th>Exam</th><th>Marks</th></tr></thead><tbody></tbody></table></div></div>
+      <!-- ══ TIMETABLE PANEL ════════════════════════════════════════════ -->
+      <section class="dash-panel" data-panel="timetable">
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem;">
+            <h3 style="margin: 0;">Class Timetable</h3>
+            <button class="btn small" onclick="window.print()" style="color: #000;">Print Timetable</button>
+          </div>
+          <div class="table-wrap">
+            <table class="table small" style="width: 100%; min-width: 800px;">
+              <thead>
+                <tr>
+                  <th>Period / Time</th>
+                  <th>Monday</th>
+                  <th>Tuesday</th>
+                  <th>Wednesday</th>
+                  <th>Thursday</th>
+                  <th>Friday</th>
+                  <th>Saturday</th>
+                </tr>
+              </thead>
+              <tbody id="tbl-student-timetable">
+                <!-- Dynamic slots -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══ LIBRARY PANEL ══════════════════════════════════════════════ -->
+      <section class="dash-panel" data-panel="library">
+        <div class="steps">
+          <button type="button" class="step-pill active" id="stu-lib-tab-issued">Issued Books</button>
+          <button type="button" class="step-pill" id="stu-lib-tab-history">Borrow History</button>
+        </div>
+        
+        <div id="stu-lib-issued-view" class="card">
+          <h3>Currently Issued Books</h3>
+          <div class="table-wrap">
+            <table class="table small" id="tbl-stu-lib-issued">
+              <thead>
+                <tr>
+                  <th>Book Title</th>
+                  <th>Author</th>
+                  <th>Category</th>
+                  <th>Issued Date</th>
+                  <th>Due Date</th>
+                  <th>Fine</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="stu-lib-history-view" class="card" style="display: none;">
+          <h3>Borrow History</h3>
+          <div class="table-wrap">
+            <table class="table small" id="tbl-stu-lib-history">
+              <thead>
+                <tr>
+                  <th>Book Title</th>
+                  <th>Author</th>
+                  <th>Category</th>
+                  <th>Issued Date</th>
+                  <th>Returned Date</th>
+                  <th>Fine Paid</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══ EXAMS & RESULTS PANEL ══════════════════════════════════════ -->
+      <section class="dash-panel" data-panel="exams">
+        <div class="card">
+          <h3>Exam Schedules</h3>
+          <div class="table-wrap">
+            <table class="table small" id="tbl-stu-exams">
+              <thead>
+                <tr>
+                  <th>Exam Name</th>
+                  <th>Type</th>
+                  <th>Subject</th>
+                  <th>Date / Time</th>
+                  <th>Venue</th>
+                  <th>Max Marks</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card mt-4">
+          <h3>Exam Results</h3>
+          <p class="small">Below are your scores for published exams.</p>
+          <div class="table-wrap mt-2">
+            <table class="table small" id="tbl-stu-results">
+              <thead>
+                <tr>
+                  <th>Exam Title</th>
+                  <th>Subject</th>
+                  <th>Type</th>
+                  <th>Date</th>
+                  <th>Marks Obtained</th>
+                  <th>Percentage</th>
+                  <th>Grade</th>
+                  <th>Pass / Fail</th>
+                  <th>Class Rank</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Print Optimized Result Sheet overlay / print target -->
+        <div id="print-result-overlay" style="display:none;" class="card mt-4">
+          <div class="result-print-header center" style="display: none; border-bottom: 2px solid #000; padding-bottom: 1rem; margin-bottom: 1.5rem;">
+            <h2 style="margin: 0 0 0.5rem 0;">SHRI SHIV CHHATRAPATI COLLEGE, JUNNAR</h2>
+            <h4 style="margin: 0; color: #555;">ACADEMIC RESULT SHEET</h4>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed rgba(56,189,248,0.2); padding-bottom: 0.5rem; margin-bottom: 1rem;">
+            <h4 id="pr-student-info" style="margin: 0;"></h4>
+            <div class="no-print">
+              <button class="btn small" onclick="window.print()" style="color: #000;">Print Report / Save as PDF</button>
+              <button class="btn secondary small" id="btn-close-print-view" type="button">Close Preview</button>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table class="table small" id="tbl-print-result" style="width: 100%;">
+              <thead>
+                <tr>
+                  <th>Exam</th>
+                  <th>Subject</th>
+                  <th>Exam Type</th>
+                  <th>Marks Obtained</th>
+                  <th>Percentage</th>
+                  <th>Grade</th>
+                  <th>Status</th>
+                  <th>Class Rank</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="result-print-footer center mt-4" style="display: none; margin-top: 3rem; border-top: 1px solid #000; padding-top: 1rem;">
+            <div style="display: flex; justify-content: space-between;">
+              <div>Class Coordinator Signature</div>
+              <div>Principal Signature</div>
+            </div>
+          </div>
+        </div>
       </section>
 
       <section class="dash-panel" data-panel="attendance">
@@ -141,6 +302,32 @@
       </section>
 
       <p id="dash-msg" class="small mt-3"></p>
+
+      <!-- Placement Cell Panel -->
+      <section class="dash-panel" data-panel="placement">
+        <!-- My application stats -->
+        <div class="stat-grid" id="stu-pl-stat-grid" style="margin-bottom:1.5rem;"></div>
+
+        <!-- Active drives -->
+        <div class="card mt-2">
+          <h3>Active Placement Drives</h3>
+          <p class="small" style="opacity:0.7;margin-top:-0.5rem;">Apply before the deadline. Each application is recorded and reviewed by the placement cell.</p>
+          <div id="pl-drives-list" style="margin-top:1rem;"></div>
+        </div>
+
+        <!-- My applications -->
+        <div class="card mt-4">
+          <h3>My Applications</h3>
+          <div class="table-wrap">
+            <table class="table small" id="tbl-stu-pl-apps">
+              <thead><tr><th>Company</th><th>Drive</th><th>Package</th><th>Location</th><th>Status</th><th>Applied On</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+      <!-- End Placement Cell Panel -->
+
     </main>
   </div>
   <script src="../js/api.js"></script>

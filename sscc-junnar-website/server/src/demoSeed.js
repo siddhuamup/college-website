@@ -14,7 +14,7 @@ import { prisma } from './db/client.js';
 import { hashPassword } from './utils/auth.js';
 import { Role } from '@prisma/client';
 
-const DEMO_VERSION = 'v1.0';
+const DEMO_VERSION = 'v3.0';
 const DEMO_SENTINEL_KEY = 'demoDataVersion';
 
 // ─── TEACHER DEFINITIONS ────────────────────────────────────────────────────
@@ -819,7 +819,22 @@ export async function performDemoSeed() {
   }
   console.log(`   ✓ ${totalFeedback} feedback entries seeded`);
 
-  // ── STEP 13: Set sentinel ─────────────────────────────────────────────────
+  // ── STEP 14: Placement Demo Data ──────────────────────────────────────────
+  await performPlacementSeed(studentRecords);
+
+  // ── STEP 15: Timetable Demo Data ──────────────────────────────────────────
+  await performTimetableSeed(studentRecords, teacherRecords);
+
+  // ── STEP 16: Library Demo Data ────────────────────────────────────────────
+  await performLibrarySeed(studentRecords);
+
+  // ── STEP 17: Exam Demo Data ───────────────────────────────────────────────
+  await performExamSeed(teacherRecords);
+
+  // ── STEP 18: Leave Requests Demo Data ─────────────────────────────────────
+  await performLeaveSeed(teacherRecords);
+
+  // ── STEP 19: Set sentinel ─────────────────────────────────────────────────
   await prisma.collegeSettings.upsert({
     where: { key: DEMO_SENTINEL_KEY },
     create: { key: DEMO_SENTINEL_KEY, value: DEMO_VERSION },
@@ -827,7 +842,7 @@ export async function performDemoSeed() {
   });
 
   const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-  console.log(`\n✅ Demo data seeding complete in ${elapsed}s`);
+  console.log('\n✅ Demo data seeding complete in ' + elapsed + 's');
   console.log('\n📌 Demo Credentials:');
   console.log('   Admin:   principal@ssccjunnar.edu / Admin@123');
   console.log('   Teacher: anita.deshmukh@ssccjunnar.edu / Teacher@123');
@@ -835,13 +850,157 @@ export async function performDemoSeed() {
   console.log('   Student: aarav.bhosale1@student.ssccjunnar.edu / Student@123');
   console.log('   Student: aditi.chavan6@student.ssccjunnar.edu / Student@123');
   console.log('\n   All 10 teacher passwords: Teacher@123');
-  console.log('   All 50 student passwords:  Student@123\n');
+  console.log('   All 50 student passwords:  Student@123');
+  console.log('\n🏢 Placement Cell seeded: 15 companies, 20 drives, 100+ applications\n');
+}
+
+// ─── PLACEMENT DEMO DATA ─────────────────────────────────────────────────────
+
+const PLACEMENT_COMPANIES = [
+  { companyName: 'Tata Consultancy Services (TCS)', industry: 'IT Services & Consulting', website: 'https://www.tcs.com', packageOffered: '3.36 LPA', eligibilityCriteria: '60% aggregate in graduation, BCA/BSc/BBA, no active backlogs', location: 'Pune, Mumbai, Hyderabad', description: 'Leading global IT services company. TCS Mass Hiring Drive for fresh graduates.' },
+  { companyName: 'Infosys', industry: 'IT Services & Consulting', website: 'https://www.infosys.com', packageOffered: '3.60 LPA', eligibilityCriteria: '65% in 10th, 12th and graduation; BCA/BSc preferred', location: 'Pune, Bangalore, Chennai', description: 'Infosys InfyTQ Campus Hiring Programme for 2025 batch. Apply for Systems Engineer role.' },
+  { companyName: 'Wipro Technologies', industry: 'IT Services', website: 'https://www.wipro.com', packageOffered: '3.50 LPA', eligibilityCriteria: '60% throughout academics; any UG with CS background', location: 'Pune, Mysore, Hyderabad', description: 'Wipro National Talent Hunt for Engineering and IT graduates. NLTH programme.' },
+  { companyName: 'Cognizant Technology Solutions', industry: 'IT Services & BPO', website: 'https://www.cognizant.com', packageOffered: '4.00 LPA', eligibilityCriteria: '60% in graduation; BCA/BSc/BBA eligible', location: 'Pune, Mumbai, Kolkata', description: 'Cognizant GenC Programme for fresh graduates. Competitive programming test + HR round.' },
+  { companyName: 'Accenture India', industry: 'Management Consulting & IT', website: 'https://www.accenture.com/in-en', packageOffered: '4.50 LPA', eligibilityCriteria: '55% in graduation, no active backlogs, any stream', location: 'Mumbai, Pune, Bangalore', description: 'Accenture ASE (Associate Software Engineer) campus hiring 2025.' },
+  { companyName: 'Capgemini', industry: 'IT Consulting & Services', website: 'https://www.capgemini.com/in-en', packageOffered: '3.80 LPA', eligibilityCriteria: '60% in 12th and graduation, BCA/BSc/BBA', location: 'Pune, Mumbai, Hyderabad', description: 'Capgemini Fresher Drive 2025. Analyst role with 6-month training program.' },
+  { companyName: 'Tech Mahindra', industry: 'IT & BPO Services', website: 'https://www.techmahindra.com', packageOffered: '3.25 LPA', eligibilityCriteria: '50% aggregate; graduates from any discipline', location: 'Pune, Nagpur, Hyderabad', description: 'Tech Mahindra SMART Hiring. Lateral and fresher opportunities in IT support and development.' },
+  { companyName: 'HCL Technologies', industry: 'IT & Digital Transformation', website: 'https://www.hcltech.com', packageOffered: '4.25 LPA', eligibilityCriteria: '60% in graduation; BCA/BSc/BBA preferred, no active backlogs', location: 'Pune, Noida, Chennai', description: 'HCL TechBee Campus Hiring for fresh graduates 2025 batch. Training + placement program.' },
+  { companyName: 'Mphasis', industry: 'IT Services & Banking Tech', website: 'https://www.mphasis.com', packageOffered: '3.75 LPA', eligibilityCriteria: '60% aggregate, BCA/BSc eligible', location: 'Pune, Bangalore', description: 'Mphasis Next campus hiring for developer and analyst roles. Strong banking domain focus.' },
+  { companyName: 'L&T Infotech (LTIMindtree)', industry: 'IT Services & Solutions', website: 'https://www.ltimindtree.com', packageOffered: '4.00 LPA', eligibilityCriteria: '65% in graduation; BCA/BSc/BBA, all streams', location: 'Pune, Mumbai, Bangalore', description: 'LTIMindtree campus hiring for 2025 batch. Multiple roles across IT services and consulting.' },
+  { companyName: 'Persistent Systems', industry: 'Software Products & IT Services', website: 'https://www.persistent.com', packageOffered: '4.50 LPA', eligibilityCriteria: '65% in 12th and graduation; BCA/BSc preferred', location: 'Pune, Nagpur, Goa', description: 'Persistent Systems Campus Connect Programme. Roles in product engineering and testing.' },
+  { companyName: 'KPIT Technologies', industry: 'Automotive & IoT Software', website: 'https://www.kpit.com', packageOffered: '4.00 LPA', eligibilityCriteria: '60% aggregate; BSc/BCA/BBA candidates welcome', location: 'Pune, Bangalore', description: 'KPIT Campus Hiring 2025 for embedded systems and software testing roles.' },
+  { companyName: 'Reliance Jio Infocomm', industry: 'Telecom & Digital Services', website: 'https://www.jio.com', packageOffered: '3.50 LPA', eligibilityCriteria: '55% in graduation; any UG stream', location: 'Mumbai, Pune, Pan-India', description: 'Jio Young Leader Programme. Campus hiring for customer success and tech roles.' },
+  { companyName: 'HDFC Bank (IT Division)', industry: 'Banking & Financial Services', website: 'https://www.hdfcbank.com', packageOffered: '5.00 LPA', eligibilityCriteria: '60% in graduation; BCA/BCom/BBA preferred; no backlogs', location: 'Mumbai, Pune, Thane', description: 'HDFC Bank campus hiring for Digital Banking and IT Operations roles 2025.' },
+  { companyName: 'Bajaj Finserv Technology', industry: 'NBFC & Fintech', website: 'https://www.bajajfinserv.in', packageOffered: '4.50 LPA', eligibilityCriteria: '60% aggregate; BCA/BCom/BBA; Pune area preferred', location: 'Pune', description: 'Bajaj Finserv Digital/Tech campus hiring 2025. Business Analyst and IT Associate roles.' },
+];
+
+const PLACEMENT_DRIVES = [
+  { companyIdx: 0,  title: 'TCS National Qualifier Test – 2025 Batch', daysAgo: 45, deadlineDays: 10, status: 'active' },
+  { companyIdx: 1,  title: 'Infosys Systems Engineer – Off-Campus Drive', daysAgo: 30, deadlineDays: 5,  status: 'active' },
+  { companyIdx: 2,  title: 'Wipro NLTH Campus Drive 2025', daysAgo: 20, deadlineDays: 15, status: 'active' },
+  { companyIdx: 3,  title: 'Cognizant GenC Hiring – Maharashtra Colleges', daysAgo: 60, deadlineDays: -5, status: 'closed' },
+  { companyIdx: 4,  title: 'Accenture ASE – Freshers Drive June 2025', daysAgo: 15, deadlineDays: 20, status: 'active' },
+  { companyIdx: 5,  title: 'Capgemini Analyst Hiring – BCA & BSc', daysAgo: 10, deadlineDays: 25, status: 'active' },
+  { companyIdx: 6,  title: 'Tech Mahindra SMART Drive – May 2025', daysAgo: 75, deadlineDays: -10, status: 'closed' },
+  { companyIdx: 7,  title: 'HCL TechBee Fresher Programme', daysAgo: 5,  deadlineDays: 30, status: 'active' },
+  { companyIdx: 8,  title: 'Mphasis Software Engineer – Campus Hire', daysAgo: 40, deadlineDays: -2, status: 'closed' },
+  { companyIdx: 9,  title: 'LTIMindtree Campus Drive – 2025 Batch', daysAgo: 25, deadlineDays: 10, status: 'active' },
+  { companyIdx: 10, title: 'Persistent Systems – Engineer Trainee Drive', daysAgo: 35, deadlineDays: -8, status: 'closed' },
+  { companyIdx: 11, title: 'KPIT Automotive Tech Campus Drive 2025', daysAgo: 18, deadlineDays: 12, status: 'active' },
+  { companyIdx: 12, title: 'Reliance Jio Young Leader Programme 2025', daysAgo: 8,  deadlineDays: 22, status: 'active' },
+  { companyIdx: 13, title: 'HDFC Bank IT Associate – Campus Hiring', daysAgo: 50, deadlineDays: -15, status: 'closed' },
+  { companyIdx: 14, title: 'Bajaj Finserv Business Analyst – 2025', daysAgo: 12, deadlineDays: 18, status: 'active' },
+  { companyIdx: 0,  title: 'TCS BPS Ignite Programme – Commerce Graduates', daysAgo: 3,  deadlineDays: 28, status: 'active' },
+  { companyIdx: 1,  title: 'Infosys BPO – Data Analyst Role 2025', daysAgo: 22, deadlineDays: 8,  status: 'active' },
+  { companyIdx: 4,  title: 'Accenture Operations – Customer Facing Roles', daysAgo: 55, deadlineDays: -20, status: 'closed' },
+  { companyIdx: 5,  title: 'Capgemini Digital India Initiative 2025', daysAgo: 7,  deadlineDays: 23, status: 'active' },
+  { companyIdx: 9,  title: 'LTIMindtree – BCA & BSc Off Campus June 2025', daysAgo: 2,  deadlineDays: 35, status: 'active' },
+];
+
+const APP_STATUSES = ['applied', 'shortlisted', 'interview_scheduled', 'selected', 'rejected'];
+// Distribution weights: applied=35, shortlisted=25, interview=20, selected=12, rejected=8
+const STATUS_WEIGHTS = [35, 25, 20, 12, 8];
+
+function weightedStatus(seed) {
+  let v = seed % 100;
+  let cum = 0;
+  for (let i = 0; i < STATUS_WEIGHTS.length; i++) {
+    cum += STATUS_WEIGHTS[i];
+    if (v < cum) return APP_STATUSES[i];
+  }
+  return 'applied';
+}
+
+async function performPlacementSeed(studentRecords) {
+  console.log('\n🏢 Seeding placement cell data...');
+
+  // Clear existing placement demo data
+  await prisma.placementApplication.deleteMany({});
+  await prisma.placementDrive.deleteMany({});
+  await prisma.company.deleteMany({});
+
+  // Create companies
+  const companyRecords = [];
+  for (const c of PLACEMENT_COMPANIES) {
+    const rec = await prisma.company.create({ data: c });
+    companyRecords.push(rec);
+  }
+  console.log(`   ✓ ${companyRecords.length} companies created`);
+
+  // Create drives
+  const driveRecords = [];
+  const now = new Date();
+  for (const d of PLACEMENT_DRIVES) {
+    const driveDate = new Date(now);
+    driveDate.setDate(driveDate.getDate() - d.daysAgo + 30);
+    driveDate.setHours(10, 0, 0, 0);
+    const deadline = new Date(now);
+    deadline.setDate(deadline.getDate() + d.deadlineDays);
+    deadline.setHours(23, 59, 0, 0);
+    const rec = await prisma.placementDrive.create({
+      data: {
+        companyId: companyRecords[d.companyIdx].id,
+        title: d.title,
+        description: `Campus recruitment drive for ${companyRecords[d.companyIdx].companyName}. Open to eligible graduates from SSC College, Junnar.`,
+        driveDate,
+        applicationDeadline: deadline,
+        status: d.status,
+        createdAt: new Date(now.getTime() - d.daysAgo * 24 * 60 * 60 * 1000),
+      },
+    });
+    driveRecords.push(rec);
+  }
+  console.log(`   ✓ ${driveRecords.length} drives created`);
+
+  // Create applications — 100+ across drives
+  let totalApps = 0;
+  const usedPairs = new Set();
+
+  // Distribute students across drives: each student applies to 2-4 drives
+  for (let si = 0; si < studentRecords.length; si++) {
+    const student = studentRecords[si];
+    const numApps = 2 + (si % 3); // 2, 3, or 4 applications per student
+    const seed = si;
+
+    for (let ai = 0; ai < numApps; ai++) {
+      const driveIdx = (si * 3 + ai * 7) % driveRecords.length;
+      const drive = driveRecords[driveIdx];
+      const pairKey = `${student.id}:${drive.id}`;
+      if (usedPairs.has(pairKey)) continue;
+      usedPairs.add(pairKey);
+
+      const applicationStatus = weightedStatus(seed * 10 + ai * 13);
+      const appliedDaysAgo = randInt(1, PLACEMENT_DRIVES[driveIdx]?.daysAgo || 30);
+      const appliedAt = new Date(now.getTime() - appliedDaysAgo * 24 * 60 * 60 * 1000);
+
+      await prisma.placementApplication.create({
+        data: {
+          studentId: student.id,
+          driveId: drive.id,
+          applicationStatus,
+          appliedAt,
+          updatedAt: appliedAt,
+        },
+      });
+      totalApps++;
+    }
+  }
+  console.log(`   ✓ ${totalApps} placement applications created`);
+  const selectedCount = await prisma.placementApplication.count({ where: { applicationStatus: 'selected' } });
+  console.log(`   ✓ ${selectedCount} students marked as selected`);
 }
 
 // ─── RESET HELPER ────────────────────────────────────────────────────────────
 
 export async function resetDemoData() {
   console.log('\n🗑️  Resetting demo data...');
+
+  // Clear new tables first to satisfy foreign key constraints
+  await prisma.leaveRequest.deleteMany({});
+  await prisma.timetable.deleteMany({});
+  await prisma.libraryIssue.deleteMany({});
+  await prisma.libraryBook.deleteMany({});
+  await prisma.exam.deleteMany({});
 
   // Delete records seeded by demo (cascade handles attendance, marks, materials, feedback)
   const demoStudents = await prisma.user.findMany({
@@ -882,8 +1041,382 @@ export async function resetDemoData() {
     await prisma.admissionApplication.deleteMany({ where: { applicationNumber: appNumber } });
   }
 
+  // Also clear placement data
+  await prisma.placementApplication.deleteMany({});
+  await prisma.placementDrive.deleteMany({});
+  await prisma.company.deleteMany({});
+
   // Remove sentinel to allow reseed
   await prisma.collegeSettings.deleteMany({ where: { key: DEMO_SENTINEL_KEY } });
 
   console.log('✅ Demo data reset complete. Run npm run seed to regenerate.\n');
+}
+
+// ─── TIMETABLE DEMO DATA ─────────────────────────────────────────────────────
+
+async function performTimetableSeed(studentRecords, teacherRecords) {
+  console.log('\n📅 Seeding timetable data...');
+  await prisma.timetable.deleteMany({});
+
+  const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const periods = [1, 2, 3, 4, 5, 6];
+  const pTimes = [
+    { period: 1, start: '09:00', end: '10:00' },
+    { period: 2, start: '10:00', end: '11:00' },
+    { period: 3, start: '11:00', end: '12:00' },
+    { period: 4, start: '12:00', end: '01:00' },
+    { period: 5, start: '01:30', end: '02:30' },
+    { period: 6, start: '02:30', end: '03:30' }
+  ];
+
+  // Get distinct classes from student definitions
+  const classes = Array.from(new Set(studentRecords.map(s => s.studentProfile?.className).filter(Boolean)));
+  
+  // Group teacher assignments by class
+  const classAssignments = {};
+  for (const t of teacherRecords) {
+    const tp = t.teacherProfile;
+    if (tp && Array.isArray(tp.assignments)) {
+      for (const a of tp.assignments) {
+        if (!classAssignments[a.className]) classAssignments[a.className] = [];
+        classAssignments[a.className].push({
+          teacherId: t.id,
+          teacherName: t.name,
+          subject: a.subject
+        });
+      }
+    }
+  }
+
+  const busyTeachers = new Set(); // format: "teacherId:day:period"
+  let timetablesCreated = 0;
+
+  for (const cls of classes) {
+    const assignments = classAssignments[cls] || [];
+    if (assignments.length === 0) continue;
+
+    const slots = [];
+    for (const day of days) {
+      // 3 to 5 periods per day
+      const numPeriods = randInt(3, 5);
+      const activePeriods = periods.slice(0, numPeriods);
+
+      for (const period of activePeriods) {
+        const pTime = pTimes.find(pt => pt.period === period);
+        // Shuffle to get a randomized assignment
+        const shuffled = [...assignments].sort(() => Math.random() - 0.5);
+        
+        for (const asgn of shuffled) {
+          const key = `${asgn.teacherId}:${day}:${period}`;
+          if (!busyTeachers.has(key)) {
+            slots.push({
+              day,
+              period,
+              startTime: pTime.start,
+              endTime: pTime.end,
+              subject: asgn.subject,
+              teacherId: asgn.teacherId,
+              teacherName: asgn.teacherName,
+              room: `Room ${randInt(101, 108)}`
+            });
+            busyTeachers.add(key);
+            break;
+          }
+        }
+      }
+    }
+
+    await prisma.timetable.create({
+      data: {
+        className: cls,
+        weekLabel: 'current',
+        slots,
+        isActive: true
+      }
+    });
+    timetablesCreated++;
+  }
+  console.log(`   ✓ ${timetablesCreated} class timetables created (clash-free)`);
+}
+
+// ─── LIBRARY DEMO DATA ───────────────────────────────────────────────────────
+
+const LIBRARY_BOOKS_DEMO = [
+  { title: "Introduction to Algorithms", author: "Thomas H. Cormen", category: "Computer Science", isbn: "9780262033848", shelfLocation: "Shelf A-1" },
+  { title: "Database System Concepts", author: "Abraham Silberschatz", category: "Computer Science", isbn: "9780073523323", shelfLocation: "Shelf A-2" },
+  { title: "Clean Code", author: "Robert C. Martin", category: "Computer Science", isbn: "9780132350884", shelfLocation: "Shelf A-3" },
+  { title: "Design Patterns", author: "Erich Gamma", category: "Computer Science", isbn: "9780201633610", shelfLocation: "Shelf A-4" },
+  { title: "Artificial Intelligence: A Modern Approach", author: "Stuart Russell", category: "Computer Science", isbn: "9780136086208", shelfLocation: "Shelf A-5" },
+  { title: "Principles of Management", author: "Harold Koontz", category: "Management", isbn: "9780070669147", shelfLocation: "Shelf B-1" },
+  { title: "Marketing Management", author: "Philip Kotler", category: "Management", isbn: "9780132102902", shelfLocation: "Shelf B-2" },
+  { title: "Organizational Behavior", author: "Stephen P. Robbins", category: "Management", isbn: "9780136124016", shelfLocation: "Shelf B-3" },
+  { title: "Financial Accounting", author: "J.R. Monga", category: "Commerce", isbn: "9788190742511", shelfLocation: "Shelf C-1" },
+  { title: "Cost Accounting: Principles & Practice", author: "M.N. Arora", category: "Commerce", isbn: "9789325960010", shelfLocation: "Shelf C-2" },
+  { title: "Business Law", author: "M.C. Kuchhal", category: "Commerce", isbn: "9789325960102", shelfLocation: "Shelf C-3" },
+  { title: "Income Tax Law and Practice", author: "Dr. H.C. Mehrotra", category: "Commerce", isbn: "9789388832049", shelfLocation: "Shelf C-4" },
+  { title: "Organic Chemistry", author: "Morrison & Boyd", category: "Chemistry", isbn: "9788131704813", shelfLocation: "Shelf D-1" },
+  { title: "Concise Inorganic Chemistry", author: "J.D. Lee", category: "Chemistry", isbn: "9788126515547", shelfLocation: "Shelf D-2" },
+  { title: "Physical Chemistry", author: "P.W. Atkins", category: "Chemistry", isbn: "9780199543373", shelfLocation: "Shelf D-3" },
+  { title: "University Physics", author: "Francis Sears", category: "Physics", isbn: "9780201603224", shelfLocation: "Shelf D-4" },
+  { title: "Advanced Engineering Mathematics", author: "Erwin Kreyszig", category: "Mathematics", isbn: "9780470458365", shelfLocation: "Shelf D-5" },
+  { title: "Introduction to Probability and Statistics", author: "William Mendenhall", category: "Mathematics", isbn: "9781133103752", shelfLocation: "Shelf D-6" },
+  { title: "A History of India (Vol 1)", author: "Romila Thapar", category: "History", isbn: "9780140138351", shelfLocation: "Shelf E-1" },
+  { title: "A History of India (Vol 2)", author: "Percival Spear", category: "History", isbn: "9780140138368", shelfLocation: "Shelf E-2" },
+  { title: "Discovery of India", author: "Jawaharlal Nehru", category: "History", isbn: "9780143031031", shelfLocation: "Shelf E-3" },
+  { title: "Principles of Economics", author: "N. Gregory Mankiw", category: "Economics", isbn: "9780324589979", shelfLocation: "Shelf E-4" },
+  { title: "Macroeconomics", author: "Richard T. Froyen", category: "Economics", isbn: "9780132438353", shelfLocation: "Shelf E-5" },
+  { title: "Indian Economy", author: "Ramesh Singh", category: "Economics", isbn: "9789353165079", shelfLocation: "Shelf E-6" },
+  { title: "Complete Works of William Shakespeare", author: "William Shakespeare", category: "English Literature", isbn: "9781853268953", shelfLocation: "Shelf F-1" },
+  { title: "The Great Gatsby", author: "F. Scott Fitzgerald", category: "English Literature", isbn: "9780743273565", shelfLocation: "Shelf F-2" },
+  { title: "To Kill a Mockingbird", author: "Harper Lee", category: "English Literature", isbn: "9780446310789", shelfLocation: "Shelf F-3" },
+  { title: "1984", author: "George Orwell", category: "English Literature", isbn: "9780451524935", shelfLocation: "Shelf F-4" },
+  { title: "Effective Java", author: "Joshua Bloch", category: "Computer Science", isbn: "9780134685991", shelfLocation: "Shelf A-6" },
+  { title: "Operating System Concepts", author: "Abraham Silberschatz", category: "Computer Science", isbn: "9781118063330", shelfLocation: "Shelf A-7" },
+  { title: "Computer Networks", author: "Andrew S. Tanenbaum", category: "Computer Science", isbn: "9780132126953", shelfLocation: "Shelf A-8" },
+  { title: "Software Engineering: A Practitioner's Approach", author: "Roger S. Pressman", category: "Computer Science", isbn: "9780078022128", shelfLocation: "Shelf A-9" },
+  { title: "Principles of Corporate Finance", author: "Richard A. Brealey", category: "Commerce", isbn: "9780078034763", shelfLocation: "Shelf C-5" },
+  { title: "Management Information Systems", author: "Kenneth C. Laudon", category: "Management", isbn: "9780133814781", shelfLocation: "Shelf B-4" },
+  { title: "Introduction to Spectroscopy", author: "Donald L. Pavia", category: "Chemistry", isbn: "9781285460123", shelfLocation: "Shelf D-7" },
+  { title: "Calculus: Early Transcendentals", author: "James Stewart", category: "Mathematics", isbn: "9780538497909", shelfLocation: "Shelf D-8" },
+  { title: "India Since Independence", author: "Bipan Chandra", category: "History", isbn: "9780143104094", shelfLocation: "Shelf E-7" },
+  { title: "Microeconomic Theory", author: "Andreu Mas-Colell", category: "Economics", isbn: "9780195073409", shelfLocation: "Shelf E-8" },
+  { title: "Wings of Fire", author: "A.P.J. Abdul Kalam", category: "Biography", isbn: "9788173711466", shelfLocation: "Shelf G-1" },
+  { title: "A Brief History of Time", author: "Stephen Hawking", category: "Physics", isbn: "9780553380163", shelfLocation: "Shelf D-9" }
+];
+
+async function performLibrarySeed(studentRecords) {
+  console.log('\n📚 Seeding library catalog...');
+  await prisma.libraryIssue.deleteMany({});
+  await prisma.libraryBook.deleteMany({});
+
+  const bookRecords = [];
+  for (const b of LIBRARY_BOOKS_DEMO) {
+    const qty = randInt(4, 8);
+    const rec = await prisma.libraryBook.create({
+      data: {
+        title: b.title,
+        author: b.author,
+        category: b.category,
+        isbn: b.isbn,
+        totalQty: qty,
+        availableQty: qty,
+        shelfLocation: b.shelfLocation
+      }
+    });
+    bookRecords.push(rec);
+  }
+  console.log(`   ✓ ${bookRecords.length} books added to catalog`);
+
+  console.log('📖 Seeding book issues (returned, active, overdue)...');
+  let totalIssues = 0;
+  const now = new Date();
+
+  // Create 50 issues
+  for (let i = 0; i < 50; i++) {
+    const student = studentRecords[i % studentRecords.length];
+    const bookIdx = (i * 7 + 3) % bookRecords.length;
+    const book = bookRecords[bookIdx];
+
+    // Decide state: 20 returned (i < 20), 15 active (20 <= i < 35), 15 overdue (i >= 35)
+    let issuedAt, dueDate, returnedAt, status, fine;
+
+    if (i < 20) {
+      // Returned
+      issuedAt = new Date(now);
+      issuedAt.setDate(issuedAt.getDate() - randInt(20, 40));
+      dueDate = new Date(issuedAt);
+      dueDate.setDate(dueDate.getDate() + 14);
+
+      // Returned late or on-time
+      const returnedDaysAfter = randInt(5, 22);
+      returnedAt = new Date(issuedAt);
+      returnedAt.setDate(returnedAt.getDate() + returnedDaysAfter);
+
+      status = 'returned';
+      
+      const diffTime = returnedAt.getTime() - dueDate.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      fine = diffDays > 0 ? diffDays * 2 : 0;
+    } else if (i < 35) {
+      // Active & not overdue
+      if (book.availableQty <= 0) continue;
+      issuedAt = new Date(now);
+      issuedAt.setDate(issuedAt.getDate() - randInt(2, 10));
+      dueDate = new Date(issuedAt);
+      dueDate.setDate(dueDate.getDate() + 14);
+      returnedAt = null;
+      status = 'issued';
+      fine = 0;
+
+      book.availableQty -= 1;
+    } else {
+      // Overdue
+      if (book.availableQty <= 0) continue;
+      issuedAt = new Date(now);
+      issuedAt.setDate(issuedAt.getDate() - randInt(20, 30));
+      dueDate = new Date(issuedAt);
+      dueDate.setDate(dueDate.getDate() + 14); // was due 6-16 days ago
+      returnedAt = null;
+      status = 'issued';
+
+      // Fine calculated dynamically up to today
+      const diffTime = now.getTime() - dueDate.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      fine = diffDays > 0 ? diffDays * 2 : 0;
+
+      book.availableQty -= 1;
+    }
+
+    await prisma.libraryIssue.create({
+      data: {
+        studentId: student.id,
+        bookId: book.id,
+        issuedAt,
+        dueDate,
+        returnedAt,
+        status,
+        fine
+      }
+    });
+    totalIssues++;
+  }
+
+  // Update book available quantities in database
+  for (const b of bookRecords) {
+    await prisma.libraryBook.update({
+      where: { id: b.id },
+      data: { availableQty: b.availableQty }
+    });
+  }
+
+  console.log(`   ✓ ${totalIssues} library issues logs created`);
+}
+
+// ─── EXAMS & RESULTS DEMO DATA ───────────────────────────────────────────────
+
+async function performExamSeed(teacherRecords) {
+  console.log('\n📝 Seeding exam schedules & linking marks...');
+  await prisma.exam.deleteMany({});
+
+  const tsMap = buildTeacherSubjectMap(teacherRecords);
+  let totalExams = 0;
+
+  const EXAM_TYPES = [
+    { name: 'Unit Test I', maxMarks: 20, examType: 'internal', daysAgo: 90, resultsPublished: true },
+    { name: 'Unit Test II', maxMarks: 20, examType: 'internal', daysAgo: 45, resultsPublished: true },
+    { name: 'Internal Assessment', maxMarks: 50, examType: 'internal', daysAgo: 60, resultsPublished: true },
+    { name: 'Practical Examination', maxMarks: 30, examType: 'practical', daysAgo: 20, resultsPublished: true },
+    { name: 'Semester Examination', maxMarks: 100, examType: 'semester', daysAgo: -10, resultsPublished: false }, // future
+  ];
+
+  for (const { studentClass, subject } of tsMap) {
+    for (const ex of EXAM_TYPES) {
+      const examDate = new Date();
+      examDate.setDate(examDate.getDate() - ex.daysAgo);
+      examDate.setHours(10, 0, 0, 0);
+
+      await prisma.exam.create({
+        data: {
+          title: ex.name,
+          examType: ex.examType,
+          className: studentClass,
+          subject,
+          examDate,
+          startTime: ex.examType === 'practical' ? '09:00 AM' : '11:00 AM',
+          duration: ex.examType === 'semester' ? '3 Hours' : '1.5 Hours',
+          venue: ex.examType === 'practical' ? 'Main Computer Lab' : `Block Room ${randInt(101, 105)}`,
+          maxMarks: ex.maxMarks,
+          isPublished: true,
+          resultsPublished: ex.resultsPublished
+        }
+      });
+      totalExams++;
+    }
+
+    // Add a draft/unpublished future exam for variety
+    const draftDate = new Date();
+    draftDate.setDate(draftDate.getDate() + 30);
+    await prisma.exam.create({
+      data: {
+        title: 'Mock Placement Test',
+        examType: 'internal',
+        className: studentClass,
+        subject,
+        examDate: draftDate,
+        startTime: '02:00 PM',
+        duration: '2 Hours',
+        venue: 'Seminar Auditorium',
+        maxMarks: 50,
+        isPublished: false,
+        resultsPublished: false
+      }
+    });
+    totalExams++;
+  }
+
+  console.log(`   ✓ ${totalExams} exams seeded and mapped to marks system`);
+}
+
+// ─── LEAVE HANDLING DEMO DATA ────────────────────────────────────────────────
+
+async function performLeaveSeed(teacherRecords) {
+  console.log('\n🍁 Seeding teacher leave requests...');
+  await prisma.leaveRequest.deleteMany({});
+
+  let totalLeaves = 0;
+  const leaveTypes = ['casual', 'sick', 'earned'];
+  const reasons = [
+    'Attending family wedding out of town',
+    'Suffering from viral fever and chest infection',
+    'Urgent personal work at home town',
+    'Routine medical health checkup',
+    'Attending national research conference',
+    'My child is unwell and needs supervision',
+    'Moving house and settling down',
+    'Urgent banking and legal work'
+  ];
+  const adminNotes = [
+    'Approved. Prof. More will adjust classes.',
+    'Approved. Please upload medical certificate later.',
+    'Rejected due to university exam duties scheduled on these dates.',
+    'Approved, please verify work substitution.',
+    'Rejected. Multiple faculty on leave in the same department.'
+  ];
+
+  for (let i = 0; i < 20; i++) {
+    const teacher = teacherRecords[i % teacherRecords.length];
+    const leaveType = pickRandom(leaveTypes);
+    const reason = pickRandom(reasons);
+
+    const isPast = i % 2 === 0;
+    const status = isPast ? (i % 4 === 0 ? 'rejected' : 'approved') : 'pending';
+
+    const fromDate = new Date();
+    if (isPast) {
+      fromDate.setDate(fromDate.getDate() - randInt(5, 30));
+    } else {
+      fromDate.setDate(fromDate.getDate() + randInt(2, 15));
+    }
+    fromDate.setHours(9, 0, 0, 0);
+
+    const toDate = new Date(fromDate);
+    toDate.setDate(toDate.getDate() + randInt(0, 3));
+    toDate.setHours(18, 0, 0, 0);
+
+    const adminNote = status === 'pending' ? '' : pickRandom(adminNotes);
+
+    await prisma.leaveRequest.create({
+      data: {
+        teacherId: teacher.id,
+        fromDate,
+        toDate,
+        reason,
+        leaveType,
+        status,
+        adminNote
+      }
+    });
+    totalLeaves++;
+  }
+  console.log(`   ✓ ${totalLeaves} teacher leave requests created`);
 }
