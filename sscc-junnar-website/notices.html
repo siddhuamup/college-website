@@ -81,7 +81,7 @@
         items = Array.isArray(data) ? data : [];
         render(items);
       } catch (e) {
-        note.textContent = e.message || 'Connect to the API server to load notices (run npm start in the server folder).';
+        note.textContent = 'No records available at the moment. Please contact the college office for assistance.';
       }
 
       filterEl.addEventListener('input', () => {

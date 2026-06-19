@@ -1,0 +1,19 @@
+Created At: 2026-06-17T20:16:15Z
+Completed At: 2026-06-17T20:16:23Z
+The following changes were made by the replace_file_content tool to: c:\Users\Siddhu\Downloads\sscc-junnar-website\sscc-junnar-website\student\index.html. If relevant, proactively run terminal commands to execute this code for the USER. Don't ask for permission.
+[diff_block_start]
+@@ -45,6 +45,9 @@
+       <!-- ══ TIMETABLE PANEL ════════════════════════════════════════════ -->
+       <section class="dash-panel" data-panel="timetable">
+         <div class="card">
++          <div style="width: 45px; height: 45px; display: grid; place-items: center; padding: 2px;">
++            <canvas id="idcard-qr" style="width: 100%; height: 100%; background: #fff; padding: 2px; border-radius: 4px;"></canvas>
++          </div>
+           <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem;">
+             <h3 style="margin: 0;">Class Timetable</h3>
+             <button class="btn small" onclick="window.print()" style="color: #000;">Print Timetable</button>
+[diff_block_end]
+
+Please note that the above snippet only shows the MODIFIED lines from the last change. It shows up to 3 lines of unchanged lines before and after the modified lines. The actual file contents may have many more lines not shown.
+
+We did our best to apply changes despite some inaccuracies. Double check if the edit applied is what you intended.

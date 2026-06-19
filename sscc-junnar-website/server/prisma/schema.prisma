@@ -53,6 +53,13 @@ model AdmissionApplication {
   board12              String    @default("")
   marks12              Float
   maxMarks12           Float     @default(600)
+  dob                  String    @default("")
+  gender               String    @default("Male")
+  parentContact        String    @default("")
+  sscMarks             Float     @default(0)
+  previousCollege      String    @default("")
+  passingYear          Int       @default(2026)
+  category             String    @default("General")
   documentFiles        Json      @default("[]")
   status               String    @default("pending")
   verificationNotes    String    @default("")
@@ -70,15 +77,20 @@ model AdmissionApplication {
 }
 
 model Notice {
-  id          String   @id @default(cuid())
-  title       String
-  body        String   @default("")
-  pdfFile     Json?
-  isPublished Boolean  @default(true)
-  createdById String?
-  createdBy   User?    @relation(fields: [createdById], references: [id], onDelete: SetNull)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id           String    @id @default(cuid())
+  title        String
+  body         String    @default("")
+  priority     String    @default("NORMAL")
+  audience     String    @default("ALL")
+  publishDate  DateTime  @default(now())
+  expiryDate   DateTime?
+  pdfFile      Json?
+  attachment   Json?
+  isPublished  Boolean   @default(true)
+  createdById  String?
+  createdBy    User?     @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 }
 
 model Department {

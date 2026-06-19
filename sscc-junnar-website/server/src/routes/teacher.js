@@ -6,18 +6,14 @@ import { createAuthMiddleware, requireRole } from '../middleware/auth.js';
 import { uploadStudyMaterial, uploadAvatarImage, uploadsPath } from '../multer/configure.js';
 import { Role } from '@prisma/client';
 import { verifyPassword, signToken } from '../utils/auth.js';
-
-function assignmentCovers(assignments, className, subject) {
-  return (assignments || []).some((a) => a.className === className && a.subject === subject);
-}
+import { filterNotices } from '../utils/notices.js';
+import { noticeDto as buildNoticeDto } from '../utils/noticeDto.js';
 
 function noticeDto(n) {
-  const p = n.pdfFile;
-  const stored = p && typeof p === 'object' && p !== null && 'storedName' in p ? p.storedName : null;
-  return withMongoId({
-    ...n,
-    pdfUrl: stored ? `/uploads/notices/${stored}` : null,
-  });
+  return withMongoId(buildNoticeDto(n));
+}
+function assignmentCovers(assignments, className, subject) {
+  return (assignments || []).some((a) => a.className === className && a.subject === subject);
 }
 
 export function teacherRouter({ jwtSecret, jwtExpiresIn }) {
@@ -266,13 +262,12 @@ export function teacherRouter({ jwtSecret, jwtExpiresIn }) {
     res.json({ ok: true });
   });
 
-  r.get('/notices', async (_req, res) => {
+  r.get('/notices', async (req, res) => {
     const items = await prisma.notice.findMany({
-      where: { isPublished: true },
       orderBy: { createdAt: 'desc' },
-      take: 50,
+      take: 100,
     });
-    res.json(items.map(noticeDto));
+    res.json(filterNotices(items, { surface: 'portal', role: 'teacher', userId: req.user.id }).map(noticeDto));
   });
 
   r.patch('/profile', uploadAvatarImage.single('avatar'), async (req, res) => {

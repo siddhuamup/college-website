@@ -38,7 +38,6 @@
         <h3>Location</h3>
         <iframe id="map-frame" class="map-embed" title="College map" loading="lazy"
           src="https://www.google.com/maps?q=Shri+Shiv+Chhatrapati+College+Junnar&output=embed"></iframe>
-        <p class="small mt-2">Map embed URL can be updated under Admin → Settings (<code>mapEmbedUrl</code>).</p>
       </div>
     </div>
   </section>
@@ -47,15 +46,6 @@
   <script src="js/layout.js"></script>
   <script src="js/app.js"></script>
   <script>
-    document.addEventListener('DOMContentLoaded', async () => {
-      try {
-        const res = await fetch('/api/public/settings');
-        if (res.ok) {
-          const s = await res.json();
-          if (s.mapEmbedUrl) document.getElementById('map-frame').src = s.mapEmbedUrl;
-        }
-      } catch { /* default iframe */ }
-    });
     document.getElementById('contact-form').addEventListener('submit', async (e) => {
       e.preventDefault();
       const msg = document.getElementById('contact-msg');

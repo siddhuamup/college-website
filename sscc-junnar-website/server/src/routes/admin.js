@@ -4,7 +4,8 @@ import path from 'path';
 import { prisma, withMongoId } from '../db/client.js';
 import { createAuthMiddleware, requireRole } from '../middleware/auth.js';
 import { hashPassword } from '../utils/auth.js';
-import { uploadNoticePdf, uploadGalleryImage, uploadsPath } from '../multer/configure.js';
+import { sendEmail } from '../utils/email.js';
+import { uploadNoticePdf, uploadGalleryImage, uploadAvatarImage, uploadsPath } from '../multer/configure.js';
 import { Role } from '@prisma/client';
 
 function stripHash(user) {
@@ -70,8 +71,16 @@ export function adminRouter({ jwtSecret }) {
   r.patch('/students/:id', async (req, res) => {
     const u = await prisma.user.findFirst({ where: { id: req.params.id, role: Role.student } });
     if (!u) return res.status(404).json({ error: 'Not found' });
-    const { name, phone, isActive, studentProfile, password } = req.body || {};
+    const { name, phone, isActive, studentProfile, password, email } = req.body || {};
     const data = {};
+    if (email) {
+      const emailLower = String(email).toLowerCase().trim();
+      if (emailLower !== u.email) {
+        const emailExists = await prisma.user.findUnique({ where: { email: emailLower } });
+        if (emailExists) return res.status(409).json({ error: 'Email already registered' });
+        data.email = emailLower;
+      }
+    }
     if (name) data.name = name;
     if (phone !== undefined) data.phone = phone;
     if (isActive !== undefined) data.isActive = isActive;
@@ -90,6 +99,34 @@ export function adminRouter({ jwtSecret }) {
     res.json({ ok: true });
   });
 
+  r.post('/students/:id/resend-credentials', async (req, res) => {
+    const student = await prisma.user.findFirst({
+      where: { id: req.params.id, role: Role.student }
+    });
+    if (!student) return res.status(404).json({ error: 'Student not found' });
+    const sp = student.studentProfile && typeof student.studentProfile === 'object' ? student.studentProfile : {};
+    
+    try {
+      await sendEmail({
+        to: sp.personalEmail || student.email,
+        subject: 'Your SSC College Junnar Credentials (Resent)',
+        text: `Dear ${student.name},\n\nHere are your login credentials:\nCollege Email: ${student.email}\nStudent ID: ${sp.studentId || 'N/A'}\nRoll Number: ${sp.rollNumber || 'N/A'}\n\nBest regards,\nSSC College Junnar`,
+        html: `<p>Dear <strong>${student.name}</strong>,</p>
+               <p>Here are your login credentials:</p>
+               <ul>
+                 <li><strong>College Email:</strong> ${student.email}</li>
+                 <li><strong>Student ID:</strong> ${sp.studentId || 'N/A'}</li>
+                 <li><strong>Roll Number:</strong> ${sp.rollNumber || 'N/A'}</li>
+               </ul>
+               <p>Best regards,<br/>SSC College Junnar</p>`
+      });
+    } catch (emailErr) {
+      console.error('Failed to send credentials email:', emailErr);
+    }
+    
+    res.json({ ok: true });
+  });
+
   r.get('/teachers', async (_req, res) => {
     const list = await prisma.user.findMany({
       where: { role: Role.teacher },
@@ -98,12 +135,26 @@ export function adminRouter({ jwtSecret }) {
     res.json(list.map(stripHash));
   });
 
-  r.post('/teachers', async (req, res) => {
-    const { email, password, name, phone, employeeId, department, designation, qualifications, assignments } =
-      req.body || {};
+  function optionalTeacherAvatar(req, res, next) {
+    if (String(req.headers['content-type'] || '').includes('multipart/form-data')) {
+      return uploadAvatarImage.single('avatar')(req, res, next);
+    }
+    next();
+  }
+
+  r.post('/teachers', optionalTeacherAvatar, async (req, res) => {
+    let { email, password, name, phone, employeeId, department, designation, qualifications, assignments, experience, specialization, bio } = req.body || {};
     if (!email || !password || !name) return res.status(400).json({ error: 'email, password, name required' });
+    if (typeof assignments === 'string') {
+      try {
+        assignments = JSON.parse(assignments);
+      } catch {
+        assignments = [];
+      }
+    }
     const exists = await prisma.user.findUnique({ where: { email: String(email).toLowerCase() } });
     if (exists) return res.status(409).json({ error: 'Email already registered' });
+    const avatarUrl = req.file ? `/uploads/avatars/${req.file.filename}` : '';
     const user = await prisma.user.create({
       data: {
         email: String(email).toLowerCase().trim(),
@@ -111,11 +162,15 @@ export function adminRouter({ jwtSecret }) {
         role: Role.teacher,
         name: String(name).trim(),
         phone: phone || '',
+        avatarUrl,
+        bio: bio || '',
         teacherProfile: {
           employeeId: employeeId || '',
           department: department || '',
           designation: designation || 'Assistant Professor',
           qualifications: qualifications || '',
+          experience: experience || '',
+          specialization: specialization || '',
           assignments: Array.isArray(assignments) ? assignments : [],
         },
       },
@@ -123,24 +178,53 @@ export function adminRouter({ jwtSecret }) {
     res.status(201).json({ user: stripHash(user) });
   });
 
-  r.patch('/teachers/:id', async (req, res) => {
+  r.patch('/teachers/:id', optionalTeacherAvatar, async (req, res) => {
     const u = await prisma.user.findFirst({ where: { id: req.params.id, role: Role.teacher } });
     if (!u) return res.status(404).json({ error: 'Not found' });
-    const { name, phone, isActive, teacherProfile, password, bio } = req.body || {};
+    let { name, phone, isActive, teacherProfile, password, bio, email, removeAvatar } = req.body || {};
+    if (typeof teacherProfile === 'string') {
+      try {
+        teacherProfile = JSON.parse(teacherProfile);
+      } catch {
+        teacherProfile = {};
+      }
+    }
     const data = {};
+    if (email) {
+      const emailLower = String(email).toLowerCase().trim();
+      if (emailLower !== u.email) {
+        const emailExists = await prisma.user.findUnique({ where: { email: emailLower } });
+        if (emailExists) return res.status(409).json({ error: 'Email already registered' });
+        data.email = emailLower;
+      }
+    }
     if (name) data.name = name;
     if (phone !== undefined) data.phone = phone;
     if (bio !== undefined) data.bio = bio;
     if (isActive !== undefined) data.isActive = isActive;
     if (password) data.passwordHash = await hashPassword(String(password));
-    if (teacherProfile) {
-      const cur = (u.teacherProfile && typeof u.teacherProfile === 'object' ? u.teacherProfile : {}) || {};
-      data.teacherProfile = {
-        ...cur,
-        ...teacherProfile,
-        assignments: teacherProfile.assignments ?? cur.assignments ?? [],
-      };
+    if (removeAvatar === 'true' || removeAvatar === true) {
+      if (u.avatarUrl) {
+        const oldName = path.basename(u.avatarUrl);
+        const oldPath = path.join(uploadsPath(), 'avatars', oldName);
+        if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+      }
+      data.avatarUrl = '';
+    } else if (req.file) {
+      if (u.avatarUrl) {
+        const oldName = path.basename(u.avatarUrl);
+        const oldPath = path.join(uploadsPath(), 'avatars', oldName);
+        if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+      }
+      data.avatarUrl = `/uploads/avatars/${req.file.filename}`;
     }
+    const cur = (u.teacherProfile && typeof u.teacherProfile === 'object' ? u.teacherProfile : {}) || {};
+    const mergedProfile = {
+      ...cur,
+      ...teacherProfile,
+      assignments: teacherProfile?.assignments ?? cur.assignments ?? [],
+    };
+    data.teacherProfile = mergedProfile;
     const updated = await prisma.user.update({ where: { id: u.id }, data });
     res.json({ user: stripHash(updated) });
   });
@@ -199,28 +283,120 @@ export function adminRouter({ jwtSecret }) {
 
     let createdUser;
     let plainPassword;
+    let generatedStudentId = '';
+    let collegeEmail = '';
+
     if (status === 'approved' && createAccount) {
-      const existing = await prisma.user.findUnique({ where: { email: doc.email } });
-      if (existing) {
-        return res.status(409).json({ error: 'A user with this email already exists' });
+      // Generate sequential Student ID
+      const yearSuffix = new Date().getFullYear().toString().slice(-2); // e.g. "26"
+      const courseAbbr = (courseName || doc.courseApplied || 'GEN').toUpperCase().replace(/[^A-Z0-9]/g, '') || 'GEN';
+      const prefix = `SSC${yearSuffix}${courseAbbr}`;
+
+      const allStudents = await prisma.user.findMany({
+        where: { role: Role.student }
+      });
+      
+      let matchCount = 0;
+      for (const student of allStudents) {
+        const sp = student.studentProfile && typeof student.studentProfile === 'object' ? student.studentProfile : {};
+        if (sp.studentId && String(sp.studentId).startsWith(prefix)) {
+          matchCount++;
+        }
       }
-      plainPassword = defaultPassword || `SSC${doc.applicationNumber.slice(-6)}!`;
+
+      const seqNum = String(matchCount + 1).padStart(3, '0');
+      generatedStudentId = `${prefix}${seqNum}`;
+      collegeEmail = `${generatedStudentId.toLowerCase()}@ssccjunnar.edu`;
+
+      const existing = await prisma.user.findUnique({ where: { email: collegeEmail } });
+      if (existing) {
+        return res.status(409).json({ error: `Student with generated email ${collegeEmail} already exists` });
+      }
+
+      // Generate random temporary password if not provided
+      if (defaultPassword) {
+        plainPassword = defaultPassword;
+      } else {
+        const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$';
+        let pwd = '';
+        const lowercase = 'abcdefghijklmnopqrstuvwxyz';
+        const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        const numbers = '0123456789';
+        const specials = '!@#$';
+        pwd += lowercase[Math.floor(Math.random() * lowercase.length)];
+        pwd += uppercase[Math.floor(Math.random() * uppercase.length)];
+        pwd += numbers[Math.floor(Math.random() * numbers.length)];
+        pwd += specials[Math.floor(Math.random() * specials.length)];
+        for (let i = 0; i < 6; i++) {
+          pwd += chars[Math.floor(Math.random() * chars.length)];
+        }
+        plainPassword = pwd.split('').sort(() => 0.5 - Math.random()).join('');
+      }
+
+      // Generate Roll Number automatically: Format: FYBCA-2026-001
+      const yearFull = new Date().getFullYear();
+      const rollPrefix = `FY${courseAbbr}-${yearFull}-`;
+      let rollMatchCount = 0;
+      for (const student of allStudents) {
+        const sp = student.studentProfile && typeof student.studentProfile === 'object' ? student.studentProfile : {};
+        if (sp.rollNumber && String(sp.rollNumber).startsWith(rollPrefix)) {
+          rollMatchCount++;
+        }
+      }
+      const rollSeqNum = String(rollMatchCount + 1).padStart(3, '0');
+      const generatedRollNumber = `${rollPrefix}${rollSeqNum}`;
+
+      const generatedVerificationId = `SSC-VER-${String(generatedStudentId || generatedRollNumber || 'unknown').replace(/\s+/g, '')}`;
+
       createdUser = await prisma.user.create({
         data: {
-          email: doc.email,
+          email: collegeEmail,
           passwordHash: await hashPassword(plainPassword),
           role: Role.student,
           name: doc.fullName,
           phone: doc.phone,
           studentProfile: {
-            rollNumber: rollNumber || doc.applicationNumber,
-            className: className || 'FY-General',
-            courseName: courseName || doc.courseApplied,
-            year: year || '1',
+            studentId: generatedStudentId,
+            personalEmail: doc.email,
+            collegeEmail: collegeEmail,
+            mobile: doc.phone || '',
+            course: doc.courseApplied,
+            courseName: doc.courseApplied,
+            className: className || '',
+            year: '1',
+            division: 'A',
+            rollNumber: generatedRollNumber,
             admissionApplicationId: doc.id,
+            address: doc.address || '',
+            parentContact: doc.parentContact || '',
+            emergencyContact: doc.parentContact || '',
+            admissionYear: new Date().getFullYear(),
+            verificationId: generatedVerificationId,
           },
         },
       });
+
+      // Dispatch real email using sendEmail abstraction
+      try {
+        await sendEmail({
+          to: doc.email,
+          subject: 'Welcome to SSC College Junnar — Your Credentials',
+          text: `Dear ${doc.fullName},\n\nYour application for ${doc.courseApplied} has been approved.\n\nYour login credentials are:\nCollege Email: ${collegeEmail}\nTemporary Password: ${plainPassword}\nStudent ID: ${generatedStudentId}\nRoll Number: ${generatedRollNumber}\n\nPlease login and change your password.\n\nBest regards,\nSSC College Junnar`,
+          html: `<p>Dear <strong>${doc.fullName}</strong>,</p>
+                 <p>Your application for <strong>${doc.courseApplied}</strong> has been approved.</p>
+                 <p>Your login credentials are:</p>
+                 <ul>
+                   <li><strong>College Email:</strong> ${collegeEmail}</li>
+                   <li><strong>Temporary Password:</strong> ${plainPassword}</li>
+                   <li><strong>Student ID:</strong> ${generatedStudentId}</li>
+                   <li><strong>Roll Number:</strong> ${generatedRollNumber}</li>
+                 </ul>
+                 <p>Please login and change your password.</p>
+                 <p>Best regards,<br/>SSC College Junnar</p>`
+        });
+      } catch (emailErr) {
+        console.error('Failed to send admission approval email:', emailErr);
+      }
     }
 
     const application = await prisma.admissionApplication.update({
@@ -233,7 +409,7 @@ export function adminRouter({ jwtSecret }) {
         ...(createdUser
           ? {
               createdStudentUserId: createdUser.id,
-              tempPasswordHint: 'Use the password returned once to the admin console',
+              tempPasswordHint: 'Credentials generated and logged to console',
             }
           : {}),
       },
@@ -243,7 +419,13 @@ export function adminRouter({ jwtSecret }) {
       application: withMongoId(application),
       studentAccount:
         createdUser && plainPassword
-          ? { email: createdUser.email, temporaryPassword: plainPassword, userId: createdUser.id }
+          ? {
+              email: collegeEmail,
+              temporaryPassword: plainPassword,
+              studentId: generatedStudentId,
+              userId: createdUser.id,
+              rollNumber: generatedRollNumber
+            }
           : null,
     });
   });
@@ -254,7 +436,7 @@ export function adminRouter({ jwtSecret }) {
   });
 
   r.post('/notices', uploadNoticePdf.single('pdf'), async (req, res) => {
-    const { title, body, isPublished } = req.body || {};
+    const { title, body, isPublished, priority, audience, publishDate, expiryDate } = req.body || {};
     if (!title) return res.status(400).json({ error: 'title required' });
     const pdfFile = req.file
       ? { originalName: req.file.originalname, storedName: req.file.filename }
@@ -263,6 +445,10 @@ export function adminRouter({ jwtSecret }) {
       data: {
         title: String(title),
         body: body || '',
+        priority: priority || 'NORMAL',
+        audience: audience || 'ALL',
+        publishDate: publishDate ? new Date(publishDate) : new Date(),
+        expiryDate: expiryDate ? new Date(expiryDate) : null,
         pdfFile: pdfFile ?? undefined,
         isPublished: !(isPublished === false || isPublished === 'false'),
         createdById: req.user.id,
@@ -284,6 +470,10 @@ export function adminRouter({ jwtSecret }) {
     const data = {};
     if (req.body.title) data.title = req.body.title;
     if (req.body.body !== undefined) data.body = req.body.body;
+    if (req.body.priority) data.priority = req.body.priority;
+    if (req.body.audience) data.audience = req.body.audience;
+    if (req.body.publishDate) data.publishDate = new Date(req.body.publishDate);
+    if (req.body.expiryDate !== undefined) data.expiryDate = req.body.expiryDate ? new Date(req.body.expiryDate) : null;
     if (req.body.isPublished !== undefined) {
       const v = req.body.isPublished;
       data.isPublished = !(v === false || v === 'false');
@@ -651,6 +841,41 @@ export function adminRouter({ jwtSecret }) {
       }
     });
     res.json(withMongoId(updated));
+  });
+  
+  r.get('/notifications/read', async (_req, res) => {
+    const row = await prisma.collegeSettings.findUnique({ where: { key: 'read_notifications' } });
+    res.json(row && Array.isArray(row.value) ? row.value : []);
+  });
+
+  r.post('/notifications/read', async (req, res) => {
+    const { id, ids } = req.body || {};
+    const row = await prisma.collegeSettings.findUnique({ where: { key: 'read_notifications' } });
+    let readList = row && Array.isArray(row.value) ? row.value : [];
+    
+    let added = false;
+    if (Array.isArray(ids)) {
+      ids.forEach(x => {
+        if (!readList.includes(x)) {
+          readList.push(x);
+          added = true;
+        }
+      });
+    } else if (id) {
+      if (!readList.includes(id)) {
+        readList.push(id);
+        added = true;
+      }
+    }
+    
+    if (added) {
+      await prisma.collegeSettings.upsert({
+        where: { key: 'read_notifications' },
+        create: { key: 'read_notifications', value: readList },
+        update: { value: readList }
+      });
+    }
+    res.json(readList);
   });
 
   return r;

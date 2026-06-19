@@ -153,10 +153,21 @@
             <input type="text" id="global-search" placeholder="Search students, faculty, notices..." autocomplete="off"/>
             <div class="search-results" id="search-results"></div>
           </div>
-          <button type="button" class="topbar-bell" id="topbar-notif-btn" aria-label="Notifications">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-            <span class="topbar-bell-badge" id="notif-badge" style="display:none;">0</span>
-          </button>
+          <div class="topbar-notif-wrap" style="position: relative;">
+            <button type="button" class="topbar-bell" id="topbar-notif-btn" aria-label="Notifications">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+              <span class="topbar-bell-badge" id="notif-badge" style="display:none;">0</span>
+            </button>
+            <div class="notif-dropdown" id="notif-dropdown" style="display:none;">
+              <div class="notif-header">
+                <h4>Notifications</h4>
+                <button type="button" class="btn small secondary" id="notif-clear-btn">Clear All</button>
+              </div>
+              <div class="notif-list" id="notif-list">
+                <div class="notif-empty">No new notifications</div>
+              </div>
+            </div>
+          </div>
           <div class="topbar-profile">
             <div class="topbar-avatar" id="admin-avatar">A</div>
             <div class="topbar-profile-info">
@@ -287,13 +298,30 @@
             <div><label class="field-label">Name</label><input class="input" name="name" required/></div>
             <div><label class="field-label">Employee ID</label><input class="input" name="employeeId"/></div>
             <div><label class="field-label">Department</label><input class="input" name="department"/></div>
-            <div><label class="field-label">Subject / class (JSON array)</label><input class="input" name="assignments" placeholder='[{"subject":"English","className":"FY-BA-A"}]'/></div>
-            <div><button class="btn" type="submit">Create</button></div>
+            <div><label class="field-label">Designation</label><input class="input" name="designation" placeholder="e.g. Assistant Professor"/></div>
+            <div><label class="field-label">Qualifications</label><input class="input" name="qualifications" placeholder="e.g. M.Sc, Ph.D"/></div>
+            <div><label class="field-label">Experience</label><input class="input" name="experience" placeholder="e.g. 5 Years"/></div>
+            <div><label class="field-label">Specialization</label><input class="input" name="specialization" placeholder="e.g. Computer Networks"/></div>
+             <div>
+              <label class="field-label">Profile Photo</label>
+              <div class="custom-file-upload-wrapper">
+                <div class="custom-file-upload-dropzone" id="add-teacher-dropzone">
+                  <div class="dropzone-prompt" id="add-teacher-prompt">
+                    <span class="upload-icon">📷</span>
+                    <span class="upload-text">Drag &amp; drop photo here or click to browse</span>
+                  </div>
+                  <input type="file" name="avatar" id="add-teacher-avatar" accept="image/*" class="hidden-file-input"/>
+                </div>
+              </div>
+            </div>
+            <div style="grid-column: 1 / -1;"><label class="field-label">Bio / Statement</label><textarea class="input" name="bio" rows="2" placeholder="Brief professional biography..."></textarea></div>
+            <div style="grid-column: 1 / -1;"><label class="field-label">Subject / class (JSON array)</label><input class="input" name="assignments" placeholder='[{"subject":"English","className":"FY-BA-A"}]'/></div>
+            <div style="grid-column: 1 / -1;"><button class="btn" type="submit">Create</button></div>
           </form>
         </div>
         <div class="card mt-4">
           <h3>Faculty</h3>
-          <div class="table-wrap"><table class="table small" id="tbl-teachers"><thead><tr><th>Name</th><th>Email</th><th>Dept</th><th></th></tr></thead><tbody></tbody></table></div>
+          <div class="table-wrap"><table class="table small" id="tbl-teachers"><thead><tr><th>Name</th><th>Email</th><th>Dept</th><th>Assignments</th><th></th></tr></thead><tbody></tbody></table></div>
         </div>
       </section>
 
@@ -307,10 +335,34 @@
       <section class="dash-panel" data-panel="notices">
         <div class="card">
           <h3>New notice</h3>
-          <form id="form-notice" class="form-grid">
+          <form id="form-notice" class="form-grid two">
             <div><label class="field-label">Title</label><input class="input" name="title" required/></div>
-            <div><label class="field-label">Body</label><textarea class="input" name="body" rows="3"></textarea></div>
-            <div><label class="field-label">PDF (optional)</label><input type="file" name="pdf" accept=".pdf"/></div>
+            <div><label class="field-label">Priority</label>
+              <select class="select input" name="priority">
+                <option value="NORMAL">Normal</option>
+                <option value="INFORMATION">Information</option>
+                <option value="IMPORTANT">Important</option>
+                <option value="URGENT">Urgent</option>
+              </select>
+            </div>
+            <div style="grid-column:1/-1"><label class="field-label">Body</label><textarea class="input" name="body" rows="3"></textarea></div>
+            <div><label class="field-label">Audience</label>
+              <select class="select input" name="audience" id="notice-audience">
+                <option value="PUBLIC">Public Website Visitors</option>
+                <option value="ALL_PORTAL">All Portal Users</option>
+                <option value="STUDENTS">Students Only</option>
+                <option value="TEACHERS">Teachers Only</option>
+                <option value="STAFF">Staff Only</option>
+                <option value="STUDENTS_TEACHERS">Students + Teachers</option>
+              </select>
+            </div>
+            <div><label class="field-label">Audience Target (optional)</label>
+              <input class="input" name="audienceTarget" placeholder="e.g. BCA, 2, FY BCA A, or student ID"/>
+              <span class="small" style="color:var(--muted);">For course/year/class/student targeting — prefixes: COURSE:, YEAR:, CLASS:, STUDENT:</span>
+            </div>
+            <div><label class="field-label">Publish Date</label><input class="input" name="publishDate" type="datetime-local"/></div>
+            <div><label class="field-label">Expiry Date</label><input class="input" name="expiryDate" type="datetime-local"/></div>
+            <div style="grid-column:1/-1"><label class="field-label">Attachment (PDF, DOCX, Image)</label><input type="file" name="pdf" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp"/></div>
             <div><button class="btn" type="submit">Publish</button></div>
           </form>
         </div>
@@ -377,7 +429,6 @@
         <div class="card">
           <h3>System settings</h3>
           <form id="form-settings" class="form-grid">
-            <div><label class="field-label">Google Maps embed URL</label><input class="input" name="mapEmbedUrl" id="set-map"/></div>
             <div><label class="field-label">Site tagline</label><input class="input" name="siteTagline" id="set-tag"/></div>
             <div><label class="field-label">Syllabus PDF URL (public downloads page)</label><input class="input" name="syllabusPdfUrl" id="set-syllabus" placeholder="https://… or /uploads/…"/></div>
             <div><label class="field-label">Prospectus PDF URL</label><input class="input" name="prospectusPdfUrl" id="set-prospectus" placeholder="https://… or /uploads/…"/></div>
@@ -866,6 +917,336 @@
           </div>
         </div>
       </section>
+
+
+  <!-- Student Edit Modal -->
+  <div class="modal-overlay" id="modal-edit-student" style="display:none;">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h3 class="modal-title">Edit Student</h3>
+        <button type="button" class="modal-close" onclick="document.getElementById('modal-edit-student').style.display='none'">&times;</button>
+      </div>
+      <form id="form-edit-student" class="form-grid">
+        <input type="hidden" id="edit-student-id"/>
+        <div>
+          <label class="field-label" for="edit-student-name">Full Name</label>
+          <input class="input" id="edit-student-name" required/>
+        </div>
+        <div>
+          <label class="field-label" for="edit-student-erp-id">Student ID (ERP ID)</label>
+          <input class="input" id="edit-student-erp-id" readonly style="background: rgba(255,255,255,0.05); cursor: not-allowed;"/>
+        </div>
+        <div>
+          <label class="field-label" for="edit-student-email">College Email (Login ID)</label>
+          <input class="input" id="edit-student-email" required/>
+        </div>
+        <div>
+          <label class="field-label" for="edit-student-personal-email">Personal Email</label>
+          <input class="input" id="edit-student-personal-email"/>
+        </div>
+        <div>
+          <label class="field-label" for="edit-student-phone">Phone / Mobile</label>
+          <input class="input" id="edit-student-phone"/>
+        </div>
+        <div>
+          <label class="field-label" for="edit-student-class">Class Name</label>
+          <input class="input" id="edit-student-class"/>
+        </div>
+        <div>
+          <label class="field-label" for="edit-student-roll">Roll Number</label>
+          <input class="input" id="edit-student-roll"/>
+        </div>
+        <div>
+          <label class="field-label" for="edit-student-course">Course Name</label>
+          <input class="input" id="edit-student-course"/>
+        </div>
+        <div>
+          <label class="field-label" for="edit-student-year">Year</label>
+          <input class="input" id="edit-student-year"/>
+        </div>
+        <div>
+          <label class="field-label" for="edit-student-division">Division</label>
+          <input class="input" id="edit-student-division"/>
+        </div>
+        <div style="display:flex;gap:0.5rem;align-items:flex-end;">
+          <div style="flex:1;">
+            <label class="field-label" for="edit-student-password">Reset Password (leave empty to keep current)</label>
+            <input class="input" id="edit-student-password" type="text" placeholder="New password..."/>
+          </div>
+          <button type="button" class="btn secondary" id="btn-student-gen-pass" style="margin: 0; min-height: 42px; width: auto; color: var(--text);">Generate</button>
+        </div>
+        <div style="grid-column: span 2; display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+          <button type="button" class="btn secondary small" id="btn-student-copy-creds" style="color: var(--text);">Copy Credentials</button>
+          <button type="button" class="btn secondary small" id="btn-student-print-creds" style="color: var(--text);">Print Credentials</button>
+          <button type="button" class="btn secondary small" id="btn-student-resend-creds" style="color: var(--text);">Resend Credentials</button>
+        </div>
+        <div style="margin-top: 1rem; display: flex; gap: 0.75rem;">
+          <button class="btn" type="submit" style="color:#000;">Save Changes</button>
+          <button class="btn secondary" type="button" onclick="document.getElementById('modal-edit-student').style.display='none'">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Admission Decision Modal -->
+  <div class="modal-overlay" id="modal-admission-decision" style="display:none;">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h3 class="modal-title">Approve Admission & Create Account</h3>
+        <button type="button" class="modal-close" onclick="document.getElementById('modal-admission-decision').style.display='none'">&times;</button>
+      </div>
+      <form id="form-admission-decision" class="form-grid">
+        <input type="hidden" id="decision-app-id"/>
+        <div>
+          <label class="field-label">Applicant Name</label>
+          <input class="input" id="decision-student-name" readonly/>
+        </div>
+        <div>
+          <label class="field-label">Course Applied</label>
+          <input class="input" id="decision-student-course" readonly/>
+        </div>
+        <div>
+          <label class="field-label">Generated Student ID</label>
+          <input class="input" id="decision-student-id" readonly/>
+        </div>
+        <div>
+          <label class="field-label">Generated College Email</label>
+          <input class="input" id="decision-college-email" readonly/>
+        </div>
+        <div>
+          <label class="field-label">Temporary Password</label>
+          <input class="input" id="decision-temp-password" readonly/>
+        </div>
+        <div>
+          <label class="field-label" for="decision-class-name">Class Name</label>
+          <input class="input" id="decision-class-name" placeholder="e.g. FY-BCA-A" required/>
+        </div>
+        <div style="margin-top: 1rem; display: flex; gap: 0.75rem; grid-column: span 2;">
+          <button class="btn" type="submit" style="color:#000;">Approve & Create Account</button>
+          <button class="btn secondary" type="button" onclick="document.getElementById('modal-admission-decision').style.display='none'">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Admission Reject Modal -->
+  <div class="modal-overlay" id="modal-admission-reject" style="display:none;">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h3 class="modal-title">Reject Admission Application</h3>
+        <button type="button" class="modal-close" onclick="document.getElementById('modal-admission-reject').style.display='none'">&times;</button>
+      </div>
+      <form id="form-admission-reject" class="form-grid">
+        <input type="hidden" id="reject-app-id"/>
+        <div style="grid-column: span 2;">
+          <label class="field-label">Applicant Name</label>
+          <input class="input" id="reject-student-name" readonly/>
+        </div>
+        <div style="grid-column: span 2;">
+          <label class="field-label" for="reject-notes">Reason for Rejection</label>
+          <textarea class="input" id="reject-notes" rows="3" placeholder="Specify reason..." required></textarea>
+        </div>
+        <div style="margin-top: 1rem; display: flex; gap: 0.75rem; grid-column: span 2;">
+          <button class="btn danger" type="submit" style="color:#fff;">Reject Application</button>
+          <button class="btn secondary" type="button" onclick="document.getElementById('modal-admission-reject').style.display='none'">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Faculty Edit Modal -->
+  <div class="modal-overlay" id="modal-edit-teacher" style="display:none;">
+    <div class="modal-container" style="max-width: 600px;">
+      <div class="modal-header">
+        <h3 class="modal-title">Edit Faculty Member</h3>
+        <button type="button" class="modal-close" onclick="document.getElementById('modal-edit-teacher').style.display='none'">&times;</button>
+      </div>
+      <form id="form-edit-teacher" class="form-grid">
+        <input type="hidden" id="edit-teacher-id"/>
+        <div>
+          <label class="field-label" for="edit-teacher-name">Full Name</label>
+          <input class="input" id="edit-teacher-name" required/>
+        </div>
+        <div>
+          <label class="field-label" for="edit-teacher-email">Login Email</label>
+          <input class="input" id="edit-teacher-email" required/>
+        </div>
+        <div>
+          <label class="field-label" for="edit-teacher-phone">Phone</label>
+          <input class="input" id="edit-teacher-phone"/>
+        </div>
+        <div>
+          <label class="field-label" for="edit-teacher-dept">Department</label>
+          <input class="input" id="edit-teacher-dept"/>
+        </div>
+        <div>
+          <label class="field-label" for="edit-teacher-designation">Designation</label>
+          <input class="input" id="edit-teacher-designation"/>
+        </div>
+        <div>
+          <label class="field-label" for="edit-teacher-qual">Qualifications</label>
+          <input class="input" id="edit-teacher-qual"/>
+        </div>
+        <div>
+          <label class="field-label" for="edit-teacher-exp">Experience (Years)</label>
+          <input class="input" id="edit-teacher-exp" type="number"/>
+        </div>
+        <div>
+          <label class="field-label" for="edit-teacher-spec">Specialization</label>
+          <input class="input" id="edit-teacher-spec"/>
+        </div>
+        <div>
+          <label class="field-label" for="edit-teacher-bio">Bio</label>
+          <textarea class="input" id="edit-teacher-bio" rows="2"></textarea>
+        </div>
+        <div style="grid-column: span 2; display: flex; align-items: center; gap: 1rem; margin-bottom: 0.5rem;">
+          <div id="edit-teacher-avatar-preview-wrap">
+            <div class="faculty-avatar-placeholder" id="edit-teacher-avatar-placeholder" style="width:60px;height:60px;border-radius:50%;border:1px solid rgba(56,189,248,0.2);background:rgba(0,0,0,0.25);display:grid;place-items:center;"></div>
+            <img id="edit-teacher-avatar-img" src="" alt="Profile picture" style="width:60px;height:60px;border-radius:50%;object-fit:cover;display:none;margin:0;border:1px solid rgba(56,189,248,0.2);"/>
+          </div>
+          <div style="flex: 1;">
+             <label class="field-label">Profile Photo</label>
+            <div class="custom-file-upload-wrapper">
+              <div class="custom-file-upload-dropzone" id="edit-teacher-dropzone" style="margin-bottom: 0.5rem;">
+                <div class="dropzone-prompt" id="edit-teacher-prompt">
+                  <span class="upload-icon">📷</span>
+                  <span class="upload-text">Drag &amp; drop photo here or click to browse</span>
+                </div>
+                <input type="file" id="edit-teacher-avatar" accept="image/*" class="hidden-file-input"/>
+              </div>
+            </div>
+            <button type="button" class="btn small danger" id="btn-edit-teacher-remove-photo" style="display: none; margin: 0 0 0.5rem 0; padding: 0.25rem 0.5rem; font-size: 0.72rem;">Remove Current Photo</button>
+            <input type="hidden" id="edit-teacher-remove-avatar-flag" value="false"/>
+          </div>
+        </div>
+        <div style="display:flex;gap:0.5rem;align-items:flex-end;">
+          <div style="flex:1;">
+            <label class="field-label" for="edit-teacher-password">Reset Password</label>
+            <input class="input" id="edit-teacher-password" type="text" placeholder="New password..."/>
+          </div>
+          <button type="button" class="btn secondary" id="btn-teacher-gen-pass" style="margin: 0; min-height: 42px; width: auto; color: var(--text);">Generate</button>
+        </div>
+        <div style="grid-column: span 2; display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+          <button type="button" class="btn secondary small" id="btn-teacher-copy-creds" style="color: var(--text);">Copy Credentials</button>
+          <button type="button" class="btn secondary small" id="btn-teacher-print-creds" style="color: var(--text);">Print Credentials</button>
+        </div>
+        <div style="grid-column: span 2; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 1rem; margin-top: 0.5rem;">
+          <h4 style="margin: 0 0 0.5rem 0;">Subject & Class Assignments</h4>
+          <div id="edit-teacher-assignments-list" style="display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 0.75rem;"></div>
+          <button type="button" class="btn small secondary" id="edit-teacher-add-assignment-btn">+ Add Assignment</button>
+        </div>
+        <div style="grid-column: span 2; margin-top: 1rem; display: flex; gap: 0.75rem;">
+          <button class="btn" type="submit" style="color:#000;">Save Changes</button>
+          <button class="btn secondary" type="button" onclick="document.getElementById('modal-edit-teacher').style.display='none'">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Notice Edit Modal -->
+  <div class="modal-overlay" id="modal-edit-notice" style="display:none;">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h3 class="modal-title">Edit Notice</h3>
+        <button type="button" class="modal-close" onclick="document.getElementById('modal-edit-notice').style.display='none'">&times;</button>
+      </div>
+      <form id="form-edit-notice" class="form-grid">
+        <input type="hidden" id="edit-notice-id"/>
+        <div>
+          <label class="field-label" for="edit-notice-title">Notice Title</label>
+          <input class="input" id="edit-notice-title" required/>
+        </div>
+        <div>
+          <label class="field-label" for="edit-notice-priority">Priority</label>
+          <select class="select input" id="edit-notice-priority">
+            <option value="NORMAL">Normal</option>
+            <option value="INFORMATION">Information</option>
+            <option value="IMPORTANT">Important</option>
+            <option value="URGENT">Urgent</option>
+          </select>
+        </div>
+        <div style="grid-column:1/-1">
+          <label class="field-label" for="edit-notice-body">Notice Body</label>
+          <textarea class="input" id="edit-notice-body" rows="4"></textarea>
+        </div>
+        <div>
+          <label class="field-label" for="edit-notice-audience">Audience</label>
+          <select class="select input" id="edit-notice-audience">
+            <option value="PUBLIC">Public Website Visitors</option>
+            <option value="ALL_PORTAL">All Portal Users</option>
+            <option value="STUDENTS">Students Only</option>
+            <option value="TEACHERS">Teachers Only</option>
+            <option value="STAFF">Staff Only</option>
+            <option value="STUDENTS_TEACHERS">Students + Teachers</option>
+          </select>
+        </div>
+        <div>
+          <label class="field-label" for="edit-notice-expiry">Expiry Date</label>
+          <input class="input" id="edit-notice-expiry" type="datetime-local"/>
+        </div>
+        <div style="grid-column:1/-1">
+          <label class="field-label" for="edit-notice-pdf">Update attachment (optional)</label>
+          <input type="file" id="edit-notice-pdf" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp"/>
+        </div>
+        <div style="margin-top: 1rem; display: flex; gap: 0.75rem;">
+          <button class="btn" type="submit">Save Changes</button>
+          <button class="btn secondary" type="button" onclick="document.getElementById('modal-edit-notice').style.display='none'">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Credentials Display Modal -->
+  <div class="modal-overlay" id="modal-credentials-display" style="display:none;">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h3 class="modal-title">Generated Credentials</h3>
+        <button type="button" class="modal-close" onclick="document.getElementById('modal-credentials-display').style.display='none'">&times;</button>
+      </div>
+      <div class="form-grid">
+        <div>
+          <label class="field-label">Student ID / ERP ID</label>
+          <input class="input" id="creds-student-id" readonly/>
+        </div>
+        <div>
+          <label class="field-label">Official College Email</label>
+          <input class="input" id="creds-college-email" readonly/>
+        </div>
+        <div>
+          <label class="field-label">Temporary Password</label>
+          <input class="input" id="creds-temp-password" readonly/>
+        </div>
+        <div>
+          <label class="field-label">Academic Roll Number</label>
+          <input class="input" id="creds-roll-number" readonly/>
+        </div>
+        <input type="hidden" id="creds-user-id"/>
+        <div style="grid-column: span 2; display: flex; gap: 0.5rem; margin-top: 1rem;">
+          <button type="button" class="btn small" id="btn-creds-copy" style="color: #000; flex: 1;">Copy Credentials</button>
+          <button type="button" class="btn small secondary" id="btn-creds-print" style="color: var(--text); flex: 1;">Print Credentials</button>
+          <button type="button" class="btn small secondary" id="btn-creds-resend" style="color: var(--text); flex: 1;">Resend Credentials</button>
+        </div>
+        <div style="grid-column: span 2; margin-top: 1rem; display: flex; justify-content: flex-end;">
+          <button class="btn secondary" type="button" onclick="document.getElementById('modal-credentials-display').style.display='none'">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Custom Modal Alert -->
+  <div class="modal-overlay" id="modal-alert" style="display:none; z-index: 9999;">
+    <div class="modal-container" style="max-width: 400px; text-align: center;">
+      <div class="modal-header" style="justify-content: center;">
+        <h3 class="modal-title" id="modal-alert-title">Notification</h3>
+      </div>
+      <div style="padding: 1rem 0;">
+        <p id="modal-alert-message" class="small"></p>
+      </div>
+      <div style="display: flex; justify-content: center; margin-top: 1rem;">
+        <button class="btn" type="button" onclick="document.getElementById('modal-alert').style.display='none'" style="color:#000; min-width: 100px;">OK</button>
+      </div>
+    </div>
+  </div>
 
       </div><!-- /dash-content -->
     </main>

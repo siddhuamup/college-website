@@ -11,47 +11,7 @@ export function authRouter({ jwtSecret, jwtExpiresIn }) {
   }
 
   r.post('/register-student', async (req, res) => {
-    const { email, password, name, phone } = req.body || {};
-    const normalizedEmail = String(email || '').toLowerCase().trim();
-    const safeName = String(name || '').trim();
-    const safePhone = String(phone || '').trim();
-
-    if (!normalizedEmail || !password || !safeName) {
-      return res.status(400).json({ error: 'name, email and password required' });
-    }
-    if (!isValidEmail(normalizedEmail)) {
-      return res.status(400).json({ error: 'Invalid email format' });
-    }
-    if (String(password).length < 6) {
-      return res.status(400).json({ error: 'Password must be at least 6 characters' });
-    }
-
-    const exists = await prisma.user.findUnique({ where: { email: normalizedEmail } });
-    if (exists) return res.status(409).json({ error: 'Email already registered' });
-
-    const user = await prisma.user.create({
-      data: {
-        email: normalizedEmail,
-        passwordHash: await hashPassword(String(password)),
-        role: Role.student,
-        name: safeName,
-        phone: safePhone,
-        studentProfile: {},
-      },
-    });
-
-    const token = signToken({ _id: user.id, role: user.role, email: user.email }, jwtSecret, jwtExpiresIn);
-    res.status(201).json({
-      token,
-      user: withMongoId({
-        id: user.id,
-        email: user.email,
-        role: user.role,
-        name: user.name,
-        phone: user.phone,
-        studentProfile: user.studentProfile,
-      }),
-    });
+    return res.status(403).json({ error: 'Self-registration is disabled. Students must be admitted by the administrator.' });
   });
 
   /** Unlock admin UI with server-side key from .env; issues JWT for existing admin user (same as password login). */
@@ -91,9 +51,22 @@ export function authRouter({ jwtSecret, jwtExpiresIn }) {
     if (!email || !password) {
       return res.status(400).json({ error: 'Email and password required' });
     }
-    const user = await prisma.user.findUnique({
-      where: { email: String(email).toLowerCase().trim() },
+    const searchId = String(email).toLowerCase().trim();
+    let user = await prisma.user.findUnique({
+      where: { email: searchId },
     });
+    if (!user) {
+      const allStudents = await prisma.user.findMany({
+        where: { role: Role.student }
+      });
+      user = allStudents.find(s => {
+        const sp = s.studentProfile && typeof s.studentProfile === 'object' ? s.studentProfile : {};
+        const sId = String(sp.studentId || '').toLowerCase().trim();
+        const pEmail = String(sp.personalEmail || '').toLowerCase().trim();
+        const cEmail = String(sp.collegeEmail || '').toLowerCase().trim();
+        return sId === searchId || pEmail === searchId || cEmail === searchId;
+      });
+    }
     if (!user || !user.isActive) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }

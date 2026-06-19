@@ -5,6 +5,15 @@
     el.className = 'small mt-3' + (err ? ' alert error' : t ? ' alert success' : '');
   };
 
+  function showModalAlert(message, title = 'Notification') {
+    const titleEl = document.getElementById('modal-alert-title');
+    const msgEl = document.getElementById('modal-alert-message');
+    const modal = document.getElementById('modal-alert');
+    if (titleEl) titleEl.textContent = title;
+    if (msgEl) msgEl.textContent = message;
+    if (modal) modal.style.display = 'flex';
+  }
+
   function showGate() {
     const gate = document.getElementById('admin-gate');
     const shell = document.getElementById('admin-shell');
@@ -49,24 +58,187 @@
 
   async function buildSearchIndex() {
     try {
-      const [students, teachers, admissions, notices, courses, departments] = await Promise.all([
+      const [students, teachers, courses, departments] = await Promise.all([
         SSC_API.get('/admin/students').catch(() => []),
         SSC_API.get('/admin/teachers').catch(() => []),
-        SSC_API.get('/admin/admissions').catch(() => []),
-        SSC_API.get('/admin/notices').catch(() => []),
         SSC_API.get('/admin/courses').catch(() => []),
         SSC_API.get('/admin/departments').catch(() => []),
       ]);
-      searchIndex = { students, teachers, admissions, notices, courses, departments };
+      searchIndex = { students, teachers, admissions: [], notices: [], courses, departments };
       searchLoaded = true;
-      // Update notification badge with pending admissions
-      const pending = admissions.filter(a => String(a.status || '').toLowerCase() === 'pending').length;
-      const badge = document.getElementById('notif-badge');
-      if (badge) {
-        if (pending > 0) { badge.textContent = pending; badge.style.display = ''; }
-        else { badge.style.display = 'none'; }
-      }
+      loadNotifications();
     } catch { /* silent */ }
+  }
+
+  let activeNotifications = [];
+  let dbReadNotifications = [];
+
+  async function loadNotifications() {
+    try {
+      const [admissions, leaves, attAnalytics, placements, dbReads] = await Promise.all([
+        SSC_API.get('/admin/admissions').catch(() => []),
+        SSC_API.get('/admin/leave').catch(() => []),
+        SSC_API.get('/admin/attendance/analytics').catch(() => null),
+        SSC_API.get('/admin/placement/applications').catch(() => []),
+        SSC_API.get('/admin/notifications/read').catch(() => []),
+      ]);
+
+      dbReadNotifications = Array.isArray(dbReads) ? dbReads : [];
+      const list = [];
+
+      // 1. Pending Admissions
+      admissions.forEach(a => {
+        if (String(a.status || '').toLowerCase() === 'pending') {
+          list.push({
+            id: 'adm-' + (a._id || a.id),
+            category: 'Pending Admissions',
+            text: `New admission application from ${a.fullName} for ${a.courseApplied}`,
+            panel: 'admissions',
+            date: a.createdAt ? new Date(a.createdAt) : new Date()
+          });
+        }
+      });
+
+      // 2. Teacher Leave Requests
+      leaves.forEach(l => {
+        if (String(l.status || '').toLowerCase() === 'pending') {
+          list.push({
+            id: 'leave-' + (l._id || l.id),
+            category: 'Teacher Leave Requests',
+            text: `Leave request from ${l.teacher?.name || 'Teacher'} (${l.leaveType})`,
+            panel: 'leaves',
+            date: l.createdAt ? new Date(l.createdAt) : new Date()
+          });
+        }
+      });
+
+      // 3. Low Attendance Alerts
+      if (attAnalytics && attAnalytics.lowAttendanceList) {
+        attAnalytics.lowAttendanceList.forEach(s => {
+          list.push({
+            id: 'att-' + s.rollNumber,
+            category: 'Low Attendance Alerts',
+            text: `Low attendance alert for ${s.name} (${s.className}): ${s.percentage}%`,
+            panel: 'attendance-analytics',
+            date: new Date()
+          });
+        });
+      }
+
+      // 4. Placement Updates
+      placements.forEach(p => {
+        if (String(p.applicationStatus || '').toLowerCase() === 'applied') {
+          list.push({
+            id: 'place-' + (p._id || p.id),
+            category: 'Placement Updates',
+            text: `New placement application: ${p.studentName} applied for ${p.companyName} (${p.driveTitle})`,
+            panel: 'placement',
+            date: p.appliedAt ? new Date(p.appliedAt) : new Date()
+          });
+        }
+      });
+
+      // 5. System Alerts
+      list.push({
+        id: 'sys-status',
+        category: 'System Alerts',
+        text: 'SSC College Junnar ERP system is online and database is healthy.',
+        panel: 'overview',
+        date: new Date()
+      });
+
+      activeNotifications = list;
+      renderNotifications();
+    } catch (err) {
+      console.error('Error loading notifications:', err);
+    }
+  }
+
+  function renderNotifications() {
+    const readIds = dbReadNotifications;
+    const unread = activeNotifications.filter(n => !readIds.includes(n.id));
+
+    // Update badge
+    const badge = document.getElementById('notif-badge');
+    if (badge) {
+      if (unread.length > 0) {
+        badge.textContent = unread.length;
+        badge.style.display = 'block';
+      } else {
+        badge.style.display = 'none';
+      }
+    }
+
+    const notifList = document.getElementById('notif-list');
+    if (!notifList) return;
+
+    if (activeNotifications.length === 0) {
+      notifList.innerHTML = '<div class="notif-empty" style="padding: 1rem; text-align: center; color: var(--muted); font-size: 0.82rem;">No new notifications</div>';
+      return;
+    }
+
+    notifList.innerHTML = '';
+    activeNotifications.forEach(n => {
+      const isRead = readIds.includes(n.id);
+      const div = document.createElement('div');
+      div.className = `notif-item ${isRead ? 'read' : 'unread'}`;
+      div.style.padding = '0.6rem 1rem';
+      div.style.borderBottom = '1px solid var(--card-border)';
+      div.style.cursor = 'pointer';
+      div.style.background = isRead ? 'transparent' : 'var(--primary-muted)';
+      div.style.display = 'flex';
+      div.style.flexDirection = 'column';
+      div.style.gap = '0.15rem';
+
+      const timeStr = n.date ? new Date(n.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+
+      div.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.72rem; font-weight: 600; color: var(--primary);">
+          <span>${esc(n.category)}</span>
+          ${isRead ? '' : '<span style="width: 6px; height: 6px; border-radius: 50%; background: var(--primary);"></span>'}
+        </div>
+        <div style="font-size: 0.8rem; color: var(--text); line-height: 1.25;">${esc(n.text)}</div>
+        <div style="font-size: 0.68rem; color: var(--muted); text-align: right; margin-top: 0.1rem;">${timeStr}</div>
+      `;
+
+      div.addEventListener('click', () => {
+        markNotifRead(n.id);
+        navigateToPanel(n.panel);
+        document.getElementById('notif-dropdown').style.display = 'none';
+      });
+
+      notifList.appendChild(div);
+    });
+  }
+
+  async function markNotifRead(id) {
+    if (!dbReadNotifications.includes(id)) {
+      dbReadNotifications.push(id);
+      renderNotifications();
+      try {
+        await SSC_API.post('/admin/notifications/read', { id });
+      } catch (err) {
+        console.error('Failed to sync notification read status:', err);
+      }
+    }
+  }
+
+  async function markAllNotifsRead() {
+    const idsToMark = [];
+    activeNotifications.forEach(n => {
+      if (!dbReadNotifications.includes(n.id)) {
+        dbReadNotifications.push(n.id);
+        idsToMark.push(n.id);
+      }
+    });
+    renderNotifications();
+    if (idsToMark.length > 0) {
+      try {
+        await SSC_API.post('/admin/notifications/read', { ids: idsToMark });
+      } catch (err) {
+        console.error('Failed to sync bulk notification read status:', err);
+      }
+    }
   }
 
   function navigateToPanel(panelId) {
@@ -175,6 +347,8 @@
       if (nameEl) nameEl.textContent = user.name || 'Admin';
       const avatarEl = document.getElementById('admin-avatar');
       if (avatarEl) avatarEl.textContent = (user.name || 'A').charAt(0).toUpperCase();
+
+      loadNotifications();
     } catch {
       SSC_API.setToken(null);
       showGate();
@@ -185,6 +359,29 @@
       SSC_API.setToken(null);
       showGate();
     });
+
+    const notifBtn = document.getElementById('topbar-notif-btn');
+    const notifDropdown = document.getElementById('notif-dropdown');
+    if (notifBtn && notifDropdown) {
+      notifBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        notifDropdown.style.display = notifDropdown.style.display === 'none' ? 'block' : 'none';
+      });
+
+      document.addEventListener('click', (e) => {
+        if (!e.target.closest('.topbar-notif-wrap')) {
+          notifDropdown.style.display = 'none';
+        }
+      });
+    }
+
+    const clearBtn = document.getElementById('notif-clear-btn');
+    if (clearBtn) {
+      clearBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        markAllNotifsRead();
+      });
+    }
 
     // Sidebar navigation — support multiple .dash-nav groups
     document.querySelectorAll('.dash-nav button[data-panel]').forEach((btn) => {
@@ -485,6 +682,9 @@
     } catch { el.innerHTML = '<p class="small">Attendance data not available</p>'; }
   }
 
+  const randPass = () => 'SSC' + Math.random().toString(36).slice(2, 8).toUpperCase() + '!';
+
+  // ── Student Modals & Bindings ─────────────────────────────
   async function loadStudents() {
     const rows = await SSC_API.get('/admin/students');
     const tb = document.querySelector('#tbl-students tbody');
@@ -498,41 +698,46 @@
         </td>`;
       tb.appendChild(tr);
     });
+
     tb.querySelectorAll('[data-edit-student]').forEach((b) =>
-      b.addEventListener('click', async () => {
+      b.addEventListener('click', () => {
         const id = b.getAttribute('data-edit-student');
         const cur = rows.find((x) => x._id === id);
         if (!cur) return;
-        const name = prompt('Student name', cur.name || '');
-        if (name === null) return;
-        const phone = prompt('Phone', cur.phone || '') || '';
-        const className = prompt('Class name', cur.studentProfile?.className || '') || '';
-        const rollNumber = prompt('Roll number', cur.studentProfile?.rollNumber || '') || '';
-        const courseName = prompt('Course name', cur.studentProfile?.courseName || '') || '';
-        const year = prompt('Year', cur.studentProfile?.year || '') || '';
-        await SSC_API.patch('/admin/students/' + id, {
-          name: name.trim(),
-          phone: phone.trim(),
-          studentProfile: {
-            className: className.trim(),
-            rollNumber: rollNumber.trim(),
-            courseName: courseName.trim(),
-            year: year.trim(),
-          },
-        });
-        msg('Student updated');
-        loadStudents();
+        
+        document.getElementById('edit-student-id').value = cur._id || cur.id;
+        document.getElementById('edit-student-name').value = cur.name || '';
+        document.getElementById('edit-student-erp-id').value = cur.studentProfile?.studentId || '';
+        document.getElementById('edit-student-email').value = cur.email || '';
+        document.getElementById('edit-student-personal-email').value = cur.studentProfile?.personalEmail || '';
+        document.getElementById('edit-student-phone').value = cur.phone || '';
+        document.getElementById('edit-student-class').value = cur.studentProfile?.className || '';
+        document.getElementById('edit-student-roll').value = cur.studentProfile?.rollNumber || '';
+        document.getElementById('edit-student-course').value = cur.studentProfile?.courseName || '';
+        document.getElementById('edit-student-year').value = cur.studentProfile?.year || '';
+        document.getElementById('edit-student-division').value = cur.studentProfile?.division || '';
+        document.getElementById('edit-student-password').value = '';
+        
+        document.getElementById('modal-edit-student').style.display = 'flex';
       })
     );
+
     tb.querySelectorAll('[data-del-student]').forEach((b) =>
       b.addEventListener('click', async () => {
-        if (!confirm('Delete this student user?')) return;
-        await SSC_API.delete('/admin/students/' + b.getAttribute('data-del-student'));
-        loadStudents();
+        if (!confirm('Are you sure you want to delete this student?')) return;
+        try {
+          await SSC_API.delete('/admin/students/' + b.getAttribute('data-del-student'));
+          msg('Student deleted successfully');
+          await loadStudents();
+          await buildSearchIndex();
+        } catch (err) {
+          showModalAlert(err.message || 'Delete failed', 'Error');
+        }
       })
     );
   }
 
+  // Student form bindings
   document.getElementById('form-student').addEventListener('submit', async (e) => {
     e.preventDefault();
     const f = e.target;
@@ -546,11 +751,256 @@
       courseName: f.courseName.value.trim(),
       year: f.year.value.trim(),
     };
-    await SSC_API.post('/admin/students', body);
-    f.reset();
-    msg('Student created');
-    loadStudents();
+    try {
+      await SSC_API.post('/admin/students', body);
+      f.reset();
+      msg('Student created');
+      await loadStudents();
+      await buildSearchIndex();
+    } catch (err) {
+      showModalAlert(err.message || 'Creation failed', 'Error');
+    }
   });
+
+  // Admissions Decision Form Submit
+  const decisionForm = document.getElementById('form-admission-decision');
+  if (decisionForm) {
+    decisionForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const id = document.getElementById('decision-app-id').value;
+      const rollNumber = document.getElementById('decision-student-id').value;
+      const className = document.getElementById('decision-class-name').value.trim();
+      const tempPassword = document.getElementById('decision-temp-password').value;
+
+      try {
+        const data = await SSC_API.post('/admin/admissions/' + id + '/decision', {
+          status: 'approved',
+          createAccount: true,
+          rollNumber,
+          className,
+          defaultPassword: tempPassword,
+        });
+
+        document.getElementById('modal-admission-decision').style.display = 'none';
+        decisionForm.reset();
+
+        if (data.studentAccount) {
+          // Open credentials display modal immediately!
+          document.getElementById('creds-student-id').value = data.studentAccount.studentId;
+          document.getElementById('creds-college-email').value = data.studentAccount.email;
+          document.getElementById('creds-temp-password').value = data.studentAccount.temporaryPassword;
+          document.getElementById('creds-roll-number').value = data.studentAccount.rollNumber || '';
+          document.getElementById('creds-user-id').value = data.studentAccount.userId;
+          document.getElementById('modal-credentials-display').style.display = 'flex';
+          msg('Admission Approved. Credentials generated.');
+        } else {
+          msg('Admission Approved');
+        }
+        await loadAdmissions();
+        await buildSearchIndex();
+      } catch (err) {
+        showModalAlert(err.message || 'Approval decision failed', 'Error');
+      }
+    });
+  }
+
+  // Bind Credentials Modal Actions
+  const btnCredsCopy = document.getElementById('btn-creds-copy');
+  if (btnCredsCopy) {
+    btnCredsCopy.addEventListener('click', () => {
+      const sid = document.getElementById('creds-student-id').value;
+      const email = document.getElementById('creds-college-email').value;
+      const pass = document.getElementById('creds-temp-password').value;
+      const roll = document.getElementById('creds-roll-number').value;
+      const text = `Student ID: ${sid}\nCollege Email: ${email}\nPassword: ${pass}\nRoll Number: ${roll}`;
+      navigator.clipboard.writeText(text).then(() => showModalAlert('Credentials copied to clipboard!', 'Success'));
+    });
+  }
+
+  const btnCredsPrint = document.getElementById('btn-creds-print');
+  if (btnCredsPrint) {
+    btnCredsPrint.addEventListener('click', () => {
+      const sid = document.getElementById('creds-student-id').value;
+      const email = document.getElementById('creds-college-email').value;
+      const pass = document.getElementById('creds-temp-password').value;
+      const roll = document.getElementById('creds-roll-number').value;
+      const win = window.open('', '_blank');
+      win.document.write(`
+        <html>
+        <head><title>New Student Credentials</title></head>
+        <body style="font-family:sans-serif;padding:2rem;" onload="window.print();window.close();">
+          <h2>SSC College Junnar — Student Admission Account Created</h2>
+          <hr/>
+          <p><strong>Generated Student ID:</strong> ${sid}</p>
+          <p><strong>Official Email (Login ID):</strong> ${email}</p>
+          <p><strong>Temporary Password:</strong> ${pass}</p>
+          <p><strong>Academic Roll Number:</strong> ${roll}</p>
+          <p style="font-size:0.9rem;color:#555;margin-top:2rem;">Keep these credentials secure. Please change your password upon first login.</p>
+        </body>
+        </html>
+      `);
+      win.document.close();
+    });
+  }
+
+  const btnCredsResend = document.getElementById('btn-creds-resend');
+  if (btnCredsResend) {
+    btnCredsResend.addEventListener('click', async () => {
+      const userId = document.getElementById('creds-user-id').value;
+      if (!userId) return;
+      try {
+        await SSC_API.post(`/admin/students/${userId}/resend-credentials`);
+        showModalAlert('Credentials email sent successfully!', 'Credentials Sent');
+      } catch (err) {
+        showModalAlert(err.message || 'Failed to resend credentials', 'Error');
+      }
+    });
+  }
+
+  // Admissions Reject Form Submit
+  const rejectForm = document.getElementById('form-admission-reject');
+  if (rejectForm) {
+    rejectForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const id = document.getElementById('reject-app-id').value;
+      const notes = document.getElementById('reject-notes').value.trim();
+
+      try {
+        await SSC_API.post('/admin/admissions/' + id + '/decision', {
+          status: 'rejected',
+          notes,
+        });
+
+        document.getElementById('modal-admission-reject').style.display = 'none';
+        rejectForm.reset();
+        msg('Admission Rejected successfully');
+        await loadAdmissions();
+        await buildSearchIndex();
+      } catch (err) {
+        showModalAlert(err.message || 'Rejection decision failed', 'Error');
+      }
+    });
+  }
+
+  // Edit Student Form Submit
+  const editStudentForm = document.getElementById('form-edit-student');
+  if (editStudentForm) {
+    editStudentForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const id = document.getElementById('edit-student-id').value;
+      const email = document.getElementById('edit-student-email').value.trim();
+      const name = document.getElementById('edit-student-name').value.trim();
+      const phone = document.getElementById('edit-student-phone').value.trim();
+      const personalEmail = document.getElementById('edit-student-personal-email').value.trim();
+      const className = document.getElementById('edit-student-class').value.trim();
+      const rollNumber = document.getElementById('edit-student-roll').value.trim();
+      const courseName = document.getElementById('edit-student-course').value.trim();
+      const year = document.getElementById('edit-student-year').value.trim();
+      const division = document.getElementById('edit-student-division').value.trim();
+      const password = document.getElementById('edit-student-password').value;
+
+      const payload = {
+        name,
+        email,
+        phone,
+        studentProfile: {
+          personalEmail,
+          className,
+          rollNumber,
+          courseName,
+          year,
+          division
+        }
+      };
+      if (password) payload.password = password;
+
+      try {
+        await SSC_API.patch('/admin/students/' + id, payload);
+        msg('Student updated successfully');
+        document.getElementById('modal-edit-student').style.display = 'none';
+        editStudentForm.reset();
+        await loadStudents();
+        await buildSearchIndex();
+      } catch (err) {
+        showModalAlert(err.message || 'Update failed', 'Error');
+      }
+    });
+
+    document.getElementById('btn-student-gen-pass').addEventListener('click', () => {
+      document.getElementById('edit-student-password').value = randPass();
+    });
+
+    document.getElementById('btn-student-copy-creds').addEventListener('click', () => {
+      const email = document.getElementById('edit-student-email').value;
+      const name = document.getElementById('edit-student-name').value;
+      const erpId = document.getElementById('edit-student-erp-id').value;
+      const roll = document.getElementById('edit-student-roll').value;
+      const pass = document.getElementById('edit-student-password').value || '(Keep existing)';
+      const text = `Name: ${name}\nStudent ID: ${erpId}\nEmail: ${email}\nPassword: ${pass}\nRoll Number: ${roll}`;
+      navigator.clipboard.writeText(text).then(() => showModalAlert('Credentials copied to clipboard!', 'Success'));
+    });
+
+    document.getElementById('btn-student-print-creds').addEventListener('click', () => {
+      const email = document.getElementById('edit-student-email').value;
+      const name = document.getElementById('edit-student-name').value;
+      const erpId = document.getElementById('edit-student-erp-id').value;
+      const roll = document.getElementById('edit-student-roll').value;
+      const pass = document.getElementById('edit-student-password').value || '(Keep existing)';
+      const win = window.open('', '_blank');
+      win.document.write(`
+        <html>
+        <head><title>Student Credentials</title></head>
+        <body style="font-family:sans-serif;padding:2rem;" onload="window.print();window.close();">
+          <h2>SSC College Junnar — Student Credentials</h2>
+          <hr/>
+          <p><strong>Name:</strong> ${name}</p>
+          <p><strong>Student ID (ERP ID):</strong> ${erpId}</p>
+          <p><strong>Official Email (Login ID):</strong> ${email}</p>
+          <p><strong>Temporary Password:</strong> ${pass}</p>
+          <p><strong>Academic Roll Number:</strong> ${roll}</p>
+          <p style="font-size:0.9rem;color:#555;margin-top:2rem;">Note: Keep these credentials secure. Please change your password upon first login.</p>
+        </body>
+        </html>
+      `);
+      win.document.close();
+    });
+
+    const resendBtn = document.getElementById('btn-student-resend-creds');
+    if (resendBtn) {
+      resendBtn.addEventListener('click', async () => {
+        const id = document.getElementById('edit-student-id').value;
+        if (!id) return;
+        try {
+          await SSC_API.post(`/admin/students/${id}/resend-credentials`);
+          showModalAlert('Credentials email sent successfully!', 'Credentials Sent');
+        } catch (err) {
+          showModalAlert(err.message || 'Failed to resend credentials', 'Error');
+        }
+      });
+    }
+  }
+
+  // ── Faculty Modals & Bindings ─────────────────────────────
+  function addAssignmentRow(subject = '', className = '') {
+    const list = document.getElementById('edit-teacher-assignments-list');
+    const row = document.createElement('div');
+    row.className = 'assignment-edit-row';
+    row.style.display = 'flex';
+    row.style.gap = '0.5rem';
+    row.style.alignItems = 'center';
+    row.innerHTML = `
+      <input class="input small assignment-subject" placeholder="Subject" value="${esc(subject)}" style="flex: 1;" required/>
+      <input class="input small assignment-class" placeholder="Class" value="${esc(className)}" style="flex: 1;" required/>
+      <button type="button" class="btn small danger remove-asgn-btn" style="padding: 0.4rem 0.6rem; margin: 0;">&times;</button>
+    `;
+    row.querySelector('.remove-asgn-btn').addEventListener('click', () => row.remove());
+    list.appendChild(row);
+  }
+
+  const addAsgnBtn = document.getElementById('edit-teacher-add-assignment-btn');
+  if (addAsgnBtn) {
+    addAsgnBtn.addEventListener('click', () => addAssignmentRow('', ''));
+  }
 
   async function loadTeachers() {
     const rows = await SSC_API.get('/admin/teachers');
@@ -558,45 +1008,80 @@
     tb.innerHTML = '';
     rows.forEach((u) => {
       const tr = document.createElement('tr');
+      const assignments = u.teacherProfile?.assignments || [];
+      const badges = Array.isArray(assignments)
+        ? assignments.map(a => `<span class="assignment-badge">${esc(a.subject)} • ${esc(a.className)}</span>`).join(' ')
+        : '';
       tr.innerHTML = `<td>${esc(u.name)}</td><td>${esc(u.email)}</td><td>${esc(u.teacherProfile?.department || '')}</td>
+        <td><div style="display:flex;flex-wrap:wrap;gap:0.25rem;">${badges}</div></td>
         <td>
           <button class="btn small" data-edit-teacher="${u._id}">Edit</button>
           <button class="btn small danger" data-del-teacher="${u._id}">Delete</button>
         </td>`;
       tb.appendChild(tr);
     });
+
     tb.querySelectorAll('[data-edit-teacher]').forEach((b) =>
-      b.addEventListener('click', async () => {
+      b.addEventListener('click', () => {
         const id = b.getAttribute('data-edit-teacher');
         const cur = rows.find((x) => x._id === id);
         if (!cur) return;
-        const name = prompt('Teacher name', cur.name || '');
-        if (name === null) return;
-        const phone = prompt('Phone', cur.phone || '') || '';
-        const department = prompt('Department', cur.teacherProfile?.department || '') || '';
-        const designation = prompt('Designation', cur.teacherProfile?.designation || '') || '';
-        await SSC_API.patch('/admin/teachers/' + id, {
-          name: name.trim(),
-          phone: phone.trim(),
-          teacherProfile: {
-            department: department.trim(),
-            designation: designation.trim(),
-          },
-        });
-        msg('Teacher updated');
-        loadTeachers();
+        
+        document.getElementById('edit-teacher-id').value = cur._id || cur.id;
+        document.getElementById('edit-teacher-name').value = cur.name || '';
+        document.getElementById('edit-teacher-email').value = cur.email || '';
+        document.getElementById('edit-teacher-phone').value = cur.phone || '';
+        document.getElementById('edit-teacher-dept').value = cur.teacherProfile?.department || '';
+        document.getElementById('edit-teacher-designation').value = cur.teacherProfile?.designation || '';
+        document.getElementById('edit-teacher-qual').value = cur.teacherProfile?.qualifications || '';
+        document.getElementById('edit-teacher-exp').value = cur.teacherProfile?.experience || '';
+        document.getElementById('edit-teacher-spec').value = cur.teacherProfile?.specialization || '';
+        document.getElementById('edit-teacher-bio').value = cur.bio || '';
+        document.getElementById('edit-teacher-password').value = '';
+        document.getElementById('edit-teacher-avatar').value = '';
+        document.getElementById('edit-teacher-remove-avatar-flag').value = 'false';
+
+        const prevImg = document.getElementById('edit-teacher-avatar-img');
+        const prevPlaceholder = document.getElementById('edit-teacher-avatar-placeholder');
+        const removePhotoBtn = document.getElementById('btn-edit-teacher-remove-photo');
+        if (cur.avatarUrl) {
+          prevImg.src = cur.avatarUrl;
+          prevImg.style.display = 'block';
+          prevPlaceholder.style.display = 'none';
+          removePhotoBtn.style.display = 'inline-block';
+        } else {
+          prevImg.src = '';
+          prevImg.style.display = 'none';
+          prevPlaceholder.style.display = 'grid';
+          removePhotoBtn.style.display = 'none';
+        }
+        
+        // Populate assignments list
+        const asgnList = document.getElementById('edit-teacher-assignments-list');
+        asgnList.innerHTML = '';
+        const list = cur.teacherProfile?.assignments || [];
+        list.forEach(a => addAssignmentRow(a.subject, a.className));
+        
+        document.getElementById('modal-edit-teacher').style.display = 'flex';
       })
     );
+
     tb.querySelectorAll('[data-del-teacher]').forEach((b) =>
       b.addEventListener('click', async () => {
-        if (!confirm('Delete this teacher user?')) return;
-        await SSC_API.delete('/admin/teachers/' + b.getAttribute('data-del-teacher'));
-        msg('Teacher removed');
-        loadTeachers();
+        if (!confirm('Are you sure you want to delete this teacher?')) return;
+        try {
+          await SSC_API.delete('/admin/teachers/' + b.getAttribute('data-del-teacher'));
+          msg('Teacher removed');
+          await loadTeachers();
+          await buildSearchIndex();
+        } catch (err) {
+          showModalAlert(err.message || 'Delete failed', 'Error');
+        }
       })
     );
   }
 
+  // Teacher Creation Submit
   document.getElementById('form-teacher').addEventListener('submit', async (e) => {
     e.preventDefault();
     const f = e.target;
@@ -607,19 +1092,160 @@
       msg('Assignments must be valid JSON array', true);
       return;
     }
-    await SSC_API.post('/admin/teachers', {
-      email: f.email.value.trim(),
-      password: f.password.value,
-      name: f.name.value.trim(),
-      employeeId: f.employeeId.value.trim(),
-      department: f.department.value.trim(),
-      assignments,
-    });
-    f.reset();
-    msg('Teacher created');
-    loadTeachers();
+    
+    const fd = new FormData();
+    fd.append('email', f.email.value.trim());
+    fd.append('password', f.password.value);
+    fd.append('name', f.name.value.trim());
+    fd.append('employeeId', f.employeeId.value.trim());
+    fd.append('department', f.department.value.trim());
+    fd.append('designation', f.designation.value.trim());
+    fd.append('qualifications', f.qualifications.value.trim());
+    fd.append('experience', f.experience.value.trim());
+    fd.append('specialization', f.specialization.value.trim());
+    fd.append('bio', f.bio.value.trim());
+    fd.append('assignments', JSON.stringify(assignments));
+    
+    if (f.avatar.files && f.avatar.files[0]) {
+      fd.append('avatar', f.avatar.files[0]);
+    }
+
+    try {
+      await SSC_API.upload('/admin/teachers', fd, 'POST');
+      f.reset();
+      msg('Teacher created successfully');
+      await loadTeachers();
+      await buildSearchIndex();
+    } catch (err) {
+      showModalAlert(err.message || 'Creation failed', 'Error');
+    }
   });
 
+  // Edit Teacher Form Submit
+  const editTeacherForm = document.getElementById('form-edit-teacher');
+  if (editTeacherForm) {
+    editTeacherForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const id = document.getElementById('edit-teacher-id').value;
+      const email = document.getElementById('edit-teacher-email').value.trim();
+      const name = document.getElementById('edit-teacher-name').value.trim();
+      const phone = document.getElementById('edit-teacher-phone').value.trim();
+      const department = document.getElementById('edit-teacher-dept').value.trim();
+      const designation = document.getElementById('edit-teacher-designation').value.trim();
+      const qualifications = document.getElementById('edit-teacher-qual').value.trim();
+      const experience = document.getElementById('edit-teacher-exp').value.trim();
+      const specialization = document.getElementById('edit-teacher-spec').value.trim();
+      const bio = document.getElementById('edit-teacher-bio').value.trim();
+      const password = document.getElementById('edit-teacher-password').value;
+
+      const assignments = [];
+      document.querySelectorAll('.assignment-edit-row').forEach(row => {
+        const sub = row.querySelector('.assignment-subject').value.trim();
+        const cls = row.querySelector('.assignment-class').value.trim();
+        if (sub && cls) {
+          assignments.push({ subject: sub, className: cls });
+        }
+      });
+
+      const fd = new FormData();
+      fd.append('email', email);
+      fd.append('name', name);
+      fd.append('phone', phone);
+      fd.append('bio', bio);
+      if (password) fd.append('password', password);
+
+      const teacherProfile = {
+        department,
+        designation,
+        qualifications,
+        experience,
+        specialization,
+        assignments
+      };
+      fd.append('teacherProfile', JSON.stringify(teacherProfile));
+
+      const removeAvatar = document.getElementById('edit-teacher-remove-avatar-flag').value === 'true';
+      fd.append('removeAvatar', removeAvatar);
+
+      const avatarFile = document.getElementById('edit-teacher-avatar').files[0];
+      if (avatarFile) fd.append('avatar', avatarFile);
+
+      try {
+        await SSC_API.upload('/admin/teachers/' + id, fd, 'PATCH');
+        msg('Faculty updated successfully');
+        document.getElementById('modal-edit-teacher').style.display = 'none';
+        editTeacherForm.reset();
+        await loadTeachers();
+        await buildSearchIndex();
+      } catch (err) {
+        showModalAlert(err.message || 'Update failed', 'Error');
+      }
+    });
+
+    const removePhotoBtn = document.getElementById('btn-edit-teacher-remove-photo');
+    if (removePhotoBtn) {
+      removePhotoBtn.addEventListener('click', () => {
+        document.getElementById('edit-teacher-remove-avatar-flag').value = 'true';
+        document.getElementById('edit-teacher-avatar-img').style.display = 'none';
+        document.getElementById('edit-teacher-avatar-placeholder').style.display = 'grid';
+        removePhotoBtn.style.display = 'none';
+        document.getElementById('edit-teacher-avatar').value = '';
+      });
+    }
+
+    const avatarInput = document.getElementById('edit-teacher-avatar');
+    if (avatarInput) {
+      avatarInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          document.getElementById('edit-teacher-remove-avatar-flag').value = 'false';
+          const reader = new FileReader();
+          reader.onload = (evt) => {
+            const prevImg = document.getElementById('edit-teacher-avatar-img');
+            prevImg.src = evt.target.result;
+            prevImg.style.display = 'block';
+            document.getElementById('edit-teacher-avatar-placeholder').style.display = 'none';
+            document.getElementById('btn-edit-teacher-remove-photo').style.display = 'inline-block';
+          };
+          reader.readAsDataURL(file);
+        }
+      });
+    }
+
+    document.getElementById('btn-teacher-gen-pass').addEventListener('click', () => {
+      document.getElementById('edit-teacher-password').value = randPass();
+    });
+
+    document.getElementById('btn-teacher-copy-creds').addEventListener('click', () => {
+      const email = document.getElementById('edit-teacher-email').value;
+      const name = document.getElementById('edit-teacher-name').value;
+      const pass = document.getElementById('edit-teacher-password').value || '(Keep existing)';
+      navigator.clipboard.writeText(text).then(() => showModalAlert('Credentials copied to clipboard!', 'Success'));
+    });
+
+    document.getElementById('btn-teacher-print-creds').addEventListener('click', () => {
+      const email = document.getElementById('edit-teacher-email').value;
+      const name = document.getElementById('edit-teacher-name').value;
+      const pass = document.getElementById('edit-teacher-password').value || '(Keep existing)';
+      const win = window.open('', '_blank');
+      win.document.write(`
+        <html>
+        <head><title>Faculty Credentials</title></head>
+        <body style="font-family:sans-serif;padding:2rem;" onload="window.print();window.close();">
+          <h2>SSC College Junnar — Faculty Credentials</h2>
+          <hr/>
+          <p><strong>Name:</strong> ${name}</p>
+          <p><strong>Login Email:</strong> ${email}</p>
+          <p><strong>Temporary Password:</strong> ${pass}</p>
+          <p style="font-size:0.9rem;color:#555;margin-top:2rem;">Note: Keep these credentials secure. Please change your password upon first login.</p>
+        </body>
+        </html>
+      `);
+      win.document.close();
+    });
+  }
+
+  // ── Admissions Management ──────────────────────────────
   async function loadAdmissions() {
     const rows = await SSC_API.get('/admin/admissions');
     const tb = document.querySelector('#tbl-admissions tbody');
@@ -635,45 +1261,86 @@
         </td>`;
       tb.appendChild(tr);
     });
+
     tb.querySelectorAll('[data-verify]').forEach((b) =>
       b.addEventListener('click', async () => {
         const id = b.getAttribute('data-verify');
         const cur = rows.find((x) => x._id === id);
-        await SSC_API.patch('/admin/admissions/' + id + '/verify', {
-          documentsVerified: !cur.documentsVerified,
-        });
-        loadAdmissions();
+        try {
+          await SSC_API.patch('/admin/admissions/' + id + '/verify', {
+            documentsVerified: !cur.documentsVerified,
+          });
+          await loadAdmissions();
+        } catch (err) {
+          alert(err.message || 'Verification failed');
+        }
       })
     );
+
     tb.querySelectorAll('[data-approve]').forEach((b) =>
       b.addEventListener('click', async () => {
         const id = b.getAttribute('data-approve');
-        const roll = prompt('Roll number for new student account?', 'BA24001');
-        const cls = prompt('Class name (must match teacher assignments)?', 'FY-BA-A');
-        const data = await SSC_API.post('/admin/admissions/' + id + '/decision', {
-          status: 'approved',
-          createAccount: true,
-          rollNumber: roll,
-          className: cls,
+        const cur = rows.find(x => x._id === id);
+        if (!cur) return;
+        
+        // Generate details dynamically
+        const yearSuffix = new Date().getFullYear().toString().slice(-2);
+        const courseAbbr = (cur.courseApplied || 'GEN').toUpperCase().replace(/[^A-Z0-9]/g, '') || 'GEN';
+        const prefix = `SSC${yearSuffix}${courseAbbr}`;
+        
+        let matchCount = 0;
+        searchIndex.students.forEach(student => {
+          const sp = student.studentProfile || {};
+          if (sp.studentId && String(sp.studentId).startsWith(prefix)) {
+            matchCount++;
+          }
         });
-        msg(
-          data.studentAccount
-            ? 'Approved. Temporary password: ' + data.studentAccount.temporaryPassword
-            : 'Approved'
-        );
-        loadAdmissions();
+        
+        const seqNum = String(matchCount + 1).padStart(3, '0');
+        const generatedStudentId = `${prefix}${seqNum}`;
+        const collegeEmail = `${generatedStudentId.toLowerCase()}@ssccjunnar.edu`;
+        
+        const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$';
+        let pwd = '';
+        const lowercase = 'abcdefghijklmnopqrstuvwxyz';
+        const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        const numbers = '0123456789';
+        const specials = '!@#$';
+        pwd += lowercase[Math.floor(Math.random() * lowercase.length)];
+        pwd += uppercase[Math.floor(Math.random() * uppercase.length)];
+        pwd += numbers[Math.floor(Math.random() * numbers.length)];
+        pwd += specials[Math.floor(Math.random() * specials.length)];
+        for (let i = 0; i < 6; i++) {
+          pwd += chars[Math.floor(Math.random() * chars.length)];
+        }
+        const tempPassword = pwd.split('').sort(() => 0.5 - Math.random()).join('');
+
+        document.getElementById('decision-app-id').value = cur._id || cur.id;
+        document.getElementById('decision-student-name').value = cur.fullName || '';
+        document.getElementById('decision-student-course').value = cur.courseApplied || '';
+        document.getElementById('decision-student-id').value = generatedStudentId;
+        document.getElementById('decision-college-email').value = collegeEmail;
+        document.getElementById('decision-temp-password').value = tempPassword;
+        document.getElementById('decision-class-name').value = `FY-${courseAbbr}-A`;
+
+        document.getElementById('modal-admission-decision').style.display = 'flex';
       })
     );
+
     tb.querySelectorAll('[data-reject]').forEach((b) =>
-      b.addEventListener('click', async () => {
+      b.addEventListener('click', () => {
         const id = b.getAttribute('data-reject');
-        const notes = prompt('Reason / notes?', '') || '';
-        await SSC_API.post('/admin/admissions/' + id + '/decision', { status: 'rejected', notes });
-        loadAdmissions();
+        const cur = rows.find(x => x._id === id);
+        if (!cur) return;
+        document.getElementById('reject-app-id').value = cur._id || cur.id;
+        document.getElementById('reject-student-name').value = cur.fullName || '';
+        document.getElementById('reject-notes').value = '';
+        document.getElementById('modal-admission-reject').style.display = 'flex';
       })
     );
   }
 
+  // ── Notices Management ─────────────────────────────────
   async function loadNotices() {
     const items = await SSC_API.get('/admin/notices');
     const box = document.getElementById('notice-list');
@@ -682,28 +1349,45 @@
       const div = document.createElement('div');
       div.className = 'card mt-2';
       div.innerHTML = `<strong>${esc(n.title)}</strong>
+        <span class="small" style="margin-left:0.5rem;color:var(--muted);">[${esc((n.priority || 'NORMAL').toLowerCase())} · ${esc((n.audience || 'ALL_PORTAL').replace(/_/g, ' '))}]</span>
         <p class="small">${esc(n.body || '')}</p>
         <button class="btn small" data-edit-notice="${n._id}">Edit</button>
         <button class="btn small danger mt-2" data-del-notice="${n._id}">Delete</button>`;
       box.appendChild(div);
     });
+
     box.querySelectorAll('[data-edit-notice]').forEach((b) =>
-      b.addEventListener('click', async () => {
+      b.addEventListener('click', () => {
         const id = b.getAttribute('data-edit-notice');
         const cur = items.find((x) => x._id === id);
         if (!cur) return;
-        const title = prompt('Notice title', cur.title || '');
-        if (title === null) return;
-        const body = prompt('Notice body', cur.body || '') || '';
-        await SSC_API.patch('/admin/notices/' + id, { title: title.trim(), body });
-        msg('Notice updated');
-        loadNotices();
+        
+        document.getElementById('edit-notice-id').value = cur._id || cur.id;
+        document.getElementById('edit-notice-title').value = cur.title || '';
+        document.getElementById('edit-notice-body').value = cur.body || '';
+        document.getElementById('edit-notice-priority').value = cur.priority || 'NORMAL';
+        document.getElementById('edit-notice-audience').value = cur.audience || 'ALL_PORTAL';
+        const expiryEl = document.getElementById('edit-notice-expiry');
+        if (expiryEl) {
+          expiryEl.value = cur.expiryDate ? new Date(cur.expiryDate).toISOString().slice(0, 16) : '';
+        }
+        document.getElementById('edit-notice-pdf').value = '';
+        
+        document.getElementById('modal-edit-notice').style.display = 'flex';
       })
     );
+
     box.querySelectorAll('[data-del-notice]').forEach((b) =>
       b.addEventListener('click', async () => {
-        await SSC_API.delete('/admin/notices/' + b.getAttribute('data-del-notice'));
-        loadNotices();
+        if (!confirm('Are you sure you want to delete this notice?')) return;
+        try {
+          await SSC_API.delete('/admin/notices/' + b.getAttribute('data-del-notice'));
+          msg('Notice deleted');
+          await loadNotices();
+          await buildSearchIndex();
+        } catch (err) {
+          showModalAlert(err.message || 'Delete failed', 'Error');
+        }
       })
     );
   }
@@ -714,13 +1398,65 @@
     const fd = new FormData();
     fd.append('title', f.title.value);
     fd.append('body', f.body.value);
+    fd.append('priority', f.priority?.value || 'NORMAL');
+    let audience = f.audience?.value || 'ALL_PORTAL';
+    const target = (f.audienceTarget?.value || '').trim();
+    if (target) {
+      if (/^(COURSE|YEAR|CLASS|STUDENT):/i.test(target)) audience = target.toUpperCase();
+      else if (/^\d+$/.test(target)) audience = `YEAR:${target}`;
+      else if (target.includes(' ')) audience = `CLASS:${target}`;
+      else audience = `COURSE:${target}`;
+    }
+    fd.append('audience', audience);
+    if (f.publishDate?.value) fd.append('publishDate', new Date(f.publishDate.value).toISOString());
+    if (f.expiryDate?.value) fd.append('expiryDate', new Date(f.expiryDate.value).toISOString());
     const pdf = f.querySelector('[name="pdf"]').files[0];
     if (pdf) fd.append('pdf', pdf);
-    await SSC_API.upload('/admin/notices', fd);
-    f.reset();
-    msg('Notice published');
-    loadNotices();
+    try {
+      await SSC_API.upload('/admin/notices', fd);
+      f.reset();
+      msg('Notice published');
+      await loadNotices();
+      await buildSearchIndex();
+    } catch (err) {
+      showModalAlert(err.message || 'Publish failed', 'Error');
+    }
   });
+
+  // Edit Notice Form Submit
+  const editNoticeForm = document.getElementById('form-edit-notice');
+  if (editNoticeForm) {
+    editNoticeForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const id = document.getElementById('edit-notice-id').value;
+      const title = document.getElementById('edit-notice-title').value.trim();
+      const body = document.getElementById('edit-notice-body').value.trim();
+      const priority = document.getElementById('edit-notice-priority')?.value || 'NORMAL';
+      const audience = document.getElementById('edit-notice-audience')?.value || 'ALL_PORTAL';
+      const expiryRaw = document.getElementById('edit-notice-expiry')?.value;
+      const pdf = document.getElementById('edit-notice-pdf').files[0];
+
+      const fd = new FormData();
+      fd.append('title', title);
+      fd.append('body', body);
+      fd.append('priority', priority);
+      fd.append('audience', audience);
+      if (expiryRaw) fd.append('expiryDate', new Date(expiryRaw).toISOString());
+      else fd.append('expiryDate', '');
+      if (pdf) fd.append('pdf', pdf);
+
+      try {
+        await SSC_API.upload('/admin/notices/' + id, fd, 'PATCH');
+        msg('Notice updated successfully');
+        document.getElementById('modal-edit-notice').style.display = 'none';
+        editNoticeForm.reset();
+        await loadNotices();
+        await buildSearchIndex();
+      } catch (err) {
+        showModalAlert(err.message || 'Update failed', 'Error');
+      }
+    });
+  }
 
   async function loadDepartments() {
     const rows = await SSC_API.get('/admin/departments');
@@ -834,7 +1570,6 @@
 
   async function loadSettings() {
     const s = await SSC_API.get('/admin/settings');
-    document.getElementById('set-map').value = s.mapEmbedUrl || '';
     document.getElementById('set-tag').value = s.siteTagline || '';
     const syllabus = document.getElementById('set-syllabus');
     const prospectus = document.getElementById('set-prospectus');
@@ -846,7 +1581,6 @@
     e.preventDefault();
     const f = e.target;
     await SSC_API.put('/admin/settings', {
-      mapEmbedUrl: f.mapEmbedUrl.value.trim(),
       siteTagline: f.siteTagline.value.trim(),
       syllabusPdfUrl: f.syllabusPdfUrl.value.trim(),
       prospectusPdfUrl: f.prospectusPdfUrl.value.trim(),
@@ -1196,7 +1930,7 @@
         <td><span style="color:${sColor};font-weight:600;text-transform:capitalize">${esc(statusLabel)}</span></td>
         <td>${dt}</td>
         <td>
-          <select class="select input" style="padding:0.3rem 0.5rem;font-size:0.8rem;" data-app-id="${a._id}">
+          <select class="select input" style="padding:0.3rem 0.5rem;font-size:0.8rem;" data-app-id="${a._id}" data-prev-val="${a.applicationStatus}">
             <option value="applied" ${a.applicationStatus==='applied'?'selected':''}>Applied</option>
             <option value="shortlisted" ${a.applicationStatus==='shortlisted'?'selected':''}>Shortlisted</option>
             <option value="interview_scheduled" ${a.applicationStatus==='interview_scheduled'?'selected':''}>Interview</option>
@@ -1209,9 +1943,26 @@
     tb.querySelectorAll('select[data-app-id]').forEach((sel) => {
       sel.addEventListener('change', async () => {
         const id = sel.getAttribute('data-app-id');
-        await SSC_API.patch('/admin/placement/applications/' + id + '/status', { applicationStatus: sel.value });
-        msg('Application status updated');
-        loadPlAnalytics();
+        const prev = sel.getAttribute('data-prev-val');
+        try {
+          await SSC_API.patch('/admin/placement/applications/' + id + '/status', { applicationStatus: sel.value });
+          msg('Application status updated');
+          
+          // Update the tag immediately in the DOM
+          const tr = sel.closest('tr');
+          const statusSpan = tr.querySelector('td:nth-child(6) span');
+          if (statusSpan) {
+            const newColor = statusColor[sel.value] || '#94a3b8';
+            statusSpan.style.color = newColor;
+            statusSpan.textContent = sel.value.replace(/_/g, ' ');
+          }
+          
+          sel.setAttribute('data-prev-val', sel.value);
+          loadPlAnalytics();
+        } catch (err) {
+          showModalAlert(err.message || 'Status update failed', 'Error');
+          sel.value = prev; // Revert select box state
+        }
       });
     });
   }

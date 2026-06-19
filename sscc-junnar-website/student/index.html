@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>Student portal — SSC College, Junnar</title>
   <script src="/js/theme.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
   <link rel="stylesheet" href="../css/styles.css"/>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
 </head>
@@ -37,8 +38,121 @@
         <span class="small" id="who"></span>
       </div>
 
+      <!-- ══ PROFILE PANEL ══════════════════════════════════════════════ -->
       <section class="dash-panel active" data-panel="profile">
-        <div class="card" id="profile-card"></div>
+        <!-- Quick Welcome card -->
+        <div class="card student-welcome-card mb-4">
+          <div class="student-welcome-left">
+            <div class="faculty-avatar-placeholder" id="db-avatar-placeholder">🎓</div>
+            <img id="db-avatar-img" src="" alt="Avatar" class="student-welcome-avatar"/>
+            <div>
+              <h2 class="student-welcome-title" id="db-welcome-name">Welcome!</h2>
+              <p class="small student-welcome-meta" id="db-student-meta">Loading student profile...</p>
+            </div>
+          </div>
+          <div class="student-quick-actions">
+            <button class="btn small" id="qa-id-card" type="button">Digital ID Card</button>
+            <button class="btn secondary small" id="qa-view-results" type="button">View Results</button>
+            <button class="btn secondary small" id="qa-view-attendance" type="button">View Attendance</button>
+            <button class="btn secondary small" id="qa-edit-profile" type="button">Edit Profile</button>
+          </div>
+        </div>
+
+        <!-- Row 1: Stats Grid -->
+        <div class="stat-grid student-stat-row">
+          <div class="stat-card" id="card-db-attendance">
+            <span class="small">Overall Attendance</span>
+            <strong id="db-stat-attendance">--%</strong>
+            <span class="small" id="db-stat-attendance-desc" style="opacity: 0.8;">Loading...</span>
+          </div>
+          <div class="stat-card" id="card-db-gpa">
+            <span class="small">Academic Standing</span>
+            <strong id="db-stat-gpa">--</strong>
+            <span class="small" id="db-stat-gpa-desc" style="opacity: 0.8;">Loading...</span>
+          </div>
+          <div class="stat-card" id="card-db-exams">
+            <span class="small">Upcoming Exams</span>
+            <strong id="db-stat-exams">0</strong>
+            <span class="small" id="db-stat-exams-desc" style="opacity: 0.8;">Loading...</span>
+          </div>
+          <div class="stat-card" id="card-db-library">
+            <span class="small">Library Issues</span>
+            <strong id="db-stat-library">0</strong>
+            <span class="small" id="db-stat-library-desc" style="opacity: 0.8;">Loading...</span>
+          </div>
+        </div>
+
+        <!-- Row 2: Charts and Tables -->
+        <div class="grid grid-3 student-row-2" id="db-row-2">
+          <div class="card" id="card-db-marks">
+            <h3>Recent Grades</h3>
+            <div class="table-wrap">
+              <table class="table small" id="tbl-db-marks">
+                <thead>
+                  <tr>
+                    <th>Subject</th>
+                    <th>Exam</th>
+                    <th>Score</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr><td colspan="3" class="small">Loading...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          
+          <div class="card" id="card-db-att-summary">
+            <h3>Subject Attendance</h3>
+            <div class="table-wrap">
+              <table class="table small" id="tbl-db-attendance">
+                <thead>
+                  <tr>
+                    <th>Subject</th>
+                    <th>Attended</th>
+                    <th>Percentage</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr><td colspan="3" class="small">Loading...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="card" id="card-db-att-trend">
+            <h3>Attendance Trend</h3>
+            <div id="db-attendance-trend-chart" style="display: flex; flex-direction: column; gap: 0.75rem; margin-top: 0.5rem;">
+              <p class="small" style="opacity: 0.7;">Loading trend...</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Row 3: Timetable today, Recent notices, Study materials feed -->
+        <div class="grid grid-3">
+          <div class="card">
+            <h3>Today's Schedule</h3>
+            <div id="db-timetable-today" class="small" style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 250px; overflow-y: auto;">
+              <p class="small" style="opacity: 0.7;">Loading today's schedule...</p>
+            </div>
+          </div>
+          
+          <div class="card">
+            <h3>Recent Notices</h3>
+            <div id="db-notices-feed" class="small" style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 250px; overflow-y: auto;">
+              <p class="small" style="opacity: 0.7;">Loading notices...</p>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>Study Materials</h3>
+            <div id="db-materials-feed" class="small" style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 250px; overflow-y: auto;">
+              <p class="small" style="opacity: 0.7;">Loading materials...</p>
+            </div>
+          </div>
+        </div>
+        
+        <div class="card" id="profile-card" style="display:none;"></div>
       </section>
 
       <!-- ══ TIMETABLE PANEL ════════════════════════════════════════════ -->
@@ -330,6 +444,76 @@
 
     </main>
   </div>
+  
+  <!-- Digital ID Card Modal -->
+  <div class="modal-overlay" id="id-card-modal">
+    <div class="modal-content id-card-modal-wrap">
+      <div class="id-card-tabs">
+        <button type="button" class="id-tab active" id="id-tab-front">Front</button>
+        <button type="button" class="id-tab" id="id-tab-back">Back</button>
+      </div>
+      <div class="smart-id-card" id="id-card-front">
+        <div class="smart-id-header">
+          <div class="smart-id-logo">SSC</div>
+          <div>
+            <h3>Shri Shiv Chhatrapati College</h3>
+            <span class="small">Junnar — Student Identity Card</span>
+          </div>
+        </div>
+        <div class="smart-id-body">
+          <div class="smart-id-photo-wrap">
+            <img src="" alt="Student Photo" id="id-card-photo" class="smart-id-photo"/>
+            <div class="smart-id-photo-placeholder" id="id-card-photo-placeholder">🎓</div>
+          </div>
+          <div class="smart-id-info">
+            <h2 id="id-card-name">&nbsp;</h2>
+            <p class="smart-id-course" id="id-card-course">&nbsp;</p>
+            <dl class="smart-id-fields">
+              <div><dt>Student ID</dt><dd id="id-card-erp-id">&nbsp;</dd></div>
+              <div><dt>Roll No</dt><dd id="id-card-roll">&nbsp;</dd></div>
+              <div><dt>Division</dt><dd id="id-card-division">&nbsp;</dd></div>
+              <div><dt>Academic Year</dt><dd id="id-card-year">&nbsp;</dd></div>
+              <div><dt>College Email</dt><dd id="id-card-email">&nbsp;</dd></div>
+              <div><dt>Valid Until</dt><dd id="id-card-validity">&nbsp;</dd></div>
+            </dl>
+          </div>
+          <div class="smart-id-qr-wrap">
+            <canvas id="id-card-qr" width="128" height="128"></canvas>
+          </div>
+        </div>
+        <div class="smart-id-footer">
+          <div class="smart-id-signature">
+            <div class="sig-line"></div>
+            <span>Principal Signature</span>
+          </div>
+          <span class="small">If found, return to SSC College Junnar</span>
+        </div>
+      </div>
+      <div class="smart-id-card smart-id-back" id="id-card-back" style="display:none;">
+        <h3>Verification &amp; Contact</h3>
+        <dl class="smart-id-fields back-fields">
+          <div><dt>Address</dt><dd id="id-card-address">&nbsp;</dd></div>
+          <div><dt>Emergency Contact</dt><dd id="id-card-emergency">&nbsp;</dd></div>
+          <div><dt>Verification ID</dt><dd id="id-card-verify-id">&nbsp;</dd></div>
+          <div><dt>Admission Year</dt><dd id="id-card-admission-year">&nbsp;</dd></div>
+        </dl>
+        <div class="smart-id-rules">
+          <h4>College Rules</h4>
+          <ul class="small">
+            <li>Carry this ID card on campus at all times.</li>
+            <li>Do not lend your ID card to others.</li>
+            <li>Report lost cards to the admin office immediately.</li>
+            <li>QR code verifies enrollment status with the college ERP.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="id-card-actions">
+        <button class="btn small" type="button" onclick="window.print()">Print ID</button>
+        <button class="btn danger small" type="button" id="btn-close-id">Close</button>
+      </div>
+    </div>
+  </div>
+
   <script src="../js/api.js"></script>
   <script src="../js/student-app.js"></script>
 </body>

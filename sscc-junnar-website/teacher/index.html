@@ -36,7 +36,105 @@
       </div>
 
       <section class="dash-panel active" data-panel="subjects">
-        <div class="card"><h3>Assigned subjects</h3><ul id="subj-list" class="small"></ul></div>
+        <!-- Quick Welcome card -->
+        <div class="card mb-4" style="padding: 1rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; background: linear-gradient(135deg, rgba(56, 189, 248, 0.08) 0%, transparent 100%); border: 1px solid rgba(56, 189, 248, 0.15);">
+          <div style="display: flex; align-items: center; gap: 1rem;">
+            <div class="faculty-avatar-placeholder" id="db-teach-avatar-placeholder" style="width: 45px; height: 45px; border-radius: 50%; display: grid; place-items: center; font-size: 1.25rem;">👨‍🏫</div>
+            <img id="db-teach-avatar-img" src="" alt="Avatar" style="width: 45px; height: 45px; border-radius: 50%; object-fit: cover; display: none; border: 1.5px solid var(--primary);"/>
+            <div>
+              <h2 style="margin: 0; font-size: 1.1rem; color: var(--text);" id="db-teach-welcome-name">Welcome!</h2>
+              <p class="small" style="margin: 0; opacity: 0.7;" id="db-teach-meta">Faculty Member</p>
+            </div>
+          </div>
+          <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <button class="btn small" onclick="panel('marks'); load('marks');" style="color: #000; font-size: 0.8rem;">Enter Marks</button>
+            <button class="btn secondary small" onclick="panel('attendance'); load('attendance');" style="font-size: 0.8rem; color: var(--text);">Mark Attendance</button>
+            <button class="btn secondary small" onclick="panel('leave'); load('leave');" style="font-size: 0.8rem; color: var(--text);">Apply Leave</button>
+          </div>
+        </div>
+
+        <!-- Row 1: Stats Grid -->
+        <div class="stat-grid" style="margin-bottom: 1.5rem;">
+          <div class="stat-card">
+            <span class="small">Assigned Subjects</span>
+            <strong id="db-teach-stat-subjects">0</strong>
+            <span class="small" id="db-teach-stat-subjects-desc" style="opacity: 0.8;">Active this term</span>
+          </div>
+          <div class="stat-card">
+            <span class="small">Total Students</span>
+            <strong id="db-teach-stat-students">0</strong>
+            <span class="small" id="db-teach-stat-students-desc" style="opacity: 0.8;">In assigned classes</span>
+          </div>
+          <div class="stat-card">
+            <span class="small">Today's Classes</span>
+            <strong id="db-teach-stat-timetable">0</strong>
+            <span class="small" id="db-teach-stat-timetable-desc" style="opacity: 0.8;">Scheduled today</span>
+          </div>
+          <div class="stat-card">
+            <span class="small">Pending Leaves</span>
+            <strong id="db-teach-stat-leaves">0</strong>
+            <span class="small" id="db-teach-stat-leaves-desc" style="opacity: 0.8;">Awaiting decision</span>
+          </div>
+        </div>
+
+        <!-- Row 2: Assigned Subjects list and Scheduled Exams -->
+        <div class="grid grid-2" style="margin-bottom: 1.5rem;">
+          <div class="card">
+            <h3>Assigned Subjects Details</h3>
+            <div class="table-wrap">
+              <table class="table small" id="tbl-db-teach-subjects">
+                <thead>
+                  <tr>
+                    <th>Subject</th>
+                    <th>Class</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr><td colspan="2" class="small">Loading assigned subjects...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="card">
+            <h3>Scheduled Examinations</h3>
+            <div class="table-wrap">
+              <table class="table small" id="tbl-db-teach-exams">
+                <thead>
+                  <tr>
+                    <th>Exam</th>
+                    <th>Subject</th>
+                    <th>Date</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr><td colspan="3" class="small">Loading scheduled exams...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Row 3: Recent marks logs, leave history, recent notices -->
+        <div class="grid grid-3">
+          <div class="card">
+            <h3>Recent Marks Entries</h3>
+            <div id="db-teach-recent-marks" class="small" style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 250px; overflow-y: auto;">
+              <p class="small" style="opacity: 0.7;">No recent entries.</p>
+            </div>
+          </div>
+          <div class="card">
+            <h3>My Leave Requests</h3>
+            <div id="db-teach-recent-leaves" class="small" style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 250px; overflow-y: auto;">
+              <p class="small" style="opacity: 0.7;">No recent leaves.</p>
+            </div>
+          </div>
+          <div class="card">
+            <h3>College Notices</h3>
+            <div id="db-teach-recent-notices" class="small" style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 250px; overflow-y: auto;">
+              <p class="small" style="opacity: 0.7;">No recent notices.</p>
+            </div>
+          </div>
+        </div>
       </section>
 
       <section class="dash-panel" data-panel="students">

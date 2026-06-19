@@ -27,6 +27,34 @@
   <script src="js/layout.js"></script>
   <script src="js/app.js"></script>
   <script>
+    function getInitials(name) {
+      let clean = name.replace(/^(prof\.|dr\.|shri\.|mr\.|mrs\.|ms\.)\s+/i, '');
+      let parts = clean.trim().split(/\s+/);
+      if (parts.length >= 2) {
+        return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+      }
+      return parts[0] ? parts[0][0].toUpperCase() : 'F';
+    }
+
+    function getHashColor(str) {
+      let hash = 0;
+      for (let i = 0; i < str.length; i++) {
+        hash = str.charCodeAt(i) + ((hash << 5) - hash);
+      }
+      const h = Math.abs(hash) % 360;
+      return `hsl(${h}, 60%, 45%)`;
+    }
+
+    function generateSvgAvatar(name) {
+      const initials = getInitials(name);
+      const color = getHashColor(name);
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%">
+        <rect width="100" height="100" fill="${color}"/>
+        <text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" fill="#ffffff" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="bold" font-size="38">${initials}</text>
+      </svg>`;
+      return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+    }
+
     document.addEventListener('DOMContentLoaded', async () => {
       const grid = document.getElementById('faculty-grid');
       const note = document.getElementById('faculty-note');
@@ -35,7 +63,7 @@
         const list = await res.json();
         if (!res.ok) throw new Error(list.error || res.statusText);
         if (!Array.isArray(list) || !list.length) {
-          note.textContent = 'No faculty records in the database yet. Admins can add teachers from the admin portal.';
+          note.textContent = 'No faculty records in the database yet.';
           return;
         }
         list.forEach((t) => {
@@ -45,18 +73,27 @@
           const av = t.avatarUrl && String(t.avatarUrl).trim();
           const img = av
             ? `<img class="faculty-avatar" src="${escapeAttr(av)}" alt="" loading="lazy"/>`
-            : '<div class="faculty-avatar faculty-avatar-placeholder" aria-hidden="true"></div>';
+            : `<img class="faculty-avatar" src="${generateSvgAvatar(t.name)}" alt="${escapeAttr(t.name)}" loading="lazy"/>`;
+          
+          const assignments = tp.assignments || [];
+          const badges = Array.isArray(assignments)
+            ? assignments.map(a => `<span class="assignment-badge" style="font-size: 0.72rem; padding: 0.15rem 0.4rem; border-radius: 4px; background: rgba(56, 189, 248, 0.1); color: var(--primary); font-weight: 500;">${escape(a.subject)} • ${escape(a.className)}</span>`).join(' ')
+            : '';
+
           card.innerHTML = `
             ${img}
-            <h3>${escape(t.name)}</h3>
-            <p class="small">${escape(tp.designation || 'Faculty')} • ${escape(tp.department || '')}</p>
-            <p class="small">${escape(tp.qualifications || '')}</p>
-            <p class="small mt-2">${escape(t.bio || '')}</p>
+            <h3 style="margin-top: 0.5rem; margin-bottom: 0.25rem;">${escape(t.name)}</h3>
+            <p class="small" style="font-weight: 600; color: var(--primary); margin: 0 0 0.25rem 0;">${escape(tp.designation || 'Faculty')}${tp.department ? ' • ' + escape(tp.department) : ''}</p>
+            ${tp.qualifications ? `<p class="small" style="margin: 0 0 0.15rem 0;">${escape(tp.qualifications)}</p>` : ''}
+            ${tp.specialization ? `<p class="small" style="margin: 0 0 0.15rem 0; opacity: 0.9;">Specialization: ${escape(tp.specialization)}</p>` : ''}
+            ${tp.experience ? `<p class="small" style="margin: 0 0 0.15rem 0; opacity: 0.85;">Experience: ${escape(tp.experience)}</p>` : ''}
+            ${t.bio ? `<p class="small mt-2" style="font-style: italic; opacity: 0.8; line-height: 1.35; margin-bottom: 0.5rem;">${escape(t.bio)}</p>` : ''}
+            ${badges ? `<div style="display:flex; flex-wrap:wrap; gap:0.25rem; margin-top: 0.5rem; border-top: 1px dashed rgba(56, 189, 248, 0.15); padding-top: 0.5rem;">${badges}</div>` : ''}
           `;
           grid.appendChild(card);
         });
       } catch (e) {
-        note.textContent = e.message || 'Start the college server to load faculty from the database.';
+        note.textContent = 'No records available at the moment. Please contact the college office for assistance.';
       }
     });
     function escape(s) {

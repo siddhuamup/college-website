@@ -4,13 +4,23 @@ import { createAuthMiddleware, requireRole } from '../middleware/auth.js';
 import { verifyPassword, signToken } from '../utils/auth.js';
 import { Role } from '@prisma/client';
 import { uploadAvatarImage } from '../multer/configure.js';
+import { filterNotices } from '../utils/notices.js';
+import { noticeDto as buildNoticeDto } from '../utils/noticeDto.js';
+
 function noticeDto(n) {
-  const p = n.pdfFile;
-  const stored = p && typeof p === 'object' && p !== null && 'storedName' in p ? p.storedName : null;
-  return withMongoId({
-    ...n,
-    pdfUrl: stored ? `/uploads/notices/${stored}` : null,
-  });
+  return withMongoId(buildNoticeDto(n));
+}
+
+function studentNoticeContext(user) {
+  const sp = user?.studentProfile && typeof user.studentProfile === 'object' ? user.studentProfile : {};
+  return {
+    surface: 'portal',
+    role: 'student',
+    userId: user?.id,
+    course: sp.courseName || sp.course || '',
+    year: sp.year,
+    className: sp.className || '',
+  };
 }
 
 function materialDto(m) {
@@ -30,9 +40,22 @@ export function studentRouter({ jwtSecret, jwtExpiresIn }) {
     const { email, password } = req.body || {};
     if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
 
-    const user = await prisma.user.findUnique({
-      where: { email: String(email).toLowerCase().trim() },
+    const searchId = String(email).toLowerCase().trim();
+    let user = await prisma.user.findUnique({
+      where: { email: searchId },
     });
+    if (!user) {
+      const allStudents = await prisma.user.findMany({
+        where: { role: Role.student }
+      });
+      user = allStudents.find(s => {
+        const sp = s.studentProfile && typeof s.studentProfile === 'object' ? s.studentProfile : {};
+        const sId = String(sp.studentId || '').toLowerCase().trim();
+        const pEmail = String(sp.personalEmail || '').toLowerCase().trim();
+        const cEmail = String(sp.collegeEmail || '').toLowerCase().trim();
+        return sId === searchId || pEmail === searchId || cEmail === searchId;
+      });
+    }
     if (!user || !user.isActive || user.role !== Role.student) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
@@ -104,13 +127,14 @@ export function studentRouter({ jwtSecret, jwtExpiresIn }) {
     res.json(list.map(materialDto));
   });
 
-  r.get('/notices', async (_req, res) => {
+  r.get('/notices', async (req, res) => {
+    const user = await prisma.user.findUnique({ where: { id: req.user.id } });
     const items = await prisma.notice.findMany({
-      where: { isPublished: true },
       orderBy: { createdAt: 'desc' },
-      take: 50,
+      take: 100,
     });
-    res.json(items.map(noticeDto));
+    const ctx = studentNoticeContext(user);
+    res.json(filterNotices(items, ctx).map(noticeDto));
   });
 
   r.post('/feedback', async (req, res) => {

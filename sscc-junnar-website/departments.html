@@ -61,11 +61,8 @@
           </select>
         </div>
       </div>
-      <div class="table-wrap">
-        <table class="table small" id="dept-table">
-          <thead><tr><th>Name</th><th>Stream</th><th>HOD</th></tr></thead>
-          <tbody></tbody>
-        </table>
+      <div id="dept-cards-grid" class="grid grid-3 mt-3">
+        <!-- Dynamic department cards will load here -->
       </div>
       <p id="dept-note" class="small mt-2"></p>
     </div>
@@ -75,23 +72,117 @@
   <script src="js/layout.js"></script>
   <script src="js/app.js"></script>
   <script>
+    function getInitials(name) {
+      let clean = name.replace(/^(prof\.|dr\.|shri\.|mr\.|mrs\.|ms\.)\s+/i, '');
+      let parts = clean.trim().split(/\s+/);
+      if (parts.length >= 2) {
+        return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+      }
+      return parts[0] ? parts[0][0].toUpperCase() : 'F';
+    }
+
+    function getHashColor(str) {
+      let hash = 0;
+      for (let i = 0; i < str.length; i++) {
+        hash = str.charCodeAt(i) + ((hash << 5) - hash);
+      }
+      const h = Math.abs(hash) % 360;
+      return `hsl(${h}, 60%, 45%)`;
+    }
+
+    function generateSvgAvatar(name) {
+      const initials = getInitials(name);
+      const color = getHashColor(name);
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%">
+        <rect width="100" height="100" fill="${color}"/>
+        <text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" fill="#ffffff" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="bold" font-size="38">${initials}</text>
+      </svg>`;
+      return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+    }
+
     document.addEventListener('DOMContentLoaded', async () => {
-      const tbody = document.querySelector('#dept-table tbody');
+      const grid = document.getElementById('dept-cards-grid');
       const note = document.getElementById('dept-note');
       const searchInput = document.getElementById('dept-search');
       const streamFilter = document.getElementById('dept-stream-filter');
       let departments = [];
+      let facultyList = [];
 
       function render(list) {
-        tbody.innerHTML = '';
+        grid.innerHTML = '';
         if (!list.length) {
-          tbody.innerHTML = '<tr><td colspan="3" class="small">No departments found matching criteria.</td></tr>';
+          grid.innerHTML = '<div class="card" style="grid-column: 1 / -1; text-align: center;"><p class="small">No records available at the moment.</p></div>';
           return;
         }
         list.forEach((d) => {
-          const tr = document.createElement('tr');
-          tr.innerHTML = `<td>${esc(d.name)}</td><td>${esc(d.stream)}</td><td>${esc(d.hodName || '')}</td>`;
-          tbody.appendChild(tr);
+          // Find matching faculty members for this department
+          const deptFaculty = facultyList.filter(f => {
+            const fDept = f.teacherProfile?.department || '';
+            return fDept.toLowerCase().trim() === d.name.toLowerCase().trim();
+          });
+
+          const card = document.createElement('div');
+          card.className = 'card fade-in';
+          card.style.display = 'flex';
+          card.style.flexDirection = 'column';
+          card.style.justifyContent = 'space-between';
+          card.style.gap = '1rem';
+          
+          let facultyCardsHtml = '';
+          if (deptFaculty.length > 0) {
+            facultyCardsHtml = deptFaculty.map(f => {
+              const av = f.avatarUrl && String(f.avatarUrl).trim();
+              const imgHtml = av
+                ? `<img src="${escapeAttr(av)}" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 1px solid rgba(56, 189, 248, 0.2);" alt="" loading="lazy"/>`
+                : `<img src="${generateSvgAvatar(f.name)}" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 1px solid rgba(56, 189, 248, 0.2);" alt="${escapeAttr(f.name)}" loading="lazy"/>`;
+              return `
+                <div style="display: flex; align-items: center; gap: 0.75rem; background: rgba(0, 0, 0, 0.12); padding: 0.6rem; border-radius: 8px; border: 1px solid rgba(56, 189, 248, 0.08);">
+                  ${imgHtml}
+                  <div style="min-width: 0; flex: 1;">
+                    <div style="font-weight: 600; font-size: 0.85rem; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escape(f.name)}</div>
+                    <div style="font-size: 0.75rem; opacity: 0.9; color: var(--primary); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escape(f.teacherProfile?.designation || 'Faculty')}</div>
+                    <div style="font-size: 0.7rem; opacity: 0.8; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escape(f.teacherProfile?.qualifications || '')}</div>
+                    ${f.teacherProfile?.specialization ? `<div style="font-size: 0.68rem; opacity: 0.7; margin-top: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Spec: ${escape(f.teacherProfile.specialization)}</div>` : ''}
+                  </div>
+                </div>
+              `;
+            }).join('');
+          } else {
+            facultyCardsHtml = '<div class="small" style="opacity: 0.6; font-style: italic; text-align: center; padding: 0.5rem 0;">No faculty members assigned to this department.</div>';
+          }
+
+          card.innerHTML = `
+            <div>
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem; margin-bottom: 0.5rem;">
+                <h3 style="margin: 0; font-size: 1.1rem; font-weight: 600;">${escape(d.name)}</h3>
+                <span class="assignment-badge" style="background: rgba(56, 189, 248, 0.1); color: var(--primary); padding: 0.15rem 0.45rem; border-radius: 4px; font-size: 0.7rem; font-weight: 600; text-transform: uppercase;">${escape(d.stream)}</span>
+              </div>
+              <p class="small" style="margin: 0 0 0.5rem 0; opacity: 0.9;">HOD: <strong>${escape(d.hodName || 'TBA')}</strong></p>
+              <p class="small" style="margin: 0 0 0.25rem 0; opacity: 0.75; font-size: 0.8rem;">👥 ${deptFaculty.length} Faculty Member${deptFaculty.length === 1 ? '' : 's'}</p>
+              ${d.description ? `<p class="small" style="margin-top: 0.5rem; opacity: 0.8; line-height: 1.35; font-size: 0.82rem;">${escape(d.description)}</p>` : ''}
+            </div>
+            
+            <div class="dept-faculty-section" style="margin-top: auto;">
+              <div class="dept-faculty-toggle" style="cursor: pointer; display: flex; align-items: center; justify-content: space-between; margin-top: 1rem; border-top: 1px solid rgba(56, 189, 248, 0.15); padding-top: 0.6rem; color: var(--primary); font-size: 0.82rem; font-weight: 600; user-select: none;">
+                <span>View Faculty Directory</span>
+                <span class="toggle-icon" style="transition: transform 0.2s;">▼</span>
+              </div>
+              <div class="dept-faculty-list" style="display: none; flex-direction: column; gap: 0.5rem; margin-top: 0.75rem;">
+                ${facultyCardsHtml}
+              </div>
+            </div>
+          `;
+
+          const toggleBtn = card.querySelector('.dept-faculty-toggle');
+          const listDiv = card.querySelector('.dept-faculty-list');
+          const toggleIcon = card.querySelector('.toggle-icon');
+          toggleBtn.addEventListener('click', () => {
+            const isHidden = listDiv.style.display === 'none';
+            listDiv.style.display = isHidden ? 'flex' : 'none';
+            toggleIcon.style.transform = isHidden ? 'rotate(180deg)' : 'rotate(0deg)';
+          });
+
+          grid.appendChild(card);
         });
       }
 
@@ -107,24 +198,37 @@
       }
 
       try {
-        const res = await fetch('/api/public/departments');
-        if (!res.ok) throw new Error();
-        departments = await res.json();
+        const [resDeps, resFac] = await Promise.all([
+          fetch('/api/public/departments'),
+          fetch('/api/public/faculty')
+        ]);
+        if (!resDeps.ok) throw new Error();
+        departments = await resDeps.json();
+        facultyList = resFac.ok ? await resFac.json() : [];
+
         if (!departments.length) {
-          note.textContent = 'No department rows yet — seed or add via Admin.';
+          note.textContent = 'No records available at the moment.';
           return;
         }
         render(departments);
         searchInput.addEventListener('input', filterList);
         streamFilter.addEventListener('change', filterList);
       } catch {
-        note.textContent = 'Run the server to load departments from SQLite via Prisma.';
+        note.textContent = 'No records available at the moment. Please contact the college office for assistance.';
       }
     });
-    function esc(s) {
+
+    function escape(s) {
       const d = document.createElement('div');
       d.textContent = s == null ? '' : String(s);
       return d.innerHTML;
+    }
+
+    function escapeAttr(s) {
+      return String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/</g, '&lt;');
     }
   </script>
 </body>

@@ -3,6 +3,8 @@ import { prisma, withMongoId } from '../db/client.js';
 import { uploadAdmissionDocs } from '../multer/configure.js';
 import { nextApplicationNumber } from '../lib/admissionNumber.js';
 import { Role } from '@prisma/client';
+import { filterNotices } from '../utils/notices.js';
+import { noticeDto as buildNoticeDto } from '../utils/noticeDto.js';
 
 function normalizePhoneIN(phone) {
   let p = String(phone || '').replace(/[\s-]/g, '');
@@ -23,21 +25,11 @@ export function publicRouter() {
 
   r.get('/notices', async (_req, res) => {
     const items = await prisma.notice.findMany({
-      where: { isPublished: true },
       orderBy: { createdAt: 'desc' },
-      take: 50,
+      take: 100,
     });
-    res.json(
-      items.map((n) => {
-        const pdf = n.pdfFile && typeof n.pdfFile === 'object' && n.pdfFile !== null && 'storedName' in n.pdfFile
-          ? (n.pdfFile).storedName
-          : null;
-        return withMongoId({
-          ...n,
-          pdfUrl: pdf ? `/uploads/notices/${pdf}` : null,
-        });
-      })
-    );
+    const filtered = filterNotices(items, { surface: 'public' });
+    res.json(filtered.map((n) => withMongoId(buildNoticeDto(n))));
   });
 
   r.get('/gallery', async (_req, res) => {
@@ -135,7 +127,7 @@ export function publicRouter() {
     res.status(201).json({ ok: true, id: fb.id, _id: fb.id });
   });
 
-  r.post('/admissions', uploadAdmissionDocs.array('documents', 5), async (req, res) => {
+  r.post('/admissions', uploadAdmissionDocs.array('documents', 10), async (req, res) => {
     const body = req.body || {};
     const fullName = body.fullName?.trim();
     const email = body.email?.trim()?.toLowerCase();
@@ -145,6 +137,15 @@ export function publicRouter() {
     const marks12 = Number(body.marks12);
     const maxMarks12 = Number(body.maxMarks12) || 600;
     const board12 = body.board12?.trim() || '';
+
+    // Upgraded admission fields
+    const dob = body.dob?.trim() || '';
+    const gender = body.gender?.trim() || 'Male';
+    const parentContact = body.parentContact?.trim() || '';
+    const sscMarks = Number(body.sscMarks) || 0;
+    const previousCollege = body.previousCollege?.trim() || '';
+    const passingYear = Number(body.passingYear) || 2026;
+    const category = body.category?.trim() || 'General';
 
     if (!fullName || !email || !phone || !address || !courseApplied || Number.isNaN(marks12)) {
       return res.status(400).json({ error: 'Missing required fields' });
@@ -157,11 +158,19 @@ export function publicRouter() {
     }
 
     const applicationNumber = await nextApplicationNumber();
-    const documentFiles = (req.files || []).map((f) => ({
-      originalName: f.originalname,
-      storedName: f.filename,
-      mimeType: f.mimetype,
-    }));
+    const documentFiles = [];
+    if (req.files && Array.isArray(req.files)) {
+      const fieldNames = ['photo', 'signature', 'marksheet', 'leavingCertificate'];
+      req.files.forEach((f, idx) => {
+        const fieldName = fieldNames[idx] || `document_${idx}`;
+        documentFiles.push({
+          field: fieldName,
+          originalName: f.originalname,
+          storedName: f.filename,
+          mimeType: f.mimetype,
+        });
+      });
+    }
 
     const appDoc = await prisma.admissionApplication.create({
       data: {
@@ -174,6 +183,13 @@ export function publicRouter() {
         board12,
         marks12,
         maxMarks12,
+        dob,
+        gender,
+        parentContact,
+        sscMarks,
+        previousCollege,
+        passingYear,
+        category,
         documentFiles,
       },
     });

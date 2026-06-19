@@ -14,7 +14,7 @@
   <section class="container mt-4">
     <div class="card">
       <h2>Downloads</h2>
-      <p class="small">Syllabus, prospectus, and other documents. Links below use URLs set in Admin → Settings when available.</p>
+      <p class="small">Syllabus, prospectus, and other documents.</p>
       <ul class="small mt-3" id="dl-list" style="line-height:1.8;"></ul>
       <p id="dl-note" class="small mt-3"></p>
     </div>
@@ -32,7 +32,7 @@
         if (url && String(url).trim()) {
           li.innerHTML = `<strong>${label}:</strong> <a href="${encodeURI(url)}" target="_blank" rel="noopener">Open / download</a>`;
         } else {
-          li.innerHTML = `<strong>${label}:</strong> <span class="small" style="color:var(--muted)">Not linked yet — contact the office or ask admin to add the URL in settings.</span>`;
+          li.innerHTML = `<strong>${label}:</strong> <span class="small" style="color:var(--muted)">Not available yet — contact the academic office for details.</span>`;
         }
         list.appendChild(li);
       }
@@ -43,7 +43,7 @@
         row('Syllabus (PDF)', s.syllabusPdfUrl);
         row('Prospectus (PDF)', s.prospectusPdfUrl);
       } catch {
-        note.textContent = 'Could not load settings. Ensure the API server is running.';
+        note.textContent = 'No records available at the moment. Please contact the college office for assistance.';
         row('Syllabus (PDF)', '');
         row('Prospectus (PDF)', '');
       }

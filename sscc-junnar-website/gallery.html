@@ -14,7 +14,7 @@
   <section class="container mt-4">
     <div class="card">
       <h2>Gallery</h2>
-      <p class="small">Campus moments and events. Administrators can upload images from the admin panel.</p>
+      <p class="small">Campus moments and events.</p>
     </div>
   </section>
 
@@ -36,7 +36,7 @@
         if (!res.ok) throw new Error();
         const items = await res.json();
         if (!items.length) {
-          note.textContent = 'No gallery images yet — add them from Admin → Gallery.';
+          note.textContent = 'No gallery images yet.';
           return;
         }
         items.forEach((g) => {
@@ -56,7 +56,7 @@
           grid.appendChild(wrap);
         });
       } catch {
-        note.textContent = 'Run the server to load the gallery from the database.';
+        note.textContent = 'No records available at the moment. Please contact the college office for assistance.';
       }
     });
   </script>

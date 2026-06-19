@@ -1,8 +1,47 @@
 (function () {
+  function el(id) {
+    return document.getElementById(id);
+  }
+
+  function setText(id, text) {
+    const node = el(id);
+    if (node) node.textContent = text;
+  }
+
+  function asArray(v) {
+    return Array.isArray(v) ? v : [];
+  }
+
+  function esc(s) {
+    const d = document.createElement('div');
+    d.textContent = s == null ? '' : String(s);
+    return d.innerHTML;
+  }
+
   function msg(t, err) {
-    const el = document.getElementById('dash-msg');
-    el.textContent = t || '';
-    el.className = 'small mt-3' + (err ? ' alert error' : t ? ' alert success' : '');
+    const node = el('dash-msg');
+    if (!node) return;
+    node.textContent = t || '';
+    node.className = 'small mt-3' + (err ? ' alert error' : t ? ' alert success' : '');
+  }
+
+  function courseDurationYears(courseName) {
+    const c = String(courseName || '').toUpperCase();
+    if (c.includes('PG') || c.includes('MA ') || c.includes('M.') || c.includes('MSC')) return 2;
+    return 3;
+  }
+
+  function computeIdValidity(sp) {
+    const admissionYear = sp.admissionYear || sp.admission_year
+      || (sp.createdAt ? new Date(sp.createdAt).getFullYear() : new Date().getFullYear());
+    const years = courseDurationYears(sp.courseName || sp.course);
+    const validYear = Number(admissionYear) + years;
+    return `May ${validYear}`;
+  }
+
+  function buildVerificationId(studentId, rollNumber) {
+    const base = String(studentId || rollNumber || 'unknown').replace(/\s+/g, '');
+    return `SSC-VER-${base}`;
   }
 
   function panel(id) {
@@ -35,6 +74,124 @@
       SSC_API.setToken(null);
       location.href = '../login.html';
     });
+
+    const idCardBtn = el('qa-id-card');
+    if (idCardBtn) {
+      idCardBtn.addEventListener('click', async () => {
+        try {
+          const u = await SSC_API.get('/student/profile');
+          const sp = u.studentProfile && typeof u.studentProfile === 'object' ? u.studentProfile : {};
+          const studentId = sp.studentId || u.id || 'N/A';
+          const rollNumber = sp.rollNumber || 'N/A';
+          const course = sp.courseName || sp.course || 'General';
+          const className = sp.className || 'N/A';
+          const division = sp.division || className.split(' ').pop() || 'N/A';
+          const academicYear = sp.year ? `Year ${sp.year}` : 'N/A';
+          const collegeEmail = sp.collegeEmail || u.email || 'N/A';
+          const verificationId = buildVerificationId(studentId, rollNumber);
+
+          setText('id-card-name', u.name || 'Student');
+          setText('id-card-course', course);
+          setText('id-card-erp-id', studentId);
+          setText('id-card-roll', rollNumber);
+          setText('id-card-division', division);
+          setText('id-card-year', academicYear);
+          setText('id-card-email', collegeEmail);
+          setText('id-card-validity', computeIdValidity(sp));
+          setText('id-card-address', sp.address || u.bio || 'Contact college office for address update.');
+          setText('id-card-emergency', sp.parentContact || sp.emergencyContact || u.phone || 'N/A');
+          setText('id-card-verify-id', verificationId);
+          setText('id-card-admission-year', sp.admissionYear || new Date().getFullYear());
+
+          const photo = el('id-card-photo');
+          const photoPlaceholder = el('id-card-photo-placeholder');
+          if (photo && photoPlaceholder) {
+            if (u.avatarUrl) {
+              photo.src = u.avatarUrl;
+              photo.style.display = 'block';
+              photoPlaceholder.style.display = 'none';
+            } else {
+              photo.style.display = 'none';
+              photoPlaceholder.style.display = 'grid';
+            }
+          }
+
+          const qrCanvas = el('id-card-qr');
+          if (qrCanvas && window.QRious) {
+            new QRious({
+              element: qrCanvas,
+              value: JSON.stringify({
+                studentId,
+                rollNumber,
+                course,
+                className,
+                verificationId,
+              }),
+              size: 128,
+              background: '#ffffff',
+              foreground: '#0f172a',
+              level: 'M',
+            });
+          }
+
+          showIdCardTab('front');
+          const modal = el('id-card-modal');
+          if (modal) modal.style.display = 'flex';
+        } catch (err) {
+          alert('Could not load profile for ID Card: ' + (err.message || 'Unknown error'));
+        }
+      });
+    }
+
+    function showIdCardTab(tab) {
+      const front = el('id-card-front');
+      const back = el('id-card-back');
+      const tabFront = el('id-tab-front');
+      const tabBack = el('id-tab-back');
+      const isFront = tab === 'front';
+      if (front) front.style.display = isFront ? 'block' : 'none';
+      if (back) back.style.display = isFront ? 'none' : 'block';
+      if (tabFront) tabFront.classList.toggle('active', isFront);
+      if (tabBack) tabBack.classList.toggle('active', !isFront);
+    }
+
+    const btnCloseId = el('btn-close-id');
+    if (btnCloseId) {
+      btnCloseId.addEventListener('click', () => {
+        const modal = el('id-card-modal');
+        if (modal) modal.style.display = 'none';
+        showIdCardTab('front');
+      });
+    }
+
+    const tabFront = el('id-tab-front');
+    const tabBack = el('id-tab-back');
+    if (tabFront) tabFront.addEventListener('click', () => showIdCardTab('front'));
+    if (tabBack) tabBack.addEventListener('click', () => showIdCardTab('back'));
+
+    const qaResultsBtn = document.getElementById('qa-view-results');
+    if (qaResultsBtn) {
+      qaResultsBtn.addEventListener('click', () => {
+        panel('exams');
+        load('exams');
+      });
+    }
+
+    const qaAttendanceBtn = document.getElementById('qa-view-attendance');
+    if (qaAttendanceBtn) {
+      qaAttendanceBtn.addEventListener('click', () => {
+        panel('attendance');
+        load('attendance');
+      });
+    }
+
+    const qaEditProfileBtn = document.getElementById('qa-edit-profile');
+    if (qaEditProfileBtn) {
+      qaEditProfileBtn.addEventListener('click', () => {
+        panel('edit-profile');
+        load('edit-profile');
+      });
+    }
 
     document.querySelectorAll('.dash-nav button').forEach((btn) => {
       btn.addEventListener('click', () => {
@@ -101,12 +258,287 @@
   async function loadProfile() {
     const u = await SSC_API.get('/student/profile');
     const sp = u.studentProfile || {};
-    document.getElementById('profile-card').innerHTML = `
-      <h3>${esc(u.name)}</h3>
-      <p class="small">Email: ${esc(u.email)} • Phone: ${esc(u.phone || '')}</p>
-      <p class="small">Roll: ${esc(sp.rollNumber || '')} • Class: ${esc(sp.className || '')}</p>
-      <p class="small">Course: ${esc(sp.courseName || '')} • Year: ${esc(sp.year || '')}</p>
-    `;
+
+    // 1. Populate top welcome
+    document.getElementById('db-welcome-name').textContent = `Welcome, ${u.name}!`;
+    document.getElementById('db-student-meta').textContent = `${sp.courseName || 'General'} • Year ${sp.year || '1'} (Roll: ${sp.rollNumber || 'N/A'})`;
+    
+    const dbAvatar = document.getElementById('db-avatar-img');
+    const dbPlaceholder = document.getElementById('db-avatar-placeholder');
+    if (u.avatarUrl) {
+      dbAvatar.src = u.avatarUrl;
+      dbAvatar.style.display = 'block';
+      dbPlaceholder.style.display = 'none';
+    } else {
+      dbAvatar.style.display = 'none';
+      dbPlaceholder.style.display = 'grid';
+    }
+
+    // 2. Fetch Attendance
+    let totalClasses = 0;
+    let presentClasses = 0;
+    let overallAttendancePct = 100;
+    const attList = [];
+    try {
+      const attendance = await SSC_API.get('/student/attendance');
+      if (Array.isArray(attendance)) {
+        attendance.forEach(a => attList.push(a));
+        totalClasses = attendance.length;
+        presentClasses = attendance.filter(a => a.status === 'present').length;
+        overallAttendancePct = totalClasses ? Math.round((presentClasses / totalClasses) * 100) : 100;
+      }
+    } catch { /* silent fallback */ }
+
+    document.getElementById('db-stat-attendance').textContent = `${overallAttendancePct}%`;
+    document.getElementById('db-stat-attendance-desc').textContent = totalClasses 
+      ? `Attended ${presentClasses} of ${totalClasses} classes` 
+      : 'No classes logged yet';
+
+    // Populate Row 2 Subject Attendance Summary
+    const subBreakdown = {};
+    attList.forEach(a => {
+      const sub = a.subject || 'General';
+      if (!subBreakdown[sub]) subBreakdown[sub] = { present: 0, total: 0 };
+      subBreakdown[sub].total += 1;
+      if (a.status === 'present') subBreakdown[sub].present += 1;
+    });
+
+    const tblDbAttendance = document.querySelector('#tbl-db-attendance tbody');
+    if (tblDbAttendance) {
+      tblDbAttendance.innerHTML = '';
+      const subjects = Object.keys(subBreakdown).sort();
+      if (!subjects.length) {
+        tblDbAttendance.innerHTML = '<tr><td colspan="3" class="small">No attendance data.</td></tr>';
+      } else {
+        subjects.slice(0, 4).forEach(sub => {
+          const stat = subBreakdown[sub];
+          const subPct = stat.total ? Math.round((stat.present / stat.total) * 100) : 100;
+          const tr = document.createElement('tr');
+          tr.innerHTML = `<td><strong>${esc(sub)}</strong></td><td>${stat.present}/${stat.total}</td><td>${subPct}%</td>`;
+          tblDbAttendance.appendChild(tr);
+        });
+      }
+    }
+
+    // 3. Fetch Marks & GPA
+    let totalMarksPct = 0;
+    let examCount = 0;
+    const marksList = [];
+    try {
+      const marks = await SSC_API.get('/student/marks');
+      if (Array.isArray(marks)) {
+        marks.forEach(m => {
+          marksList.push(m);
+          if (m.maxMarks > 0) {
+            totalMarksPct += (m.marksObtained / m.maxMarks) * 100;
+            examCount++;
+          }
+        });
+      }
+    } catch { /* silent fallback */ }
+
+    const avgPct = examCount ? (totalMarksPct / examCount) : null;
+    const gpaVal = avgPct !== null ? `${(avgPct / 10).toFixed(1)} CGPA` : 'N/A';
+    document.getElementById('db-stat-gpa').textContent = gpaVal;
+    document.getElementById('db-stat-gpa-desc').textContent = examCount
+      ? `Based on ${examCount} exams`
+      : 'No grades published';
+
+    // Populate Row 2 Recent Exam Performance
+    const tblDbMarks = document.querySelector('#tbl-db-marks tbody');
+    if (tblDbMarks) {
+      tblDbMarks.innerHTML = '';
+      if (!marksList.length) {
+        tblDbMarks.innerHTML = '<tr><td colspan="3" class="small">No recent grades.</td></tr>';
+      } else {
+        marksList.slice(0, 4).forEach(m => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `<td><strong>${esc(m.subject)}</strong></td><td>${esc(m.examName)}</td><td>${m.marksObtained}/${m.maxMarks}</td>`;
+          tblDbMarks.appendChild(tr);
+        });
+      }
+    }
+
+    // 4. Fetch Upcoming Exams
+    let upcomingExamsCount = 0;
+    let nextExamDateStr = 'None scheduled';
+    try {
+      const schedules = await SSC_API.get('/student/exams/schedule');
+      if (Array.isArray(schedules)) {
+        upcomingExamsCount = schedules.length;
+        if (schedules.length > 0) {
+          const sorted = [...schedules].sort((a,b) => new Date(a.examDate) - new Date(b.examDate));
+          if (sorted[0]?.examDate) {
+            nextExamDateStr = `Next: ${new Date(sorted[0].examDate).toLocaleDateString('en-IN')}`;
+          }
+        }
+      }
+    } catch { /* silent fallback */ }
+    document.getElementById('db-stat-exams').textContent = upcomingExamsCount;
+    document.getElementById('db-stat-exams-desc').textContent = nextExamDateStr;
+
+    // 5. Fetch Library Borrowed Books
+    let libraryCount = 0;
+    let oldestDueDateStr = 'No current issues';
+    try {
+      const libraryBooks = await SSC_API.get('/student/library/my-books');
+      if (Array.isArray(libraryBooks)) {
+        libraryCount = libraryBooks.length;
+        if (libraryBooks.length > 0) {
+          const sorted = [...libraryBooks].sort((a,b) => new Date(a.dueDate) - new Date(b.dueDate));
+          if (sorted[0]?.dueDate) {
+            const overdue = new Date(sorted[0].dueDate) < new Date();
+            oldestDueDateStr = overdue ? 'Overdue item!' : `Due: ${new Date(sorted[0].dueDate).toLocaleDateString('en-IN')}`;
+          }
+        }
+      }
+    } catch { /* silent fallback */ }
+    document.getElementById('db-stat-library').textContent = libraryCount;
+    document.getElementById('db-stat-library-desc').textContent = oldestDueDateStr;
+
+    // 6. Compute and render Monthly Attendance Trend chart card
+    const trendContainer = document.getElementById('db-attendance-trend-chart');
+    const attTrendCard = el('card-db-att-trend');
+    if (trendContainer) {
+      trendContainer.innerHTML = '';
+      if (totalClasses === 0) {
+        trendContainer.innerHTML = '<p class="small empty-state">Attendance trend will appear once classes are logged.</p>';
+      } else {
+        if (attTrendCard) attTrendCard.style.display = '';
+        const monthlyData = {}; // key: "YYYY-MM"
+        attList.forEach(a => {
+          if (!a.date) return;
+          const d = new Date(a.date);
+          const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+          if (!monthlyData[key]) monthlyData[key] = { present: 0, total: 0 };
+          monthlyData[key].total += 1;
+          if (a.status === 'present') monthlyData[key].present += 1;
+        });
+
+        const sortedMonths = Object.keys(monthlyData).sort();
+        if (sortedMonths.length === 0) {
+          trendContainer.innerHTML = '<p class="small" style="opacity: 0.7;">No monthly logs found.</p>';
+        } else {
+          sortedMonths.slice(-4).forEach(key => {
+            const stat = monthlyData[key];
+            const pct = Math.round((stat.present / stat.total) * 100);
+            const [yr, mo] = key.split('-');
+            const monthLabel = new Date(Number(yr), Number(mo) - 1, 1).toLocaleDateString('en-IN', { month: 'short', year: '2-digit' });
+            
+            const barWrap = document.createElement('div');
+            barWrap.style.display = 'flex';
+            barWrap.style.flexDirection = 'column';
+            barWrap.style.gap = '0.25rem';
+            
+            let color = 'var(--accent)';
+            if (pct < 75) color = '#ef4444';
+            
+            barWrap.innerHTML = `
+              <div style="display:flex; justify-content:space-between; font-size:0.75rem;">
+                <span style="font-weight:600;">${monthLabel}</span>
+                <span>${pct}% (${stat.present}/${stat.total})</span>
+              </div>
+              <div style="background:rgba(255,255,255,0.08); height:8px; border-radius:4px; overflow:hidden; border: 0.5px solid rgba(255,255,255,0.1);">
+                <div style="background:${color}; width:${pct}%; height:100%; border-radius:4px; transition: width 0.6s ease-in-out;"></div>
+              </div>
+            `;
+            trendContainer.appendChild(barWrap);
+          });
+        }
+      }
+    }
+
+    // 7. Always show dashboard widgets — empty data uses placeholders above
+    ['card-db-attendance', 'card-db-gpa', 'card-db-exams', 'card-db-library', 'card-db-marks', 'card-db-att-summary', 'card-db-att-trend'].forEach((id) => {
+      const card = el(id);
+      if (card) card.style.display = '';
+    });
+    const row2 = el('db-row-2');
+    if (row2) {
+      row2.style.display = '';
+      row2.className = 'grid grid-3 student-row-2';
+    }
+
+    // 8. Today's Timetable slots
+    const dbTimetable = document.getElementById('db-timetable-today');
+    if (dbTimetable) {
+      dbTimetable.innerHTML = '';
+      try {
+        const tt = await SSC_API.get('/student/timetable');
+        const slots = tt.slots || [];
+        const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        let todayDay = dayNames[new Date().getDay()];
+        if (todayDay === 'Sunday') todayDay = 'Monday'; // Default to Monday if Sunday
+        
+        const todaySlots = slots.filter(s => s.day === todayDay).sort((a,b) => Number(a.period) - Number(b.period));
+        if (!todaySlots.length) {
+          dbTimetable.innerHTML = `<p class="small" style="opacity: 0.7;">No slots scheduled for today (${todayDay}).</p>`;
+        } else {
+          todaySlots.forEach(slot => {
+            const div = document.createElement('div');
+            div.style.padding = '0.5rem';
+            div.style.borderBottom = '1px solid rgba(56, 189, 248, 0.1)';
+            div.innerHTML = `
+              <div style="font-weight:600; color:var(--primary); font-size:0.85rem;">Period ${slot.period}: ${esc(slot.subject)}</div>
+              <div style="font-size:0.75rem; opacity:0.8;">Room ${esc(slot.room)} • ${esc(slot.teacherName || 'TBA')}</div>
+            `;
+            dbTimetable.appendChild(div);
+          });
+        }
+      } catch {
+        dbTimetable.innerHTML = '<p class="small" style="opacity: 0.7;">Unable to load timetable slots.</p>';
+      }
+    }
+
+    // 9. Recent Notices
+    const dbNotices = document.getElementById('db-notices-feed');
+    if (dbNotices) {
+      dbNotices.innerHTML = '';
+      try {
+        const notices = await SSC_API.get('/student/notices');
+        if (Array.isArray(notices) && notices.length > 0) {
+          notices.slice(0, 4).forEach(n => {
+            const div = document.createElement('div');
+            div.style.padding = '0.5rem';
+            div.style.borderBottom = '1px solid rgba(56, 189, 248, 0.1)';
+            div.innerHTML = `
+              <div style="font-weight:600; font-size:0.85rem;">${esc(n.title)}</div>
+              <p class="small" style="margin:2px 0 0 0; opacity:0.85; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${esc(n.body || '')}</p>
+            `;
+            dbNotices.appendChild(div);
+          });
+        } else {
+          dbNotices.innerHTML = '<p class="small" style="opacity: 0.7;">No recent notices.</p>';
+        }
+      } catch {
+        dbNotices.innerHTML = '<p class="small" style="opacity: 0.7;">Unable to load notices.</p>';
+      }
+    }
+
+    // 10. Recent Study Materials
+    const dbMaterials = document.getElementById('db-materials-feed');
+    if (dbMaterials) {
+      dbMaterials.innerHTML = '';
+      try {
+        const materials = await SSC_API.get('/student/materials');
+        if (Array.isArray(materials) && materials.length > 0) {
+          materials.slice(0, 4).forEach(m => {
+            const div = document.createElement('div');
+            div.style.padding = '0.5rem';
+            div.style.borderBottom = '1px solid rgba(56, 189, 248, 0.1)';
+            div.innerHTML = `
+              <div style="font-weight:600; font-size:0.85rem;">${esc(m.title)}</div>
+              <div style="font-size:0.75rem; opacity:0.8;">Subject: ${esc(m.subject)}</div>
+            `;
+            dbMaterials.appendChild(div);
+          });
+        } else {
+          dbMaterials.innerHTML = '<p class="small" style="opacity: 0.7;">No study materials available.</p>';
+        }
+      } catch {
+        dbMaterials.innerHTML = '<p class="small" style="opacity: 0.7;">Unable to load study materials.</p>';
+      }
+    }
   }
 
   async function loadMarks() {
@@ -272,12 +704,6 @@
     document.getElementById('student-avatar-upload').value = '';
   }
 
-  function esc(s) {
-    const d = document.createElement('div');
-    d.textContent = s == null ? '' : String(s);
-    return d.innerHTML;
-  }
-
   // ════════════════════════════════════════════════════════════
   // PLACEMENT CELL — Student JS
   // ════════════════════════════════════════════════════════════
@@ -287,8 +713,8 @@
   }
 
   async function loadStuPlDrives() {
-    const drives = await SSC_API.get('/student/placement/drives');
-    const container = document.getElementById('pl-drives-list');
+    const drives = asArray(await SSC_API.get('/student/placement/drives'));
+    const container = el('pl-drives-list');
     if (!container) return;
 
     if (!drives.length) {
@@ -358,7 +784,7 @@
   }
 
   async function loadStuPlApplications() {
-    const apps = await SSC_API.get('/student/placement/applications');
+    const apps = asArray(await SSC_API.get('/student/placement/applications'));
     const tb = document.querySelector('#tbl-stu-pl-apps tbody');
     if (!tb) return;
     tb.innerHTML = '';
@@ -413,7 +839,7 @@
 
   async function loadTimetablePanel() {
     const tt = await SSC_API.get('/student/timetable');
-    const slots = tt.slots || [];
+    const slots = asArray(tt?.slots);
     const tbody = document.getElementById('tbl-student-timetable');
     tbody.innerHTML = '';
     
@@ -470,7 +896,7 @@
   }
 
   async function loadIssuedBooks() {
-    const issues = await SSC_API.get('/student/library/my-books');
+    const issues = asArray(await SSC_API.get('/student/library/my-books'));
     const tbody = document.querySelector('#tbl-stu-lib-issued tbody');
     tbody.innerHTML = '';
     
@@ -496,7 +922,7 @@
   }
 
   async function loadBorrowHistory() {
-    const history = await SSC_API.get('/student/library/history');
+    const history = asArray(await SSC_API.get('/student/library/history'));
     const tbody = document.querySelector('#tbl-stu-lib-history tbody');
     tbody.innerHTML = '';
     
@@ -538,7 +964,7 @@
   }
 
   async function loadExamSchedules() {
-    const schedules = await SSC_API.get('/student/exams/schedule');
+    const schedules = asArray(await SSC_API.get('/student/exams/schedule'));
     const tbody = document.querySelector('#tbl-stu-exams tbody');
     tbody.innerHTML = '';
     
@@ -565,7 +991,7 @@
   }
 
   async function loadExamResults() {
-    examResultsCache = await SSC_API.get('/student/exams/results');
+    examResultsCache = asArray(await SSC_API.get('/student/exams/results'));
     const tbody = document.querySelector('#tbl-stu-results tbody');
     tbody.innerHTML = '';
     

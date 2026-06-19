@@ -468,8 +468,8 @@ export async function performDemoSeed() {
   // Check sentinel
   const sentinel = await prisma.collegeSettings.findUnique({ where: { key: DEMO_SENTINEL_KEY } });
   if (sentinel && sentinel.value === DEMO_VERSION) {
-    console.log(`✅ Demo data already seeded (${DEMO_VERSION}). Skipping. To reseed, call resetDemoData() first.`);
-    return;
+    console.log(`✅ Demo data already seeded (${DEMO_VERSION}). Running updates/corrections.`);
+    // return;
   }
 
   const startTime = Date.now();
@@ -547,10 +547,46 @@ export async function performDemoSeed() {
   console.log('🎒 Seeding students...');
   const studentDefs = generateStudents();
   const studentRecords = [];
-  for (const s of studentDefs) {
+  for (let idx = 0; idx < studentDefs.length; idx++) {
+    const s = studentDefs[idx];
     const existing = await prisma.user.findUnique({ where: { email: s.email } });
+    
+    // Determine deterministic IDs
+    const courseCode = s.rollNumber.replace(/[0-9]/g, '');
+    const rollSeqNum = s.rollNumber.replace(/[^0-9]/g, '');
+    const generatedStudentId = `SSC26${courseCode.toUpperCase()}${String(idx + 1).padStart(3, '0')}`;
+    const generatedVerificationId = `SSC-VER-${generatedStudentId}`;
+    const personalEmail = s.email.replace('@student.ssccjunnar.edu', '@gmail.com');
+
+    const profileData = {
+      studentId: generatedStudentId,
+      personalEmail: personalEmail,
+      collegeEmail: s.email,
+      mobile: s.phone || '',
+      course: s.courseName,
+      courseName: s.courseName,
+      className: s.className,
+      year: s.year,
+      division: 'A',
+      rollNumber: s.rollNumber,
+      address: 'Junnar, Pune District, Maharashtra, 410502',
+      parentContact: '9123456789',
+      emergencyContact: '9123456789',
+      admissionYear: 2026,
+      verificationId: generatedVerificationId,
+      demoData: true,
+    };
+
     if (existing) {
-      studentRecords.push({ ...existing, targetAttendance: s.targetAttendance });
+      const updated = await prisma.user.update({
+        where: { id: existing.id },
+        data: {
+          name: s.name,
+          phone: s.phone,
+          studentProfile: profileData
+        }
+      });
+      studentRecords.push({ ...updated, targetAttendance: s.targetAttendance });
     } else {
       const created = await prisma.user.create({
         data: {
@@ -559,16 +595,10 @@ export async function performDemoSeed() {
           role: Role.student,
           name: s.name,
           phone: s.phone,
-          studentProfile: {
-            rollNumber: s.rollNumber,
-            className: s.className,
-            courseName: s.courseName,
-            year: s.year,
-            demoData: true,
-          },
+          studentProfile: profileData,
         },
       });
-      studentRecords.push({ ...created, targetAttendance: s.targetAttendance, studentProfile: { rollNumber: s.rollNumber, className: s.className } });
+      studentRecords.push({ ...created, targetAttendance: s.targetAttendance });
     }
   }
   console.log(`   ✓ ${studentRecords.length} students seeded (password: Student@123)`);
