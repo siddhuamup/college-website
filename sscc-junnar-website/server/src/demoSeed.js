@@ -866,6 +866,12 @@ export async function performDemoSeed() {
 
   // ── STEP 19: Set sentinel ─────────────────────────────────────────────────
   await prisma.collegeSettings.upsert({
+    where: { key: 'attendanceThreshold' },
+    create: { key: 'attendanceThreshold', value: 75 },
+    update: {},
+  });
+
+  await prisma.collegeSettings.upsert({
     where: { key: DEMO_SENTINEL_KEY },
     create: { key: DEMO_SENTINEL_KEY, value: DEMO_VERSION },
     update: { value: DEMO_VERSION },

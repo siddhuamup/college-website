@@ -649,18 +649,23 @@
     const el = document.getElementById('attendance-summary-content');
     if (!el) return;
     try {
-      const students = await SSC_API.get('/admin/students');
+      const [students, settings] = await Promise.all([
+        SSC_API.get('/admin/students'),
+        SSC_API.get('/public/settings').catch(() => ({}))
+      ]);
+      const threshold = settings && settings.attendanceThreshold !== undefined ? Number(settings.attendanceThreshold) : 75;
+      
       // Check for students with low attendance data
       const lowAttendance = students.filter(s => {
         const att = s.studentProfile && s.studentProfile.attendancePercentage;
-        return att !== undefined && att !== null && Number(att) < 75;
+        return att !== undefined && att !== null && Number(att) < threshold;
       });
 
       if (lowAttendance.length === 0) {
         el.innerHTML = `
           <div style="text-align:center;padding:1rem 0;">
             <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-            <p class="small mt-2" style="color:var(--accent);font-weight:600;">All students above 75% attendance</p>
+            <p class="small mt-2" style="color:var(--accent);font-weight:600;">All students above ${threshold}% attendance</p>
             <p class="small">No low attendance alerts at this time.</p>
           </div>
         `;
@@ -670,7 +675,7 @@
       let html = '<table class="table small"><thead><tr><th>Student</th><th>Class</th><th>Attendance</th></tr></thead><tbody>';
       lowAttendance.slice(0, 5).forEach(s => {
         const att = Number(s.studentProfile.attendancePercentage);
-        const color = att < 50 ? 'var(--danger)' : 'var(--warning)';
+        const color = att < threshold ? 'var(--danger)' : 'var(--warning)';
         html += `<tr>
           <td>${esc(s.name)}</td>
           <td>${esc(s.studentProfile.className || '—')}</td>
@@ -1575,6 +1580,8 @@
     const prospectus = document.getElementById('set-prospectus');
     if (syllabus) syllabus.value = s.syllabusPdfUrl || '';
     if (prospectus) prospectus.value = s.prospectusPdfUrl || '';
+    const threshold = document.getElementById('set-threshold');
+    if (threshold) threshold.value = s.attendanceThreshold || 75;
   }
 
   document.getElementById('form-settings').addEventListener('submit', async (e) => {
@@ -1584,6 +1591,7 @@
       siteTagline: f.siteTagline.value.trim(),
       syllabusPdfUrl: f.syllabusPdfUrl.value.trim(),
       prospectusPdfUrl: f.prospectusPdfUrl.value.trim(),
+      attendanceThreshold: Number(f.attendanceThreshold.value.trim()) || 75,
     });
     msg('Settings saved');
   });
@@ -1635,9 +1643,13 @@
       <div class="stat-card"><span class="small">Present Today</span><strong>${data.presentToday}</strong></div>
       <div class="stat-card"><span class="small">Absent Today</span><strong>${data.absentToday}</strong></div>
       <div class="stat-card"><span class="small">Global Avg %</span><strong>${data.globalPercentage}%</strong></div>
-      <div class="stat-card"><span class="small">Students &lt;75%</span><strong style="color: #ef4444">${data.lowAttendanceCount}</strong></div>
+      <div class="stat-card"><span class="small">Students &lt;${data.threshold}%</span><strong style="color: #ef4444">${data.lowAttendanceCount}</strong></div>
     `;
 
+    const threshLabel = document.getElementById('att-threshold-label');
+    if (threshLabel) threshLabel.textContent = data.threshold;
+
+    // Render Low Attendance List
     const tblLow = document.querySelector('#tbl-low-att tbody');
     tblLow.innerHTML = '';
     if (!data.lowAttendanceList.length) {
@@ -1657,35 +1669,77 @@
       });
     }
 
+    // Render Watchlist List (Risk List)
+    const tblRisk = document.querySelector('#tbl-risk-att tbody');
+    if (tblRisk) {
+      tblRisk.innerHTML = '';
+      if (!data.riskList || !data.riskList.length) {
+        tblRisk.innerHTML = '<tr><td colspan="6" class="small">No students in the watchlist.</td></tr>';
+      } else {
+        data.riskList.forEach((s) => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${esc(s.rollNumber)}</td>
+            <td>${esc(s.name)}</td>
+            <td>${esc(s.className)}</td>
+            <td>${s.attended}</td>
+            <td>${s.totalClasses}</td>
+            <td style="color: #f59e0b; font-weight: bold;">${s.percentage}%</td>
+          `;
+          tblRisk.appendChild(tr);
+        });
+      }
+    }
+
+    // Render Class-wise list with monthly comparison columns & trend arrow
     const tblClass = document.querySelector('#tbl-class-att tbody');
     tblClass.innerHTML = '';
-    if (!data.classSummary.length) {
-      tblClass.innerHTML = '<tr><td colspan="3" class="small">No records found.</td></tr>';
+    if (!data.classTrends || !data.classTrends.length) {
+      tblClass.innerHTML = '<tr><td colspan="5" class="small">No class trend records found.</td></tr>';
     } else {
-      data.classSummary.forEach((c) => {
+      data.classTrends.forEach((c) => {
         const tr = document.createElement('tr');
-        const color = c.percentage < 75 ? 'color: #ef4444; font-weight: bold;' : '';
+        const color = c.thisMonthPct !== null && c.thisMonthPct < data.threshold ? 'color: #ef4444; font-weight: bold;' : '';
+        const trendSymbol = c.direction === 'up' ? '↑ Improving' : c.direction === 'down' ? '↓ Dropping' : '→ Stable';
+        const trendColor = c.direction === 'up' ? 'color:#22c55e;' : c.direction === 'down' ? 'color:#ef4444;' : 'color:var(--muted);';
+        
+        // Find total logs from classSummary
+        const summary = data.classSummary.find(x => x.className === c.className);
+        const totalLogs = summary ? summary.totalLogs : 0;
+
         tr.innerHTML = `
           <td>${esc(c.className)}</td>
-          <td>${c.totalLogs}</td>
-          <td style="${color}">${c.percentage}%</td>
+          <td>${totalLogs}</td>
+          <td style="${color}">${c.thisMonthPct !== null ? c.thisMonthPct + '%' : '—'}</td>
+          <td>${c.lastMonthPct !== null ? c.lastMonthPct + '%' : '—'}</td>
+          <td style="${trendColor} font-weight:600;">${trendSymbol}</td>
         `;
         tblClass.appendChild(tr);
       });
     }
 
+    // Render Subject-wise list with monthly comparison columns & trend arrow
     const tblSubject = document.querySelector('#tbl-subject-att tbody');
     tblSubject.innerHTML = '';
-    if (!data.subjectSummary.length) {
-      tblSubject.innerHTML = '<tr><td colspan="3" class="small">No records found.</td></tr>';
+    if (!data.subjectTrends || !data.subjectTrends.length) {
+      tblSubject.innerHTML = '<tr><td colspan="5" class="small">No subject trend records found.</td></tr>';
     } else {
-      data.subjectSummary.forEach((s) => {
+      data.subjectTrends.forEach((s) => {
         const tr = document.createElement('tr');
-        const color = s.percentage < 75 ? 'color: #ef4444; font-weight: bold;' : '';
+        const color = s.thisMonthPct !== null && s.thisMonthPct < data.threshold ? 'color: #ef4444; font-weight: bold;' : '';
+        const trendSymbol = s.direction === 'up' ? '↑ Improving' : s.direction === 'down' ? '↓ Dropping' : '→ Stable';
+        const trendColor = s.direction === 'up' ? 'color:#22c55e;' : s.direction === 'down' ? 'color:#ef4444;' : 'color:var(--muted);';
+        
+        // Find total logs from subjectSummary
+        const summary = data.subjectSummary.find(x => x.subject === s.subject);
+        const totalLogs = summary ? summary.totalLogs : 0;
+
         tr.innerHTML = `
           <td>${esc(s.subject)}</td>
-          <td>${s.totalLogs}</td>
-          <td style="${color}">${s.percentage}%</td>
+          <td>${totalLogs}</td>
+          <td style="${color}">${s.thisMonthPct !== null ? s.thisMonthPct + '%' : '—'}</td>
+          <td>${s.lastMonthPct !== null ? s.lastMonthPct + '%' : '—'}</td>
+          <td style="${trendColor} font-weight:600;">${trendSymbol}</td>
         `;
         tblSubject.appendChild(tr);
       });
@@ -1701,7 +1755,7 @@
       } else {
         monthly.forEach((m) => {
           const tr = document.createElement('tr');
-          const color = m.percentage < 75 ? 'color: #ef4444; font-weight: bold;' : 'color: #22c55e;';
+          const color = m.percentage < data.threshold ? 'color: #ef4444; font-weight: bold;' : 'color: #22c55e;';
           // Format month label e.g. "2025-11" → "Nov 2025"
           const [yr, mo] = m.month.split('-');
           const label = new Date(Number(yr), Number(mo) - 1, 1)
@@ -1731,25 +1785,25 @@
   }
 
   function exportCSV() {
-    if (!lastAnalyticsData) {
+    if (!lastAnalyticsData || !lastAnalyticsData.fullReportList) {
       msg('No analytics data to export', true);
       return;
     }
-    let csv = 'Roll Number,Name,Class,Attended,Total Classes,Percentage\n';
-    lastAnalyticsData.lowAttendanceList.forEach(s => {
-      csv += `"${s.rollNumber}","${s.name}","${s.className}",${s.attended},${s.totalClasses},${s.percentage}%\n`;
+    let csv = 'Student ID,Roll Number,Student Name,Class,Subject,Attendance Percentage,Present Count,Absent Count\n';
+    lastAnalyticsData.fullReportList.forEach(s => {
+      csv += `"${s.studentId}","${s.rollNumber}","${s.name}","${s.className}","${s.subject}",${s.percentage}%,${s.present},${s.absent}\n`;
     });
-    downloadCSV(csv, 'low_attendance_report.csv');
+    downloadCSV(csv, 'student_attendance_report.csv');
   }
 
   function exportExcel() {
-    if (!lastAnalyticsData) {
+    if (!lastAnalyticsData || !lastAnalyticsData.fullReportList) {
       msg('No analytics data to export', true);
       return;
     }
-    let xls = 'Roll Number\tName\tClass\tAttended\tTotal Classes\tPercentage\n';
-    lastAnalyticsData.lowAttendanceList.forEach(s => {
-      xls += `"${s.rollNumber}"\t"${s.name}"\t"${s.className}"\t${s.attended}\t${s.totalClasses}\t${s.percentage}%\n`;
+    let xls = 'Student ID\tRoll Number\tStudent Name\tClass\tSubject\tAttendance Percentage\tPresent Count\tAbsent Count\n';
+    lastAnalyticsData.fullReportList.forEach(s => {
+      xls += `"${s.studentId}"\t"${s.rollNumber}"\t"${s.name}"\t"${s.className}"\t"${s.subject}"\t${s.percentage}%\t${s.present}\t${s.absent}\n`;
     });
     const blob = new Blob([xls], { type: 'application/vnd.ms-excel;charset=utf-8;' });
     const link = document.createElement("a");

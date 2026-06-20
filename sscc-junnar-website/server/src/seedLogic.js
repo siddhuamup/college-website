@@ -95,8 +95,11 @@ export async function performSeed() {
   for (const row of [
     { key: 'syllabusPdfUrl', value: '' },
     { key: 'prospectusPdfUrl', value: '' },
+    { key: 'attendanceThreshold', value: 75 }
   ]) {
     const ex = await prisma.collegeSettings.findUnique({ where: { key: row.key } });
-    if (!ex) await prisma.collegeSettings.create({ data: row });
+    if (!ex) {
+      await prisma.collegeSettings.create({ data: row });
+    }
   }
 }

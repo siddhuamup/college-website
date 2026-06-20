@@ -1,4 +1,16 @@
 (function () {
+  let cachedSettings = null;
+  async function getSettings() {
+    if (cachedSettings) return cachedSettings;
+    try {
+      cachedSettings = await SSC_API.get('/public/settings');
+    } catch (e) {
+      console.error('Failed to fetch settings', e);
+      cachedSettings = { attendanceThreshold: 75 };
+    }
+    return cachedSettings;
+  }
+
   function el(id) {
     return document.getElementById(id);
   }
@@ -289,10 +301,37 @@
       }
     } catch { /* silent fallback */ }
 
+    const settings = await getSettings();
+    const threshold = settings.attendanceThreshold ? Number(settings.attendanceThreshold) : 75;
+
+    let statusText = 'Good Standing';
+    let cardStyle = '';
+    let statusColor = '#22c55e'; // Green
+    
+    if (overallAttendancePct < threshold) {
+      statusText = 'Attendance Warning';
+      statusColor = '#ef4444'; // Red
+      cardStyle = 'border: 1px solid var(--danger); background: var(--danger-muted);';
+    } else if (overallAttendancePct < threshold + 5) {
+      statusText = 'Watchlist';
+      statusColor = '#f59e0b'; // Amber
+      cardStyle = 'border: 1px solid var(--warning); background: var(--warning-muted);';
+    } else {
+      statusText = 'Good Standing';
+      statusColor = '#22c55e'; // Green
+      cardStyle = 'border: 1px solid var(--accent); background: var(--accent-muted);';
+    }
+
+    const cardAtt = el('card-db-attendance');
+    if (cardAtt) {
+      cardAtt.style.cssText = cardStyle;
+    }
+
     document.getElementById('db-stat-attendance').textContent = `${overallAttendancePct}%`;
-    document.getElementById('db-stat-attendance-desc').textContent = totalClasses 
-      ? `Attended ${presentClasses} of ${totalClasses} classes` 
-      : 'No classes logged yet';
+    document.getElementById('db-stat-attendance-desc').innerHTML = `
+      <div style="margin-top: 0.25rem; font-size: 0.75rem; opacity: 0.85;">Required: ${threshold}%</div>
+      <div style="margin-top: 0.25rem; font-weight: 600; color: ${statusColor};">Status: ${statusText}</div>
+    `;
 
     // Populate Row 2 Subject Attendance Summary
     const subBreakdown = {};
@@ -313,8 +352,16 @@
         subjects.slice(0, 4).forEach(sub => {
           const stat = subBreakdown[sub];
           const subPct = stat.total ? Math.round((stat.present / stat.total) * 100) : 100;
+          let subColorStyle = '';
+          if (subPct < threshold) {
+            subColorStyle = 'color: #ef4444; font-weight: bold;';
+          } else if (subPct < threshold + 5) {
+            subColorStyle = 'color: #f59e0b; font-weight: bold;';
+          } else {
+            subColorStyle = 'color: #22c55e; font-weight: bold;';
+          }
           const tr = document.createElement('tr');
-          tr.innerHTML = `<td><strong>${esc(sub)}</strong></td><td>${stat.present}/${stat.total}</td><td>${subPct}%</td>`;
+          tr.innerHTML = `<td><strong>${esc(sub)}</strong></td><td>${stat.present}/${stat.total}</td><td style="${subColorStyle}">${subPct}%</td>`;
           tblDbAttendance.appendChild(tr);
         });
       }
@@ -573,11 +620,87 @@
     if (missedEl) missedEl.textContent = missed;
     document.getElementById('stu-att-percent').textContent = pct + '%';
     
+    const settings = await getSettings();
+    const threshold = settings.attendanceThreshold ? Number(settings.attendanceThreshold) : 75;
+
     const warn = document.getElementById('att-warn-banner');
-    if (total > 0 && pct < 75) {
-      warn.style.display = 'block';
-    } else {
-      warn.style.display = 'none';
+    if (warn) {
+      warn.innerHTML = `<strong>⚠️ Low Attendance Warning:</strong> Your overall attendance is currently below the required ${threshold}%. Please contact your course coordinator.`;
+      if (total > 0 && pct < threshold) {
+        warn.style.display = 'block';
+      } else {
+        warn.style.display = 'none';
+      }
+    }
+
+    // Trend analysis (Last 30 Days vs Prior 30 Days)
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
+
+    const last30Logs = list.filter(a => new Date(a.date) >= thirtyDaysAgo);
+    const prior30Logs = list.filter(a => {
+      const d = new Date(a.date);
+      return d >= sixtyDaysAgo && d < thirtyDaysAgo;
+    });
+
+    const present30 = last30Logs.filter(a => a.status === 'present').length;
+    const absent30 = last30Logs.filter(a => a.status === 'absent').length;
+    const leave30 = last30Logs.filter(a => a.status === 'leave').length;
+
+    const presentPrior = prior30Logs.filter(a => a.status === 'present').length;
+    const totalPrior = prior30Logs.length;
+
+    const pct30 = last30Logs.length ? (present30 / last30Logs.length) * 100 : 100;
+    const pctPrior = totalPrior ? (presentPrior / totalPrior) * 100 : pct30;
+
+    let trendDir = '→ Stable';
+    let trendColor = 'var(--text-secondary)';
+    if (pct30 > pctPrior + 1) {
+      trendDir = '↑ Improving';
+      trendColor = '#22c55e'; // Green
+    } else if (pct30 < pctPrior - 1) {
+      trendDir = '↓ Dropping';
+      trendColor = '#ef4444'; // Red
+    }
+
+    setText('att-trend-present', present30);
+    setText('att-trend-absent', absent30);
+    setText('att-trend-leave', leave30);
+
+    const trendDirEl = el('att-trend-direction');
+    if (trendDirEl) {
+      trendDirEl.textContent = trendDir;
+      trendDirEl.style.color = trendColor;
+    }
+
+    let statusText = 'Good Standing';
+    let statusColor = '#22c55e'; // Green
+    let statusBg = 'var(--accent-muted)';
+    let statusBorder = '1px solid var(--accent)';
+    
+    if (pct < threshold) {
+      statusText = 'Attendance Warning';
+      statusColor = '#ef4444'; // Red
+      statusBg = 'var(--danger-muted)';
+      statusBorder = '1px solid var(--danger)';
+    } else if (pct < threshold + 5) {
+      statusText = 'Watchlist';
+      statusColor = '#f59e0b'; // Amber
+      statusBg = 'var(--warning-muted)';
+      statusBorder = '1px solid var(--warning)';
+    }
+
+    const panelStatusEl = el('att-panel-status');
+    if (panelStatusEl) {
+      panelStatusEl.textContent = statusText;
+      panelStatusEl.style.color = statusColor;
+    }
+
+    const attTrendCardEl = el('att-trend-card');
+    if (attTrendCardEl) {
+      attTrendCardEl.style.border = statusBorder;
+      attTrendCardEl.style.background = statusBg;
     }
 
     // Render subject breakdown
@@ -602,13 +725,20 @@
       subjects.forEach(sub => {
         const stats = subBreakdown[sub];
         const subPct = stats.total ? Math.round((stats.present / stats.total) * 100) : 100;
-        const color = subPct < 75 ? 'color: #ef4444; font-weight: bold;' : '';
+        let subColorStyle = '';
+        if (subPct < threshold) {
+          subColorStyle = 'color: #ef4444; font-weight: bold;';
+        } else if (subPct < threshold + 5) {
+          subColorStyle = 'color: #f59e0b; font-weight: bold;';
+        } else {
+          subColorStyle = 'color: #22c55e; font-weight: bold;';
+        }
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td>${esc(sub)}</td>
           <td>${stats.present}</td>
           <td>${stats.total}</td>
-          <td style="${color}">${subPct}%</td>
+          <td style="${subColorStyle}">${subPct}%</td>
         `;
         tblBreakdown.appendChild(tr);
       });

@@ -363,6 +363,26 @@
       <p id="dash-msg" class="small mt-3"></p>
     </main>
   </div>
+
+  <!-- Duplicate Attendance Confirmation Modal -->
+  <div class="modal-overlay" id="modal-att-duplicate" style="display:none; z-index: 9999;">
+    <div class="modal-container" style="max-width: 450px;">
+      <div class="modal-header">
+        <h3 class="modal-title">Attendance Conflict</h3>
+        <button type="button" class="modal-close" id="btn-duplicate-close">&times;</button>
+      </div>
+      <div style="padding: 1rem 0;">
+        <p class="small" style="font-weight: 600; font-size: 0.95rem; margin-bottom: 0.5rem; color: var(--danger);">⚠️ Attendance already exists for this session.</p>
+        <p class="small" style="opacity: 0.85; line-height: 1.4;">A record for this teacher, date, and subject combination has already been saved. Please choose an action:</p>
+      </div>
+      <div style="display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 1rem; flex-wrap: wrap;">
+        <button class="btn secondary small" type="button" id="btn-duplicate-view" style="color: var(--text);">View Existing</button>
+        <button class="btn small" type="button" id="btn-duplicate-update" style="color: #000; background: var(--accent);">Update Existing</button>
+        <button class="btn secondary small" type="button" id="btn-duplicate-cancel" style="color: var(--text);">Cancel</button>
+      </div>
+    </div>
+  </div>
+
   <script src="../js/api.js"></script>
   <script src="../js/teacher-app.js"></script>
 </body>

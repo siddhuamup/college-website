@@ -1,6 +1,7 @@
 (function () {
   let studentsCache = [];
   let teacherExamsCache = [];
+  let existingAttendanceList = [];
 
   function msg(t, err) {
     const el = document.getElementById('dash-msg');
@@ -94,22 +95,90 @@
           return;
         }
         
-        const entries = [];
-        document.querySelectorAll('#att-rows input[type="checkbox"]').forEach((cb) => {
-          entries.push({
-            studentId: cb.getAttribute('data-sid'),
-            status: cb.checked ? 'present' : 'absent',
-          });
-        });
+        if (existingAttendanceList && existingAttendanceList.length > 0) {
+          const modal = document.getElementById('modal-att-duplicate');
+          if (modal) modal.style.display = 'flex';
+          btn.disabled = false;
+          btn.textContent = originalText;
+          return;
+        }
+
         try {
-          await SSC_API.post('/teacher/attendance', { subject, date, entries });
-          msg('Attendance saved');
-          await checkExistingAttendance();
-        } catch (err) {
-          msg(err.message || 'Could not save attendance', true);
+          await submitAttendance();
         } finally {
           btn.disabled = false;
           btn.textContent = originalText;
+        }
+      });
+    }
+
+    async function submitAttendance() {
+      const subject = document.getElementById('att-subject').value.trim();
+      const date = document.getElementById('att-date').value;
+      const entries = [];
+      document.querySelectorAll('#att-rows input[type="checkbox"]').forEach((cb) => {
+        entries.push({
+          studentId: cb.getAttribute('data-sid'),
+          status: cb.checked ? 'present' : 'absent',
+        });
+      });
+      try {
+        await SSC_API.post('/teacher/attendance', { subject, date, entries });
+        msg('Attendance saved');
+        await checkExistingAttendance();
+      } catch (err) {
+        msg(err.message || 'Could not save attendance', true);
+      }
+    }
+
+    const btnDuplicateClose = document.getElementById('btn-duplicate-close');
+    if (btnDuplicateClose) {
+      btnDuplicateClose.addEventListener('click', () => {
+        const modal = document.getElementById('modal-att-duplicate');
+        if (modal) modal.style.display = 'none';
+      });
+    }
+
+    const btnDuplicateCancel = document.getElementById('btn-duplicate-cancel');
+    if (btnDuplicateCancel) {
+      btnDuplicateCancel.addEventListener('click', () => {
+        const modal = document.getElementById('modal-att-duplicate');
+        if (modal) modal.style.display = 'none';
+      });
+    }
+
+    const btnDuplicateView = document.getElementById('btn-duplicate-view');
+    if (btnDuplicateView) {
+      btnDuplicateView.addEventListener('click', () => {
+        const modal = document.getElementById('modal-att-duplicate');
+        if (modal) modal.style.display = 'none';
+        if (existingAttendanceList && existingAttendanceList.length > 0) {
+          const map = Object.fromEntries(existingAttendanceList.map(e => [String(e.studentId), e.status]));
+          document.querySelectorAll('#att-rows input[type="checkbox"]').forEach(cb => {
+            const sid = cb.getAttribute('data-sid');
+            cb.checked = map[sid] === 'present';
+          });
+        }
+      });
+    }
+
+    const btnDuplicateUpdate = document.getElementById('btn-duplicate-update');
+    if (btnDuplicateUpdate) {
+      btnDuplicateUpdate.addEventListener('click', async () => {
+        const modal = document.getElementById('modal-att-duplicate');
+        if (modal) modal.style.display = 'none';
+        
+        const saveBtn = document.getElementById('att-save');
+        if (saveBtn) {
+          saveBtn.disabled = true;
+          const origText = saveBtn.textContent;
+          saveBtn.textContent = 'Saving...';
+          try {
+            await submitAttendance();
+          } finally {
+            saveBtn.disabled = false;
+            saveBtn.textContent = origText;
+          }
         }
       });
     }
@@ -655,6 +724,7 @@
     if (!subject || !date) {
       if (statusSpan) statusSpan.style.display = 'none';
       if (saveBtn) saveBtn.textContent = 'Save attendance';
+      existingAttendanceList = [];
       return;
     }
     
@@ -662,6 +732,7 @@
       const query = new URLSearchParams({ subject, from: date, to: date });
       const existing = await SSC_API.get('/teacher/attendance?' + query.toString());
       const existingList = Array.isArray(existing) ? existing : [];
+      existingAttendanceList = existingList;
       
       if (existingList.length > 0) {
         const map = Object.fromEntries(existingList.map(e => [String(e.studentId), e.status]));
@@ -683,6 +754,7 @@
       }
     } catch (err) {
       console.error(err);
+      existingAttendanceList = [];
     }
   }
 

@@ -686,6 +686,14 @@ export function adminRouter({ jwtSecret }) {
   });
 
   r.get('/attendance/analytics', async (_req, res) => {
+    // Load configurable attendance threshold
+    const thresholdRow = await prisma.collegeSettings.findUnique({ where: { key: 'attendanceThreshold' } });
+    let threshold = 75;
+    if (thresholdRow && thresholdRow.value !== undefined && thresholdRow.value !== null) {
+      threshold = Number(thresholdRow.value);
+      if (isNaN(threshold)) threshold = 75;
+    }
+
     const students = await prisma.user.findMany({
       where: { role: Role.student, isActive: true },
       select: { id: true, name: true, email: true, studentProfile: true },
@@ -714,31 +722,92 @@ export function adminRouter({ jwtSecret }) {
 
     // Compute student logs breakdown
     const lowAttendanceList = [];
+    const riskList = [];
+    const fullReportList = [];
+
     students.forEach((student) => {
       const studentLogs = logs.filter(l => l.studentId === student.id);
       const total = studentLogs.length;
       const present = studentLogs.filter(l => l.status === 'present').length;
+      const absent = total - present;
       const pct = total ? Math.round((present / total) * 100) : 100;
-      if (total > 0 && pct < 75) {
-        lowAttendanceList.push({
-          id: student.id,
-          name: student.name,
-          email: student.email,
-          rollNumber: student.studentProfile?.rollNumber || '',
-          className: student.studentProfile?.className || 'Unassigned',
-          percentage: pct,
-          attended: present,
-          totalClasses: total,
-        });
+
+      const sp = student.studentProfile || {};
+      const studentIdStr = sp.studentId || student.id;
+      const rollNumber = sp.rollNumber || '';
+      const className = sp.className || 'Unassigned';
+
+      if (total > 0) {
+        if (pct < threshold) {
+          lowAttendanceList.push({
+            id: student.id,
+            name: student.name,
+            email: student.email,
+            rollNumber,
+            className,
+            percentage: pct,
+            attended: present,
+            totalClasses: total,
+          });
+        } else if (pct < threshold + 5) {
+          riskList.push({
+            id: student.id,
+            name: student.name,
+            email: student.email,
+            rollNumber,
+            className,
+            percentage: pct,
+            attended: present,
+            totalClasses: total,
+          });
+        }
       }
+
+      // Group by subject for full report
+      const subjectsGroup = {};
+      studentLogs.forEach(log => {
+        const sub = log.subject || 'Other';
+        if (!subjectsGroup[sub]) {
+          subjectsGroup[sub] = { present: 0, absent: 0, total: 0 };
+        }
+        subjectsGroup[sub].total += 1;
+        if (log.status === 'present') {
+          subjectsGroup[sub].present += 1;
+        } else {
+          subjectsGroup[sub].absent += 1;
+        }
+      });
+
+      Object.entries(subjectsGroup).forEach(([subject, counts]) => {
+        const subPct = counts.total ? Math.round((counts.present / counts.total) * 100) : 100;
+        fullReportList.push({
+          studentId: studentIdStr,
+          rollNumber,
+          name: student.name,
+          className,
+          subject,
+          percentage: subPct,
+          present: counts.present,
+          absent: counts.absent,
+          total: counts.total
+        });
+      });
     });
 
-    // Compute class-wise breakdown
+    // Compute class-wise breakdown & trends (This Month vs Last Month)
+    const now = new Date();
+    const startOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+
     const classStats = {};
+    const classTrendStats = {};
+
     logs.forEach((log) => {
       const student = students.find((s) => s.id === log.studentId);
       if (!student) return;
       const cls = student.studentProfile?.className || 'Unassigned';
+      
+      // General summary
       if (!classStats[cls]) {
         classStats[cls] = { present: 0, total: 0 };
       }
@@ -746,15 +815,52 @@ export function adminRouter({ jwtSecret }) {
       if (log.status === 'present') {
         classStats[cls].present += 1;
       }
+
+      // Trend summary
+      const logDate = new Date(log.date);
+      let period = null;
+      if (logDate >= startOfThisMonth) {
+        period = 'thisMonth';
+      } else if (logDate >= startOfLastMonth && logDate < startOfThisMonth) {
+        period = 'lastMonth';
+      }
+
+      if (period) {
+        if (!classTrendStats[cls]) {
+          classTrendStats[cls] = {
+            thisMonth: { present: 0, total: 0 },
+            lastMonth: { present: 0, total: 0 }
+          };
+        }
+        classTrendStats[cls][period].total += 1;
+        if (log.status === 'present') {
+          classTrendStats[cls][period].present += 1;
+        }
+      }
     });
+
     const classSummary = Object.entries(classStats).map(([className, stat]) => ({
       className,
       percentage: stat.total ? Math.round((stat.present / stat.total) * 100) : 0,
       totalLogs: stat.total,
     })).sort((a, b) => a.className.localeCompare(b.className));
 
-    // Compute subject-wise breakdown
+    const classTrends = Object.entries(classTrendStats).map(([className, stats]) => {
+      const thisPct = stats.thisMonth.total ? Math.round((stats.thisMonth.present / stats.thisMonth.total) * 100) : null;
+      const lastPct = stats.lastMonth.total ? Math.round((stats.lastMonth.present / stats.lastMonth.total) * 100) : null;
+      let change = null;
+      let direction = 'stable';
+      if (thisPct !== null && lastPct !== null) {
+        change = thisPct - lastPct;
+        direction = change > 0 ? 'up' : change < 0 ? 'down' : 'stable';
+      }
+      return { className, thisMonthPct: thisPct, lastMonthPct: lastPct, change, direction };
+    }).sort((a, b) => a.className.localeCompare(b.className));
+
+    // Compute subject-wise breakdown & trends
     const subjectStats = {};
+    const subjectTrendStats = {};
+
     logs.forEach((log) => {
       const subj = log.subject || 'Other';
       if (!subjectStats[subj]) {
@@ -764,12 +870,47 @@ export function adminRouter({ jwtSecret }) {
       if (log.status === 'present') {
         subjectStats[subj].present += 1;
       }
+
+      // Trend summary
+      const logDate = new Date(log.date);
+      let period = null;
+      if (logDate >= startOfThisMonth) {
+        period = 'thisMonth';
+      } else if (logDate >= startOfLastMonth && logDate < startOfThisMonth) {
+        period = 'lastMonth';
+      }
+
+      if (period) {
+        if (!subjectTrendStats[subj]) {
+          subjectTrendStats[subj] = {
+            thisMonth: { present: 0, total: 0 },
+            lastMonth: { present: 0, total: 0 }
+          };
+        }
+        subjectTrendStats[subj][period].total += 1;
+        if (log.status === 'present') {
+          subjectTrendStats[subj][period].present += 1;
+        }
+      }
     });
+
     const subjectSummary = Object.entries(subjectStats).map(([subject, stat]) => ({
       subject,
       percentage: stat.total ? Math.round((stat.present / stat.total) * 100) : 0,
       totalLogs: stat.total,
     })).sort((a, b) => a.subject.localeCompare(b.subject));
+
+    const subjectTrends = Object.entries(subjectTrendStats).map(([subject, stats]) => {
+      const thisPct = stats.thisMonth.total ? Math.round((stats.thisMonth.present / stats.thisMonth.total) * 100) : null;
+      const lastPct = stats.lastMonth.total ? Math.round((stats.lastMonth.present / stats.lastMonth.total) * 100) : null;
+      let change = null;
+      let direction = 'stable';
+      if (thisPct !== null && lastPct !== null) {
+        change = thisPct - lastPct;
+        direction = change > 0 ? 'up' : change < 0 ? 'down' : 'stable';
+      }
+      return { subject, thisMonthPct: thisPct, lastMonthPct: lastPct, change, direction };
+    }).sort((a, b) => a.subject.localeCompare(b.subject));
 
     const totalLogsCount = logs.length;
     const totalPresentCount = logs.filter(l => l.status === 'present').length;
@@ -804,9 +945,14 @@ export function adminRouter({ jwtSecret }) {
       globalPercentage,
       lowAttendanceCount: lowAttendanceList.length,
       lowAttendanceList,
+      riskList,
       classSummary,
       subjectSummary,
       monthlySummary,
+      classTrends,
+      subjectTrends,
+      fullReportList,
+      threshold
     });
   });
 
