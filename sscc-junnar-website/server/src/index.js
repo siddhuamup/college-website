@@ -2,6 +2,7 @@ import 'dotenv/config';
 import express from 'express';
 import 'express-async-errors';
 import cors from 'cors';
+import helmet from 'helmet';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { ensureUploadDirs, uploadsPath } from './multer/configure.js';
@@ -15,22 +16,84 @@ import { adminTimetableRouter, teacherTimetableRouter, studentTimetableRouter } 
 import { adminLibraryRouter, studentLibraryRouter } from './routes/library.js';
 import { adminExamRouter, teacherExamRouter, studentExamRouter } from './routes/exam.js';
 import { errorHandler } from './middleware/errorHandler.js';
+import { globalApiLimiter } from './middleware/rateLimit.js';
 import { prisma } from './db/client.js';
+import { createAuthMiddleware } from './middleware/auth.js';
+
+// ─── .ENV VALIDATION ────────────────────────────────────────────────────────
+// Crash immediately on missing/weak critical env vars — never silently fallback.
+
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET || JWT_SECRET.length < 64) {
+  console.error('═══════════════════════════════════════════════════════════');
+  console.error('  FATAL: JWT_SECRET is missing or too short.');
+  console.error('  It must be set in server/.env and be at least 64 characters.');
+  console.error('  Generate one: node -e "console.log(require(\'crypto\').randomBytes(64).toString(\'hex\'))"');
+  console.error('═══════════════════════════════════════════════════════════');
+  process.exit(1);
+}
+
+const ADMIN_ACCESS_KEY = process.env.ADMIN_ACCESS_KEY;
+if (!ADMIN_ACCESS_KEY || ADMIN_ACCESS_KEY.length < 16) {
+  console.error('═══════════════════════════════════════════════════════════');
+  console.error('  FATAL: ADMIN_ACCESS_KEY is missing or too short (min 16 chars).');
+  console.error('  Set a strong, unique key in server/.env');
+  console.error('═══════════════════════════════════════════════════════════');
+  process.exit(1);
+}
+
+if (!process.env.DATABASE_URL) {
+  console.error('FATAL: DATABASE_URL not set in .env');
+  process.exit(1);
+}
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const siteRoot = path.join(__dirname, '..', '..');
 const PORT = Number(process.env.PORT) || 3000;
-const JWT_SECRET = process.env.JWT_SECRET || 'dev-only-change-me';
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
 
 ensureUploadDirs();
 const uploadsRoot = uploadsPath();
 
 const app = express();
-app.use(cors({ origin: true, credentials: true }));
+
+// ─── SECURITY MIDDLEWARE ────────────────────────────────────────────────────
+
+// Helmet — secure HTTP headers (X-Frame-Options, CSP, etc.)
+app.use(helmet({
+  contentSecurityPolicy: false, // Allow inline scripts for vanilla JS frontend
+  crossOriginEmbedderPolicy: false,
+}));
+
+// CORS — configurable whitelist (no more origin:true)
+const CORS_ORIGIN = process.env.CORS_ORIGIN || `http://localhost:${PORT}`;
+app.use(cors({
+  origin: CORS_ORIGIN.split(',').map(s => s.trim()),
+  credentials: true,
+}));
+
 app.use(express.json({ limit: '2mb' }));
 
-app.use('/uploads', express.static(uploadsRoot));
+// Global rate limit on all API routes
+app.use('/api', globalApiLimiter);
+
+// ─── UPLOAD ACCESS CONTROL (HYBRID) ────────────────────────────────────────
+// Public uploads: gallery, materials, avatars, notices — accessible without auth
+// Protected uploads: admissions — require valid JWT (sensitive PII: marksheets, photos)
+
+app.use('/uploads/gallery', express.static(path.join(uploadsRoot, 'gallery')));
+app.use('/uploads/materials', express.static(path.join(uploadsRoot, 'materials')));
+app.use('/uploads/avatars', express.static(path.join(uploadsRoot, 'avatars')));
+app.use('/uploads/notices', express.static(path.join(uploadsRoot, 'notices')));
+
+// Protected: admission documents require authentication
+const authGuardForUploads = createAuthMiddleware(JWT_SECRET);
+app.use('/uploads/admissions', authGuardForUploads, express.static(path.join(uploadsRoot, 'admissions')));
+
+// Fallback: any other uploads subdirectory (e.g. future ones) requires auth
+app.use('/uploads', authGuardForUploads, express.static(uploadsRoot));
+
+// ─── API ROUTES ─────────────────────────────────────────────────────────────
 
 app.get('/api/health', async (_req, res) => {
   let dbOk = false;
@@ -85,6 +148,7 @@ async function boot() {
       console.log(`SSC College CMS running at http://localhost:${PORT}`);
       console.log(`SQLite via Prisma (DATABASE_URL in .env)`);
       console.log(`Health: http://localhost:${PORT}/api/health`);
+      console.log(`Security: helmet ✓ | rate-limit ✓ | CORS: ${CORS_ORIGIN}`);
     });
   } catch (err) {
     console.error('Database connection failed:', err.message);

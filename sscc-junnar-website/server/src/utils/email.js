@@ -26,11 +26,13 @@ export async function sendEmail({ to, subject, text, html }) {
   const from = process.env.EMAIL_FROM || user || 'no-reply@ssccjunnar.edu';
 
   if (!provider || !user || !pass) {
+    // SECURITY: Mask any passwords/credentials in the simulation output
+    const maskedText = (text || '').replace(/Password:\s*\S+/gi, 'Password: ********');
     console.log(`\n--- [EMAIL SIMULATION (SMTP configuration missing)] ---`);
     console.log(`To:      ${to}`);
     console.log(`Subject: ${subject}`);
     console.log(`From:    ${from}`);
-    console.log(`Body:\n${text}`);
+    console.log(`Body:\n${maskedText}`);
     console.log(`------------------------------------------------------\n`);
     return { simulated: true };
   }
@@ -63,6 +65,8 @@ export async function sendEmail({ to, subject, text, html }) {
     secure = process.env.EMAIL_SECURE === 'true';
   }
 
+  // SECURITY: Use modern TLS defaults — do NOT weaken with SSLv3 or disable
+  // certificate verification. Nodemailer's defaults are already secure.
   const transporter = nodemailer.createTransport({
     host,
     port,
@@ -71,10 +75,7 @@ export async function sendEmail({ to, subject, text, html }) {
       user,
       pass,
     },
-    tls: {
-      ciphers: 'SSLv3',
-      rejectUnauthorized: false
-    }
+    // TLS uses modern defaults (TLS 1.2+, certificate verification enabled)
   });
 
   const mailOptions = {

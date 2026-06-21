@@ -8,17 +8,19 @@
  */
 import 'dotenv/config';
 import jwt from 'jsonwebtoken';
+import { PrismaClient } from '@prisma/client';
 
+const prisma = new PrismaClient();
 const BASE = `http://localhost:${process.env.PORT || 3000}`;
-const SECRET = process.env.JWT_SECRET || 'dev-only-change-me';
+const SECRET = process.env.JWT_SECRET;
 
-function makeToken(role, sub = 'audit-user-000') {
+function makeToken(role, sub) {
   return jwt.sign({ sub, role, email: `${role}@audit.test` }, SECRET, { expiresIn: '1h' });
 }
 
-const studentToken = makeToken('student');
-const teacherToken = makeToken('teacher');
-const adminToken = makeToken('admin');
+let studentToken = null;
+let teacherToken = null;
+let adminToken = null;
 
 async function req(method, path, token = null, body = null) {
   const headers = { 'Content-Type': 'application/json' };
@@ -44,6 +46,25 @@ async function run() {
   console.log('\n═══════════════════════════════════════════════════');
   console.log('  SECURITY AUDIT — RBAC VERIFICATION');
   console.log('═══════════════════════════════════════════════════\n');
+
+  // Create temporary audit users in DB so the isActive check passes
+  const auditUsers = [
+    { id: 'audit-student-001', email: 'student@audit.test', passwordHash: 'hash', role: 'student', name: 'Audit Student', isActive: true },
+    { id: 'audit-teacher-001', email: 'teacher@audit.test', passwordHash: 'hash', role: 'teacher', name: 'Audit Teacher', isActive: true },
+    { id: 'audit-admin-001', email: 'admin@audit.test', passwordHash: 'hash', role: 'admin', name: 'Audit Admin', isActive: true },
+  ];
+
+  for (const user of auditUsers) {
+    await prisma.user.upsert({
+      where: { id: user.id },
+      update: { isActive: true, role: user.role },
+      create: user,
+    });
+  }
+
+  studentToken = makeToken('student', 'audit-student-001');
+  teacherToken = makeToken('teacher', 'audit-teacher-001');
+  adminToken = makeToken('admin', 'audit-admin-001');
 
   // ── Phase 1: Unauthenticated Access ────────────────────────────────
   console.log('▶ Phase 1: Unauthenticated Access (should be 401)');
@@ -239,4 +260,17 @@ async function run() {
   console.log('─'.repeat(90));
 }
 
-run().catch(e => { console.error('Audit script failed:', e); process.exit(1); });
+run()
+  .catch(e => {
+    console.error('Audit script failed:', e);
+  })
+  .finally(async () => {
+    const auditUserIds = ['audit-student-001', 'audit-teacher-001', 'audit-admin-001'];
+    for (const id of auditUserIds) {
+      await prisma.user.delete({ where: { id } }).catch(() => {});
+    }
+    await prisma.$disconnect();
+    if (results.FAIL > 0) {
+      process.exit(1);
+    }
+  });

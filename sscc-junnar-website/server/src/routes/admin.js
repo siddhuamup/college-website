@@ -7,6 +7,7 @@ import { hashPassword } from '../utils/auth.js';
 import { sendEmail } from '../utils/email.js';
 import { uploadNoticePdf, uploadGalleryImage, uploadAvatarImage, uploadsPath } from '../multer/configure.js';
 import { Role } from '@prisma/client';
+import { nextStudentId, nextRollNumber } from '../lib/studentIdGenerator.js';
 
 function stripHash(user) {
   if (!user) return user;
@@ -105,26 +106,53 @@ export function adminRouter({ jwtSecret }) {
     });
     if (!student) return res.status(404).json({ error: 'Student not found' });
     const sp = student.studentProfile && typeof student.studentProfile === 'object' ? student.studentProfile : {};
-    
+
+    // Generate a new random password (same pattern as admission approval)
+    const lowercase = 'abcdefghijklmnopqrstuvwxyz';
+    const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const numbers = '0123456789';
+    const specials = '!@#$';
+    const chars = lowercase + uppercase + numbers + specials;
+    let pwd = '';
+    pwd += lowercase[Math.floor(Math.random() * lowercase.length)];
+    pwd += uppercase[Math.floor(Math.random() * uppercase.length)];
+    pwd += numbers[Math.floor(Math.random() * numbers.length)];
+    pwd += specials[Math.floor(Math.random() * specials.length)];
+    for (let i = 0; i < 6; i++) {
+      pwd += chars[Math.floor(Math.random() * chars.length)];
+    }
+    const newPassword = pwd.split('').sort(() => 0.5 - Math.random()).join('');
+
+    // Update password hash and flag for mandatory change
+    await prisma.user.update({
+      where: { id: student.id },
+      data: {
+        passwordHash: await hashPassword(newPassword),
+        mustChangePassword: true,
+      },
+    });
+
     try {
       await sendEmail({
         to: sp.personalEmail || student.email,
-        subject: 'Your SSC College Junnar Credentials (Resent)',
-        text: `Dear ${student.name},\n\nHere are your login credentials:\nCollege Email: ${student.email}\nStudent ID: ${sp.studentId || 'N/A'}\nRoll Number: ${sp.rollNumber || 'N/A'}\n\nBest regards,\nSSC College Junnar`,
+        subject: 'Your SSC College Junnar Credentials (Reset)',
+        text: `Dear ${student.name},\n\nYour login credentials have been reset.\n\nCollege Email: ${student.email}\nNew Temporary Password: ${newPassword}\nStudent ID: ${sp.studentId || 'N/A'}\nRoll Number: ${sp.rollNumber || 'N/A'}\n\nPlease login and change your password immediately.\n\nBest regards,\nSSC College Junnar`,
         html: `<p>Dear <strong>${student.name}</strong>,</p>
-               <p>Here are your login credentials:</p>
+               <p>Your login credentials have been reset.</p>
                <ul>
                  <li><strong>College Email:</strong> ${student.email}</li>
+                 <li><strong>New Temporary Password:</strong> ${newPassword}</li>
                  <li><strong>Student ID:</strong> ${sp.studentId || 'N/A'}</li>
                  <li><strong>Roll Number:</strong> ${sp.rollNumber || 'N/A'}</li>
                </ul>
+               <p><strong>Please login and change your password immediately.</strong></p>
                <p>Best regards,<br/>SSC College Junnar</p>`
       });
     } catch (emailErr) {
       console.error('Failed to send credentials email:', emailErr);
     }
-    
-    res.json({ ok: true });
+
+    res.json({ ok: true, message: 'New credentials generated and sent' });
   });
 
   r.get('/teachers', async (_req, res) => {
@@ -287,25 +315,9 @@ export function adminRouter({ jwtSecret }) {
     let collegeEmail = '';
 
     if (status === 'approved' && createAccount) {
-      // Generate sequential Student ID
-      const yearSuffix = new Date().getFullYear().toString().slice(-2); // e.g. "26"
+      // Atomic Student-ID generation using Counter model (prevents race-condition duplicates)
       const courseAbbr = (courseName || doc.courseApplied || 'GEN').toUpperCase().replace(/[^A-Z0-9]/g, '') || 'GEN';
-      const prefix = `SSC${yearSuffix}${courseAbbr}`;
-
-      const allStudents = await prisma.user.findMany({
-        where: { role: Role.student }
-      });
-      
-      let matchCount = 0;
-      for (const student of allStudents) {
-        const sp = student.studentProfile && typeof student.studentProfile === 'object' ? student.studentProfile : {};
-        if (sp.studentId && String(sp.studentId).startsWith(prefix)) {
-          matchCount++;
-        }
-      }
-
-      const seqNum = String(matchCount + 1).padStart(3, '0');
-      generatedStudentId = `${prefix}${seqNum}`;
+      generatedStudentId = await nextStudentId(courseAbbr);
       collegeEmail = `${generatedStudentId.toLowerCase()}@ssccjunnar.edu`;
 
       const existing = await prisma.user.findUnique({ where: { email: collegeEmail } });
@@ -333,18 +345,8 @@ export function adminRouter({ jwtSecret }) {
         plainPassword = pwd.split('').sort(() => 0.5 - Math.random()).join('');
       }
 
-      // Generate Roll Number automatically: Format: FYBCA-2026-001
-      const yearFull = new Date().getFullYear();
-      const rollPrefix = `FY${courseAbbr}-${yearFull}-`;
-      let rollMatchCount = 0;
-      for (const student of allStudents) {
-        const sp = student.studentProfile && typeof student.studentProfile === 'object' ? student.studentProfile : {};
-        if (sp.rollNumber && String(sp.rollNumber).startsWith(rollPrefix)) {
-          rollMatchCount++;
-        }
-      }
-      const rollSeqNum = String(rollMatchCount + 1).padStart(3, '0');
-      const generatedRollNumber = `${rollPrefix}${rollSeqNum}`;
+      // Atomic Roll-Number generation using Counter model
+      const generatedRollNumber = await nextRollNumber(courseAbbr);
 
       const generatedVerificationId = `SSC-VER-${String(generatedStudentId || generatedRollNumber || 'unknown').replace(/\s+/g, '')}`;
 
