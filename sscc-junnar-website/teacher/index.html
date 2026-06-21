@@ -5,35 +5,130 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>Teacher portal — SSC College, Junnar</title>
   <script src="/js/theme.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
   <link rel="stylesheet" href="../css/styles.css"/>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
 </head>
 <body class="dashboard-body">
   <div class="dash-layout">
     <aside class="dash-side">
-      <h2>Teacher</h2>
+      <!-- Sidebar Brand -->
+      <div class="sidebar-brand">
+        <div class="sidebar-brand-icon">SSC</div>
+        <div class="sidebar-brand-text">
+          <span class="sidebar-brand-title">SSC College</span>
+          <span class="sidebar-brand-sub">Faculty portal</span>
+        </div>
+      </div>
+
+      <!-- Navigation Category: Workspace -->
+      <div class="sidebar-category">Workspace</div>
       <nav class="dash-nav">
-        <button type="button" data-panel="subjects" class="active">My subjects</button>
-        <button type="button" data-panel="students">Students</button>
-        <button type="button" data-panel="timetable">Timetable</button>
-        <button type="button" data-panel="marks">Marks</button>
-        <button type="button" data-panel="leave">Leave Request</button>
-        <button type="button" data-panel="attendance">Attendance</button>
-        <button type="button" data-panel="materials">Study materials</button>
-        <button type="button" data-panel="notices">Notices</button>
-        <button type="button" data-panel="edit-profile">Edit Profile</button>
+        <button type="button" data-panel="subjects" class="active">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+          Dashboard
+        </button>
+        <button type="button" data-panel="students">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          Students
+        </button>
+        <button type="button" data-panel="attendance">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          Attendance
+        </button>
+        <button type="button" data-panel="marks">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 10 3 12 0v-5"/></svg>
+          Marks
+        </button>
+        <button type="button" data-panel="timetable">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          Timetable
+        </button>
       </nav>
-      <a class="btn secondary small mt-3" href="../index.html" style="display:inline-block;text-decoration:none;">Public site</a>
-      <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem; align-items: center;">
-        <button type="button" class="theme-toggle-btn" onclick="window.ThemeManager.cycle()" aria-label="Toggle Theme">🌙 Dark</button>
-        <button type="button" class="btn danger small" id="logout-btn" style="flex: 1; margin-top: 0 !important;">Logout</button>
+
+      <!-- Navigation Category: Personal -->
+      <div class="sidebar-category">Personal</div>
+      <nav class="dash-nav">
+        <button type="button" data-panel="leave">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M16 14h.01"/></svg>
+          Leave requests
+        </button>
+        <button type="button" data-panel="materials">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          Study materials
+        </button>
+        <button type="button" data-panel="notices">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          Notices
+        </button>
+        <button type="button" data-panel="edit-profile">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          Edit profile
+        </button>
+      </nav>
+
+      <!-- Sidebar Bottom Utility -->
+      <div class="sidebar-bottom">
+        <div class="sidebar-status">
+          <span class="sidebar-status-dot"></span>
+          System Online
+        </div>
+        <div class="sidebar-bottom-actions">
+          <button type="button" class="theme-toggle-btn" onclick="window.ThemeManager.toggle()" id="theme-toggle-sidebar" aria-label="Toggle Theme">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+            Light
+          </button>
+          <a class="btn secondary small" href="../index.html" style="text-decoration:none; flex: 1; justify-content: center;">
+            Site
+          </a>
+          <button type="button" class="btn danger small" id="logout-btn" style="flex: 1; justify-content: center;">
+            Logout
+          </button>
+        </div>
       </div>
     </aside>
+
     <main class="dash-main">
-      <div class="dash-top">
-        <h1 style="margin:0;font-size:1.25rem;">Faculty workspace</h1>
-        <span class="small" id="who"></span>
+      <!-- Topbar -->
+      <div class="dash-topbar">
+        <div class="topbar-left">
+          <button type="button" class="topbar-bell" id="mobile-menu-btn" style="display:none;" aria-label="Menu">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          </button>
+          <h1 class="topbar-title" id="dash-title">Dashboard</h1>
+        </div>
+        <div class="topbar-right">
+          <div class="topbar-search" id="global-search-wrap">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="global-search" placeholder="Search students, subjects..." autocomplete="off"/>
+            <div class="search-results" id="search-results"></div>
+          </div>
+          <div class="topbar-notif-wrap" style="position: relative;">
+            <button type="button" class="topbar-bell" id="topbar-notif-btn" aria-label="Notifications">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+              <span class="topbar-bell-badge" id="notif-badge" style="display:none;">0</span>
+            </button>
+            <div class="notif-dropdown" id="notif-dropdown" style="display:none;">
+              <div class="notif-header">
+                <h4>Notifications</h4>
+                <button type="button" class="btn small secondary" id="notif-clear-btn">Clear All</button>
+              </div>
+              <div class="notif-list" id="notif-list">
+                <div class="notif-empty">No new notifications</div>
+              </div>
+            </div>
+          </div>
+          <div class="topbar-profile">
+            <div class="topbar-avatar" id="teacher-avatar">T</div>
+            <div class="topbar-profile-info">
+              <span class="topbar-profile-name" id="teacher-user">Teacher</span>
+              <span class="topbar-profile-role" id="teacher-role">Faculty</span>
+            </div>
+          </div>
+        </div>
       </div>
+
+      <div class="dash-content">
 
       <section class="dash-panel active" data-panel="subjects">
         <!-- Quick Welcome card -->
@@ -50,6 +145,7 @@
             <button class="btn small" onclick="panel('marks'); load('marks');" style="color: #000; font-size: 0.8rem;">Enter Marks</button>
             <button class="btn secondary small" onclick="panel('attendance'); load('attendance');" style="font-size: 0.8rem; color: var(--text);">Mark Attendance</button>
             <button class="btn secondary small" onclick="panel('leave'); load('leave');" style="font-size: 0.8rem; color: var(--text);">Apply Leave</button>
+            <button class="btn secondary small" id="qa-id-card" style="font-size: 0.8rem; color: var(--text);">Digital ID Card</button>
           </div>
         </div>
 
@@ -114,6 +210,15 @@
           </div>
         </div>
 
+        <!-- Row 2.5: Class Performance Average Widget -->
+        <div class="card mb-4" id="card-db-performance-avg" style="display: none; margin-bottom: 1.5rem;">
+          <h3>Class Academic Performance Average</h3>
+          <p class="small text-secondary" style="margin-top:-0.5rem; margin-bottom:1rem;">Your subject average marks obtained compared across exams.</p>
+          <div id="performance-average-widget" style="display: flex; flex-direction: column; gap: 0.75rem;">
+            <p class="small text-secondary">Loading subject averages...</p>
+          </div>
+        </div>
+
         <!-- Row 3: Recent marks logs, leave history, recent notices -->
         <div class="grid grid-3">
           <div class="card">
@@ -146,19 +251,44 @@
 
       <section class="dash-panel" data-panel="marks">
         <div class="card">
-          <h3>Enter / update marks</h3>
-          <form id="form-marks" class="form-grid two">
-            <div><label class="field-label">Student</label><select class="select input" id="mark-student" required></select></div>
-            <div><label class="field-label">Subject</label><input class="input" id="mark-subject" required/></div>
+          <h3>Enter / Update Marks (Bulk Roster)</h3>
+          <p class="small text-secondary" style="margin-bottom: 1rem;">Select the subject and exam to load the student list and enter marks in bulk.</p>
+          <div class="form-grid three" style="margin-bottom: 1.5rem;">
             <div>
-              <label class="field-label">Exam name / Select Scheduled Exam</label>
-              <input class="input" id="mark-exam" placeholder="Unit 1" list="exams-datalist" required/>
+              <label class="field-label" for="bulk-mark-subject">Subject</label>
+              <select id="bulk-mark-subject" class="select input" required>
+                <option value="">-- Select Subject --</option>
+              </select>
+            </div>
+            <div>
+              <label class="field-label" for="bulk-mark-exam">Exam Name</label>
+              <input class="input" id="bulk-mark-exam" placeholder="e.g. Unit Test 1" list="exams-datalist" required/>
               <datalist id="exams-datalist"></datalist>
             </div>
-            <div><label class="field-label">Marks obtained</label><input class="input" id="mark-obt" type="number" step="0.01" required/></div>
-            <div><label class="field-label">Max marks</label><input class="input" id="mark-max" type="number" value="50" required/></div>
-            <div><button class="btn" type="submit" style="color: #000; margin-top: 1.25rem;">Save marks</button></div>
-          </form>
+            <div>
+              <label class="field-label" for="bulk-mark-max">Max Marks</label>
+              <input class="input" id="bulk-mark-max" type="number" value="50" required/>
+            </div>
+          </div>
+          
+          <div id="bulk-marks-roster-container" style="display: none; border-top: 1px solid var(--card-border); padding-top: 1.5rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+              <span id="bulk-marks-counter" class="small highlight" style="font-weight: 600;">0 of 0 entered</span>
+              <button class="btn small" type="button" id="btn-save-bulk-marks" style="color: #000; margin-top: 0;">Save All</button>
+            </div>
+            <div class="table-wrap">
+              <table class="table small" id="tbl-bulk-marks-roster" style="width: 100%;">
+                <thead>
+                  <tr>
+                    <th>Roll No</th>
+                    <th>Student Name</th>
+                    <th>Marks Obtained</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
         </div>
         
         <div class="card mt-4">
@@ -245,39 +375,82 @@
       </section>
 
       <section class="dash-panel" data-panel="edit-profile">
-        <div class="card">
-          <h3>Edit Profile</h3>
-          <form id="form-edit-profile" class="form-grid">
-            <div style="display:flex;align-items:center;gap:1.5rem;margin-bottom:1rem;flex-wrap:wrap;">
-              <div id="teacher-avatar-preview-wrap">
-                <div class="faculty-avatar-placeholder" id="teacher-avatar-placeholder" style="width:80px;height:80px;border-radius:50%;border:1px solid rgba(56,189,248,0.2);background:rgba(0,0,0,0.25);display:grid;place-items:center;"></div>
-                <img id="teacher-avatar-img" src="" alt="Profile picture" style="width:80px;height:80px;border-radius:50%;object-fit:cover;display:none;margin:0;border:1px solid rgba(56,189,248,0.2);"/>
+        <div class="grid grid-2" style="align-items: start; gap: 1.5rem;">
+          <div class="card">
+            <h3>Edit Profile</h3>
+            <form id="form-edit-profile" class="form-grid">
+              <div style="display:flex;align-items:center;gap:1.5rem;margin-bottom:1rem;flex-wrap:wrap;">
+                <div id="teacher-avatar-preview-wrap">
+                  <div class="faculty-avatar-placeholder" id="teacher-avatar-placeholder" style="width:80px;height:80px;border-radius:50%;border:1px solid rgba(56,189,248,0.2);background:rgba(0,0,0,0.25);display:grid;place-items:center;"></div>
+                  <img id="teacher-avatar-img" src="" alt="Profile picture" style="width:80px;height:80px;border-radius:50%;object-fit:cover;display:none;margin:0;border:1px solid rgba(56,189,248,0.2);"/>
+                </div>
+                <div>
+                  <label class="field-label" for="teacher-avatar-upload">Upload profile picture</label>
+                  <input type="file" id="teacher-avatar-upload" name="avatar" accept="image/*"/>
+                </div>
               </div>
               <div>
-                <label class="field-label" for="teacher-avatar-upload">Upload profile picture</label>
-                <input type="file" id="teacher-avatar-upload" name="avatar" accept="image/*"/>
+                <label class="field-label" for="teacher-profile-name">Full Name</label>
+                <input class="input" id="teacher-profile-name" name="name" required/>
               </div>
-            </div>
-            <div>
-              <label class="field-label" for="teacher-profile-name">Full Name</label>
-              <input class="input" id="teacher-profile-name" name="name" required/>
-            </div>
-            <div>
-              <label class="field-label" for="teacher-profile-phone">Phone number</label>
-              <input class="input" id="teacher-profile-phone" name="phone"/>
-            </div>
-            <div>
-              <label class="field-label" for="teacher-profile-qual">Qualifications</label>
-              <input class="input" id="teacher-profile-qual" name="qualifications"/>
-            </div>
-            <div>
-              <label class="field-label" for="teacher-profile-bio">Bio / Statement</label>
-              <textarea class="input" id="teacher-profile-bio" name="bio" rows="3"></textarea>
-            </div>
-            <div>
-              <button class="btn" type="submit">Save Changes</button>
-            </div>
-          </form>
+              <div>
+                <label class="field-label" for="teacher-profile-phone">Phone number</label>
+                <input class="input" id="teacher-profile-phone" name="phone"/>
+              </div>
+              <div>
+                <label class="field-label" for="teacher-profile-qual">Qualifications</label>
+                <input class="input" id="teacher-profile-qual" name="qualifications"/>
+              </div>
+              <div>
+                <label class="field-label" for="teacher-profile-bio">Bio / Statement</label>
+                <textarea class="input" id="teacher-profile-bio" name="bio" rows="3"></textarea>
+              </div>
+              <div>
+                <button class="btn" type="submit" style="color: #000;">Save Changes</button>
+              </div>
+            </form>
+          </div>
+          
+          <div class="card" id="card-change-password">
+            <h3>Change Password</h3>
+            <form id="form-change-password" class="form-grid">
+              <div>
+                <label class="field-label" for="profile-current-pwd">Current Password</label>
+                <input type="password" id="profile-current-pwd" class="input" required autocomplete="current-password"/>
+              </div>
+              <div>
+                <label class="field-label" for="profile-new-pwd">New Password</label>
+                <input type="password" id="profile-new-pwd" class="input" required autocomplete="new-password"/>
+              </div>
+              <div>
+                <label class="field-label" for="profile-confirm-pwd">Confirm New Password</label>
+                <input type="password" id="profile-confirm-pwd" class="input" required autocomplete="new-password"/>
+              </div>
+              <div class="password-strength-checklist small mt-2" style="display: flex; flex-direction: column; gap: 0.25rem;">
+                <div id="criteria-length" class="criteria text-secondary" style="display: flex; align-items: center; gap: 0.4rem;">
+                  <span class="dot" style="width: 6px; height: 6px; border-radius: 50%; background: var(--muted); display: inline-block;"></span>
+                  At least 8 characters
+                </div>
+                <div id="criteria-upper" class="criteria text-secondary" style="display: flex; align-items: center; gap: 0.4rem;">
+                  <span class="dot" style="width: 6px; height: 6px; border-radius: 50%; background: var(--muted); display: inline-block;"></span>
+                  At least one uppercase letter (A-Z)
+                </div>
+                <div id="criteria-lower" class="criteria text-secondary" style="display: flex; align-items: center; gap: 0.4rem;">
+                  <span class="dot" style="width: 6px; height: 6px; border-radius: 50%; background: var(--muted); display: inline-block;"></span>
+                  At least one lowercase letter (a-z)
+                </div>
+                <div id="criteria-digit" class="criteria text-secondary" style="display: flex; align-items: center; gap: 0.4rem;">
+                  <span class="dot" style="width: 6px; height: 6px; border-radius: 50%; background: var(--muted); display: inline-block;"></span>
+                  At least one number (0-9)
+                </div>
+                <div id="criteria-special" class="criteria text-secondary" style="display: flex; align-items: center; gap: 0.4rem;">
+                  <span class="dot" style="width: 6px; height: 6px; border-radius: 50%; background: var(--muted); display: inline-block;"></span>
+                  At least one special character (!@#$%^&*()_+-=)
+                </div>
+              </div>
+              <button type="submit" class="btn mt-2" style="color: #000;">Change Password</button>
+            </form>
+          </div>
         </div>
       </section>
 
@@ -361,6 +534,7 @@
       </section>
 
       <p id="dash-msg" class="small mt-3"></p>
+      </div>
     </main>
   </div>
 
@@ -382,6 +556,157 @@
       </div>
     </div>
   </div>
+
+  <!-- Must Change Password Modal -->
+  <div class="modal-overlay" id="modal-must-change-pwd" style="display:none; z-index: 9999;">
+    <div class="modal-container" style="max-width: 450px;">
+      <div class="modal-header">
+        <h3 class="modal-title">Password Change Required</h3>
+      </div>
+      <div style="padding: 0.5rem 0;">
+        <p class="small text-secondary">Your account was initialized with a default temporary password. You must set a personalized, secure password to continue using the system.</p>
+        <form id="form-must-change-pwd" class="form-grid mt-3">
+          <div>
+            <label class="field-label" for="must-current-pwd">Current Password</label>
+            <input type="password" id="must-current-pwd" class="input" required autocomplete="current-password"/>
+          </div>
+          <div>
+            <label class="field-label" for="must-new-pwd">New Password</label>
+            <input type="password" id="must-new-pwd" class="input" required autocomplete="new-password"/>
+          </div>
+          <div>
+            <label class="field-label" for="must-confirm-pwd">Confirm New Password</label>
+            <input type="password" id="must-confirm-pwd" class="input" required autocomplete="new-password"/>
+          </div>
+          <div class="password-strength-checklist small mt-2" style="display: flex; flex-direction: column; gap: 0.25rem;">
+            <div id="must-criteria-length" class="criteria text-secondary" style="display: flex; align-items: center; gap: 0.4rem;">
+              <span class="dot" style="width: 6px; height: 6px; border-radius: 50%; background: var(--muted); display: inline-block;"></span>
+              At least 8 characters
+            </div>
+            <div id="must-criteria-upper" class="criteria text-secondary" style="display: flex; align-items: center; gap: 0.4rem;">
+              <span class="dot" style="width: 6px; height: 6px; border-radius: 50%; background: var(--muted); display: inline-block;"></span>
+              At least one uppercase letter (A-Z)
+            </div>
+            <div id="must-criteria-lower" class="criteria text-secondary" style="display: flex; align-items: center; gap: 0.4rem;">
+              <span class="dot" style="width: 6px; height: 6px; border-radius: 50%; background: var(--muted); display: inline-block;"></span>
+              At least one lowercase letter (a-z)
+            </div>
+            <div id="must-criteria-digit" class="criteria text-secondary" style="display: flex; align-items: center; gap: 0.4rem;">
+              <span class="dot" style="width: 6px; height: 6px; border-radius: 50%; background: var(--muted); display: inline-block;"></span>
+              At least one number (0-9)
+            </div>
+            <div id="must-criteria-special" class="criteria text-secondary" style="display: flex; align-items: center; gap: 0.4rem;">
+              <span class="dot" style="width: 6px; height: 6px; border-radius: 50%; background: var(--muted); display: inline-block;"></span>
+              At least one special character (!@#$%^&*()_+-=)
+            </div>
+          </div>
+          <button type="submit" class="btn mt-3" style="color: #000; width: 100%;">Set Password</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Teacher Digital ID Card Modal -->
+  <div class="modal-overlay" id="id-card-modal" style="display:none; z-index: 9999;">
+    <div class="modal-content id-card-modal-wrap">
+      <div class="id-card-tabs">
+        <button type="button" class="id-tab active" id="id-tab-front">Front</button>
+        <button type="button" class="id-tab" id="id-tab-back">Back</button>
+      </div>
+      <div class="smart-id-card" id="id-card-front">
+        <div class="smart-id-header">
+          <div class="smart-id-logo">SSC</div>
+          <div>
+            <h3>Shri Shiv Chhatrapati College</h3>
+            <span class="small">Junnar — Faculty Identity Card</span>
+          </div>
+        </div>
+        <div class="smart-id-body">
+          <div class="smart-id-photo-wrap">
+            <img src="" alt="Faculty Photo" id="id-card-photo" class="smart-id-photo"/>
+            <div class="smart-id-photo-placeholder" id="id-card-photo-placeholder">👨‍🏫</div>
+          </div>
+          <div class="smart-id-info">
+            <h2 id="id-card-name">&nbsp;</h2>
+            <p class="smart-id-course" id="id-card-designation">&nbsp;</p>
+            <dl class="smart-id-fields">
+              <div><dt>Faculty ID</dt><dd id="id-card-erp-id">&nbsp;</dd></div>
+              <div><dt>Department</dt><dd id="id-card-dept">&nbsp;</dd></div>
+              <div><dt>Official Email</dt><dd id="id-card-email">&nbsp;</dd></div>
+              <div><dt>Phone / Contact</dt><dd id="id-card-phone">&nbsp;</dd></div>
+              <div><dt>Valid Until</dt><dd id="id-card-validity">&nbsp;</dd></div>
+            </dl>
+          </div>
+          <div class="smart-id-qr-wrap">
+            <canvas id="id-card-qr" width="128" height="128"></canvas>
+          </div>
+        </div>
+        <div class="smart-id-footer">
+          <div class="smart-id-signature">
+            <div class="sig-line"></div>
+            <span>Principal Signature</span>
+          </div>
+          <span class="small">If found, return to SSC College Junnar</span>
+        </div>
+      </div>
+      <div class="smart-id-card smart-id-back" id="id-card-back" style="display:none;">
+        <h3>Faculty Details</h3>
+        <dl class="smart-id-fields back-fields">
+          <div><dt>Qualifications</dt><dd id="id-card-qual">&nbsp;</dd></div>
+          <div><dt>Statement / Bio</dt><dd id="id-card-bio">&nbsp;</dd></div>
+          <div><dt>Verification ID</dt><dd id="id-card-verify-id">&nbsp;</dd></div>
+          <div><dt>Emergency Contact</dt><dd id="id-card-emergency">&nbsp;</dd></div>
+        </dl>
+        <div class="smart-id-rules">
+          <h4>College Regulations</h4>
+          <ul class="small">
+            <li>This identity card must be displayed while on campus.</li>
+            <li>Loss of ID card must be reported to the registrar immediately.</li>
+            <li>QR code verifies faculty employment status with the college ERP.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="id-card-actions">
+        <button class="btn small" type="button" onclick="window.print()">Print ID</button>
+        <button class="btn danger small" type="button" id="btn-close-id">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Student Detailed Slide-in Drawer -->
+  <div class="drawer-overlay" id="drawer-overlay"></div>
+  <div class="side-drawer" id="student-detail-drawer">
+    <div class="drawer-header">
+      <h3 class="drawer-title" id="drawer-student-name">Student Details</h3>
+      <button type="button" class="drawer-close" id="btn-close-drawer">&times;</button>
+    </div>
+    <div class="drawer-body" id="drawer-student-body">
+      <!-- Dynamic student details go here -->
+    </div>
+  </div>
+
+  <!-- Mobile Bottom Viewport Navigation -->
+  <div class="mobile-bottom-nav">
+    <button type="button" class="mobile-bottom-nav-btn active" data-nav-panel="subjects">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+      <span>Dashboard</span>
+    </button>
+    <button type="button" class="mobile-bottom-nav-btn" data-nav-panel="attendance">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      <span>Attendance</span>
+    </button>
+    <button type="button" class="mobile-bottom-nav-btn" data-nav-panel="marks">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 10 3 12 0v-5"/></svg>
+      <span>Marks</span>
+    </button>
+    <button type="button" class="mobile-bottom-nav-btn" data-nav-panel="edit-profile">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      <span>Profile</span>
+    </button>
+  </div>
+
+  <!-- Reusable Toast Notification Container -->
+  <div id="toast-container"></div>
 
   <script src="../js/api.js"></script>
   <script src="../js/teacher-app.js"></script>

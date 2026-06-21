@@ -649,17 +649,13 @@
     const el = document.getElementById('attendance-summary-content');
     if (!el) return;
     try {
-      const [students, settings] = await Promise.all([
-        SSC_API.get('/admin/students'),
+      const [analytics, settings] = await Promise.all([
+        SSC_API.get('/admin/attendance/analytics'),
         SSC_API.get('/public/settings').catch(() => ({}))
       ]);
       const threshold = settings && settings.attendanceThreshold !== undefined ? Number(settings.attendanceThreshold) : 75;
       
-      // Check for students with low attendance data
-      const lowAttendance = students.filter(s => {
-        const att = s.studentProfile && s.studentProfile.attendancePercentage;
-        return att !== undefined && att !== null && Number(att) < threshold;
-      });
+      const lowAttendance = analytics && analytics.lowAttendanceList ? analytics.lowAttendanceList : [];
 
       if (lowAttendance.length === 0) {
         el.innerHTML = `
@@ -674,11 +670,11 @@
 
       let html = '<table class="table small"><thead><tr><th>Student</th><th>Class</th><th>Attendance</th></tr></thead><tbody>';
       lowAttendance.slice(0, 5).forEach(s => {
-        const att = Number(s.studentProfile.attendancePercentage);
+        const att = Number(s.percentage);
         const color = att < threshold ? 'var(--danger)' : 'var(--warning)';
         html += `<tr>
           <td>${esc(s.name)}</td>
-          <td>${esc(s.studentProfile.className || '—')}</td>
+          <td>${esc(s.className || '—')}</td>
           <td><span style="color:${color};font-weight:600;">${att}%</span></td>
         </tr>`;
       });

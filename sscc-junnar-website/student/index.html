@@ -12,31 +12,137 @@
 <body class="dashboard-body">
   <div class="dash-layout">
     <aside class="dash-side">
-      <h2>Student</h2>
+      <!-- Sidebar Brand -->
+      <div class="sidebar-brand">
+        <div class="sidebar-brand-icon">SSC</div>
+        <div class="sidebar-brand-text">
+          <span class="sidebar-brand-title">SSC College</span>
+          <span class="sidebar-brand-sub">Student portal</span>
+        </div>
+      </div>
+
+      <!-- Navigation Category: Overview -->
+      <div class="sidebar-category">Overview</div>
       <nav class="dash-nav">
-        <button type="button" data-panel="profile" class="active">Profile</button>
-        <button type="button" data-panel="timetable">Timetable</button>
-        <button type="button" data-panel="library">Library</button>
-        <button type="button" data-panel="exams">Exams & Results</button>
-        <button type="button" data-panel="attendance">Attendance</button>
-        <button type="button" data-panel="materials">Materials</button>
-        <button type="button" data-panel="notices">Notices</button>
-        <button type="button" data-panel="placement">Placement Cell</button>
-        <button type="button" data-panel="admission">Admission status</button>
-        <button type="button" data-panel="feedback">Feedback</button>
-        <button type="button" data-panel="edit-profile">Edit Profile</button>
+        <button type="button" data-panel="profile" class="active">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+          Dashboard
+        </button>
       </nav>
-      <a class="btn secondary small mt-3" href="../index.html" style="display:inline-block;text-decoration:none;">Public site</a>
-      <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem; align-items: center;">
-        <button type="button" class="theme-toggle-btn" onclick="window.ThemeManager.cycle()" aria-label="Toggle Theme">🌙 Dark</button>
-        <button type="button" class="btn danger small" id="logout-btn" style="flex: 1; margin-top: 0 !important;">Logout</button>
+
+      <!-- Navigation Category: Academics -->
+      <div class="sidebar-category">Academics</div>
+      <nav class="dash-nav">
+        <button type="button" data-panel="attendance">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          Attendance
+        </button>
+        <button type="button" data-panel="exams">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 10 3 12 0v-5"/></svg>
+          Exams & results
+        </button>
+        <button type="button" data-panel="timetable">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          Timetable
+        </button>
+        <button type="button" data-panel="materials">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          Materials
+        </button>
+      </nav>
+
+      <!-- Navigation Category: Campus -->
+      <div class="sidebar-category">Campus</div>
+      <nav class="dash-nav">
+        <button type="button" data-panel="library">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M8 7h8"/><path d="M8 11h6"/></svg>
+          Library
+        </button>
+        <button type="button" data-panel="placement">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+          Placement cell
+        </button>
+        <button type="button" data-panel="notices">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          Notices
+        </button>
+      </nav>
+
+      <!-- Navigation Category: Account -->
+      <div class="sidebar-category">Account</div>
+      <nav class="dash-nav">
+        <button type="button" data-panel="feedback">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          Feedback
+        </button>
+        <button type="button" data-panel="edit-profile">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          Edit profile
+        </button>
+      </nav>
+
+      <!-- Sidebar Bottom Utility -->
+      <div class="sidebar-bottom">
+        <div class="sidebar-status">
+          <span class="sidebar-status-dot"></span>
+          System Online
+        </div>
+        <div class="sidebar-bottom-actions">
+          <button type="button" class="theme-toggle-btn" onclick="window.ThemeManager.toggle()" id="theme-toggle-sidebar" aria-label="Toggle Theme">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+            Light
+          </button>
+          <a class="btn secondary small" href="../index.html" style="text-decoration:none; flex: 1; justify-content: center;">
+            Site
+          </a>
+          <button type="button" class="btn danger small" id="logout-btn" style="flex: 1; justify-content: center;">
+            Logout
+          </button>
+        </div>
       </div>
     </aside>
+
     <main class="dash-main">
-      <div class="dash-top">
-        <h1 style="margin:0;font-size:1.25rem;">Student dashboard</h1>
-        <span class="small" id="who"></span>
+      <!-- Topbar -->
+      <div class="dash-topbar">
+        <div class="topbar-left">
+          <button type="button" class="topbar-bell" id="mobile-menu-btn" style="display:none;" aria-label="Menu">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          </button>
+          <h1 class="topbar-title" id="dash-title">Dashboard</h1>
+        </div>
+        <div class="topbar-right">
+          <div class="topbar-search" id="global-search-wrap">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="global-search" placeholder="Search results, notices..." autocomplete="off"/>
+            <div class="search-results" id="search-results"></div>
+          </div>
+          <div class="topbar-notif-wrap" style="position: relative;">
+            <button type="button" class="topbar-bell" id="topbar-notif-btn" aria-label="Notifications">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+              <span class="topbar-bell-badge" id="notif-badge" style="display:none;">0</span>
+            </button>
+            <div class="notif-dropdown" id="notif-dropdown" style="display:none;">
+              <div class="notif-header">
+                <h4>Notifications</h4>
+                <button type="button" class="btn small secondary" id="notif-clear-btn">Clear All</button>
+              </div>
+              <div class="notif-list" id="notif-list">
+                <div class="notif-empty">No new notifications</div>
+              </div>
+            </div>
+          </div>
+          <div class="topbar-profile">
+            <div class="topbar-avatar" id="student-avatar">S</div>
+            <div class="topbar-profile-info">
+              <span class="topbar-profile-name" id="student-user">Student</span>
+              <span class="topbar-profile-role" id="student-role">Student</span>
+            </div>
+          </div>
+        </div>
       </div>
+
+      <div class="dash-content">
 
       <!-- ══ PROFILE PANEL ══════════════════════════════════════════════ -->
       <section class="dash-panel active" data-panel="profile">
@@ -252,6 +358,42 @@
 
         <div class="card mt-4">
           <h3>Exam Results</h3>
+          
+          <!-- Results Summary & GPA Trend -->
+          <div class="grid grid-2 mb-4" id="results-summary-block" style="align-items: start; gap: 1.5rem; margin-top: 1rem;">
+            <div style="padding: 1rem; border-radius: var(--radius-xs); background: rgba(0,0,0,0.15); border: 1px solid var(--card-border);">
+              <h4 style="margin: 0 0 0.5rem 0; font-size: 0.85rem; color: var(--text-secondary);">Overall Academic Performance</h4>
+              <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom: 0.5rem;">
+                <strong id="results-avg-pct" style="font-size: 1.5rem; font-weight:700;">--%</strong>
+                <span class="small" id="results-avg-grade" style="font-weight:600; color:var(--primary);">Grade: --</span>
+              </div>
+              <div style="background:rgba(255,255,255,0.08); height:8px; border-radius:4px; overflow:hidden; border: 0.5px solid rgba(255,255,255,0.1);">
+                <div id="results-avg-bar" style="background:var(--primary); width:0%; height:100%; border-radius:4px; transition: width 0.6s ease-in-out;"></div>
+              </div>
+            </div>
+            
+            <div style="padding: 1rem; border-radius: var(--radius-xs); background: rgba(0,0,0,0.15); border: 1px solid var(--card-border);">
+              <h4 style="margin: 0 0 0.5rem 0; font-size: 0.85rem; color: var(--text-secondary);">Semester GPA Sparkline</h4>
+              <div style="display:flex; align-items:center; gap: 1rem; justify-content:space-between;">
+                <div>
+                  <strong id="results-gpa-trend-val" style="font-size: 1.5rem; font-weight:700;">--</strong>
+                  <span class="small" style="display:block; opacity:0.8;">Estimated GPA</span>
+                </div>
+                <div id="results-gpa-sparkline" style="display:flex; align-items:flex-end; gap:3px; height: 35px;">
+                  <!-- Sparkline bars dynamically rendered -->
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Filter Tabs -->
+          <div class="steps mb-2" id="exam-filter-tabs">
+            <button type="button" class="step-pill active" data-filter="all">All Exams</button>
+            <button type="button" class="step-pill" data-filter="unit_test">Unit Tests</button>
+            <button type="button" class="step-pill" data-filter="semester">Semesters</button>
+            <button type="button" class="step-pill" data-filter="final">Finals</button>
+          </div>
+
           <p class="small">Below are your scores for published exams.</p>
           <div class="table-wrap mt-2">
             <table class="table small" id="tbl-stu-results">
@@ -362,17 +504,37 @@
 
         <div class="card mt-4">
           <h3>Date-wise Attendance Log</h3>
-          <div class="table-wrap">
-            <table class="table small" id="tbl-att">
-              <thead>
-                <tr>
-                  <th>Date</th>
-                  <th>Subject</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody></tbody>
-            </table>
+          <div class="grid grid-2" style="gap: 1.5rem; align-items: start;">
+            <div>
+              <div class="table-wrap">
+                <table class="table small" id="tbl-att">
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Subject</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </div>
+            <div>
+              <h4>Attendance Calendar Heatmap</h4>
+              <p class="small text-secondary" style="margin-top:-0.5rem; margin-bottom: 1rem;">Visual calendar showing your daily attendance for the current month.</p>
+              <div id="attendance-heatmap-wrap" style="padding: 1rem; border-radius: 8px; background: rgba(0,0,0,0.15); border: 1px solid var(--card-border);">
+                <div id="attendance-heatmap-month-label" class="small mb-2" style="font-weight: 600; text-align: center;"></div>
+                <div class="heatmap-weekdays" style="display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-size: 0.7rem; color: var(--muted); margin-bottom: 0.5rem;">
+                  <div>M</div><div>T</div><div>W</div><div>T</div><div>F</div><div>S</div><div>S</div>
+                </div>
+                <div id="attendance-heatmap-grid" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px;"></div>
+                <div class="heatmap-legend small mt-3" style="display: flex; gap: 1rem; justify-content: center; font-size: 0.72rem; flex-wrap: wrap;">
+                  <span style="display:flex; align-items:center; gap: 0.25rem;"><span style="width:10px; height:10px; background:#22c55e; border-radius: 2px; display:inline-block;"></span> Present</span>
+                  <span style="display:flex; align-items:center; gap: 0.25rem;"><span style="width:10px; height:10px; background:#ef4444; border-radius: 2px; display:inline-block;"></span> Absent</span>
+                  <span style="display:flex; align-items:center; gap: 0.25rem;"><span style="width:10px; height:10px; background:var(--muted); opacity: 0.35; border-radius: 2px; display:inline-block;"></span> No Log</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -383,10 +545,6 @@
 
       <section class="dash-panel" data-panel="notices">
         <div class="card"><div id="stu-notices"></div></div>
-      </section>
-
-      <section class="dash-panel" data-panel="admission">
-        <div class="card"><pre id="adm-pre" class="small" style="white-space:pre-wrap;"></pre></div>
       </section>
 
       <section class="dash-panel" data-panel="feedback">
@@ -401,35 +559,90 @@
       </section>
 
       <section class="dash-panel" data-panel="edit-profile">
-        <div class="card">
-          <h3>Edit Profile</h3>
-          <form id="form-edit-profile" class="form-grid">
-            <div style="display:flex;align-items:center;gap:1.5rem;margin-bottom:1rem;flex-wrap:wrap;">
-              <div id="student-avatar-preview-wrap">
-                <div class="faculty-avatar-placeholder" id="student-avatar-placeholder" style="width:80px;height:80px;border-radius:50%;border:1px solid rgba(56,189,248,0.2);background:rgba(0,0,0,0.25);display:grid;place-items:center;"></div>
-                <img id="student-avatar-img" src="" alt="Profile picture" style="width:80px;height:80px;border-radius:50%;object-fit:cover;display:none;margin:0;border:1px solid rgba(56,189,248,0.2);"/>
+        <div class="grid grid-2" style="align-items: start; gap: 1.5rem;">
+          <div class="card">
+            <h3>Edit Profile</h3>
+            <form id="form-edit-profile" class="form-grid">
+              <div style="display:flex;align-items:center;gap:1.5rem;margin-bottom:1rem;flex-wrap:wrap;">
+                <div id="student-avatar-preview-wrap">
+                  <div class="faculty-avatar-placeholder" id="student-avatar-placeholder" style="width:80px;height:80px;border-radius:50%;border:1px solid rgba(56,189,248,0.2);background:rgba(0,0,0,0.25);display:grid;place-items:center;"></div>
+                  <img id="student-avatar-img" src="" alt="Profile picture" style="width:80px;height:80px;border-radius:50%;object-fit:cover;display:none;margin:0;border:1px solid rgba(56,189,248,0.2);"/>
+                </div>
+                <div>
+                  <label class="field-label" for="student-avatar-upload">Upload profile picture</label>
+                  <input type="file" id="student-avatar-upload" name="avatar" accept="image/*"/>
+                </div>
               </div>
               <div>
-                <label class="field-label" for="student-avatar-upload">Upload profile picture</label>
-                <input type="file" id="student-avatar-upload" name="avatar" accept="image/*"/>
+                <label class="field-label" for="student-profile-name">Full Name</label>
+                <input class="input" id="student-profile-name" name="name" required/>
+              </div>
+              <div>
+                <label class="field-label" for="student-profile-phone">Phone number</label>
+                <input class="input" id="student-profile-phone" name="phone"/>
+              </div>
+              <div>
+                <label class="field-label" for="student-profile-bio">Bio / Statement</label>
+                <textarea class="input" id="student-profile-bio" name="bio" rows="3"></textarea>
+              </div>
+              <div>
+                <button class="btn" type="submit" style="color: #000;">Save Changes</button>
+              </div>
+            </form>
+          </div>
+          
+          <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+            <!-- Enrollment records sub-card -->
+            <div class="card" id="card-enrollment-status">
+              <h3>Enrollment Records</h3>
+              <p class="small text-secondary" style="margin-bottom: 0.75rem;">Your college admission application status:</p>
+              <div id="enrollment-status-content" class="small" style="padding: 1rem; border-radius: 8px; background: rgba(0,0,0,0.15); border: 1px solid var(--card-border); line-height: 1.5; white-space: pre-wrap;">
+                Loading admission status...
               </div>
             </div>
-            <div>
-              <label class="field-label" for="student-profile-name">Full Name</label>
-              <input class="input" id="student-profile-name" name="name" required/>
+            
+            <!-- Change Password card -->
+            <div class="card" id="card-change-password">
+              <h3>Change Password</h3>
+              <form id="form-change-password" class="form-grid">
+                <div>
+                  <label class="field-label" for="profile-current-pwd">Current Password</label>
+                  <input type="password" id="profile-current-pwd" class="input" required autocomplete="current-password"/>
+                </div>
+                <div>
+                  <label class="field-label" for="profile-new-pwd">New Password</label>
+                  <input type="password" id="profile-new-pwd" class="input" required autocomplete="new-password"/>
+                </div>
+                <div>
+                  <label class="field-label" for="profile-confirm-pwd">Confirm New Password</label>
+                  <input type="password" id="profile-confirm-pwd" class="input" required autocomplete="new-password"/>
+                </div>
+                <div class="password-strength-checklist small mt-2" style="display: flex; flex-direction: column; gap: 0.25rem;">
+                  <div id="criteria-length" class="criteria text-secondary" style="display: flex; align-items: center; gap: 0.4rem;">
+                    <span class="dot" style="width: 6px; height: 6px; border-radius: 50%; background: var(--muted); display: inline-block;"></span>
+                    At least 8 characters
+                  </div>
+                  <div id="criteria-upper" class="criteria text-secondary" style="display: flex; align-items: center; gap: 0.4rem;">
+                    <span class="dot" style="width: 6px; height: 6px; border-radius: 50%; background: var(--muted); display: inline-block;"></span>
+                    At least one uppercase letter (A-Z)
+                  </div>
+                  <div id="criteria-lower" class="criteria text-secondary" style="display: flex; align-items: center; gap: 0.4rem;">
+                    <span class="dot" style="width: 6px; height: 6px; border-radius: 50%; background: var(--muted); display: inline-block;"></span>
+                    At least one lowercase letter (a-z)
+                  </div>
+                  <div id="criteria-digit" class="criteria text-secondary" style="display: flex; align-items: center; gap: 0.4rem;">
+                    <span class="dot" style="width: 6px; height: 6px; border-radius: 50%; background: var(--muted); display: inline-block;"></span>
+                    At least one number (0-9)
+                  </div>
+                  <div id="criteria-special" class="criteria text-secondary" style="display: flex; align-items: center; gap: 0.4rem;">
+                    <span class="dot" style="width: 6px; height: 6px; border-radius: 50%; background: var(--muted); display: inline-block;"></span>
+                    At least one special character (!@#$%^&*()_+-=)
+                  </div>
+                </div>
+                <button type="submit" class="btn mt-2" style="color: #000;">Change Password</button>
+              </form>
             </div>
-            <div>
-              <label class="field-label" for="student-profile-phone">Phone number</label>
-              <input class="input" id="student-profile-phone" name="phone"/>
-            </div>
-            <div>
-              <label class="field-label" for="student-profile-bio">Bio / Statement</label>
-              <textarea class="input" id="student-profile-bio" name="bio" rows="3"></textarea>
-            </div>
-            <div>
-              <button class="btn" type="submit">Save Changes</button>
-            </div>
-          </form>
+          </div>
         </div>
       </section>
 
@@ -450,7 +663,10 @@
         <!-- My applications -->
         <div class="card mt-4">
           <h3>My Applications</h3>
-          <div class="table-wrap">
+          <div id="stu-pl-apps-cards" style="display: flex; flex-direction: column; gap: 1rem; margin-top: 1rem;">
+            <p class="small text-secondary">Loading your applications...</p>
+          </div>
+          <div class="table-wrap" style="display:none;">
             <table class="table small" id="tbl-stu-pl-apps">
               <thead><tr><th>Company</th><th>Drive</th><th>Package</th><th>Location</th><th>Status</th><th>Applied On</th></tr></thead>
               <tbody></tbody>
@@ -459,12 +675,12 @@
         </div>
       </section>
       <!-- End Placement Cell Panel -->
-
+      </div>
     </main>
   </div>
   
   <!-- Digital ID Card Modal -->
-  <div class="modal-overlay" id="id-card-modal">
+  <div class="modal-overlay" id="id-card-modal" style="display:none; z-index: 9999;">
     <div class="modal-content id-card-modal-wrap">
       <div class="id-card-tabs">
         <button type="button" class="id-tab active" id="id-tab-front">Front</button>
@@ -531,6 +747,78 @@
       </div>
     </div>
   </div>
+
+  <!-- Must Change Password Modal -->
+  <div class="modal-overlay" id="modal-must-change-pwd" style="display:none; z-index: 9999;">
+    <div class="modal-container" style="max-width: 450px;">
+      <div class="modal-header">
+        <h3 class="modal-title">Password Change Required</h3>
+      </div>
+      <div style="padding: 0.5rem 0;">
+        <p class="small text-secondary">Your account was initialized with a default temporary password. You must set a personalized, secure password to continue using the system.</p>
+        <form id="form-must-change-pwd" class="form-grid mt-3">
+          <div>
+            <label class="field-label" for="must-current-pwd">Current Password</label>
+            <input type="password" id="must-current-pwd" class="input" required autocomplete="current-password"/>
+          </div>
+          <div>
+            <label class="field-label" for="must-new-pwd">New Password</label>
+            <input type="password" id="must-new-pwd" class="input" required autocomplete="new-password"/>
+          </div>
+          <div>
+            <label class="field-label" for="must-confirm-pwd">Confirm New Password</label>
+            <input type="password" id="must-confirm-pwd" class="input" required autocomplete="new-password"/>
+          </div>
+          <div class="password-strength-checklist small mt-2" style="display: flex; flex-direction: column; gap: 0.25rem;">
+            <div id="must-criteria-length" class="criteria text-secondary" style="display: flex; align-items: center; gap: 0.4rem;">
+              <span class="dot" style="width: 6px; height: 6px; border-radius: 50%; background: var(--muted); display: inline-block;"></span>
+              At least 8 characters
+            </div>
+            <div id="must-criteria-upper" class="criteria text-secondary" style="display: flex; align-items: center; gap: 0.4rem;">
+              <span class="dot" style="width: 6px; height: 6px; border-radius: 50%; background: var(--muted); display: inline-block;"></span>
+              At least one uppercase letter (A-Z)
+            </div>
+            <div id="must-criteria-lower" class="criteria text-secondary" style="display: flex; align-items: center; gap: 0.4rem;">
+              <span class="dot" style="width: 6px; height: 6px; border-radius: 50%; background: var(--muted); display: inline-block;"></span>
+              At least one lowercase letter (a-z)
+            </div>
+            <div id="must-criteria-digit" class="criteria text-secondary" style="display: flex; align-items: center; gap: 0.4rem;">
+              <span class="dot" style="width: 6px; height: 6px; border-radius: 50%; background: var(--muted); display: inline-block;"></span>
+              At least one number (0-9)
+            </div>
+            <div id="must-criteria-special" class="criteria text-secondary" style="display: flex; align-items: center; gap: 0.4rem;">
+              <span class="dot" style="width: 6px; height: 6px; border-radius: 50%; background: var(--muted); display: inline-block;"></span>
+              At least one special character (!@#$%^&*()_+-=)
+            </div>
+          </div>
+          <button type="submit" class="btn mt-3" style="color: #000; width: 100%;">Set Password</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile Bottom Viewport Navigation -->
+  <div class="mobile-bottom-nav">
+    <button type="button" class="mobile-bottom-nav-btn active" data-nav-panel="profile">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+      <span>Dashboard</span>
+    </button>
+    <button type="button" class="mobile-bottom-nav-btn" data-nav-panel="attendance">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      <span>Attendance</span>
+    </button>
+    <button type="button" class="mobile-bottom-nav-btn" data-nav-panel="exams">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 10 3 12 0v-5"/></svg>
+      <span>Exams</span>
+    </button>
+    <button type="button" class="mobile-bottom-nav-btn" data-nav-panel="edit-profile">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      <span>Profile</span>
+    </button>
+  </div>
+
+  <!-- Reusable Toast Notification Container -->
+  <div id="toast-container"></div>
 
   <script src="../js/api.js"></script>
   <script src="../js/student-app.js"></script>
