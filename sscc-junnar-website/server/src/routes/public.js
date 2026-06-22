@@ -5,6 +5,7 @@ import { nextApplicationNumber } from '../lib/admissionNumber.js';
 import { Role } from '@prisma/client';
 import { filterNotices } from '../utils/notices.js';
 import { noticeDto as buildNoticeDto } from '../utils/noticeDto.js';
+import { publicFormLimiter } from '../middleware/rateLimit.js';
 
 function normalizePhoneIN(phone) {
   let p = String(phone || '').replace(/[\s-]/g, '');
@@ -108,7 +109,7 @@ export function publicRouter() {
     res.json(obj);
   });
 
-  r.post('/feedback', async (req, res) => {
+  r.post('/feedback', publicFormLimiter, async (req, res) => {
     const { name, email, message, rating } = req.body || {};
     if (!name || !message) return res.status(400).json({ error: 'Name and message required' });
     const em = email ? String(email).trim().toLowerCase() : '';
@@ -127,7 +128,7 @@ export function publicRouter() {
     res.status(201).json({ ok: true, id: fb.id, _id: fb.id });
   });
 
-  r.post('/admissions', uploadAdmissionDocs.array('documents', 10), async (req, res) => {
+  r.post('/admissions', publicFormLimiter, uploadAdmissionDocs.array('documents', 10), async (req, res) => {
     const body = req.body || {};
     const fullName = body.fullName?.trim();
     const email = body.email?.trim()?.toLowerCase();

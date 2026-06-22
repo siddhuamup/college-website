@@ -131,6 +131,10 @@
       setupTeacherIdCard(user);
       setupStudentDrawer();
 
+      if (user.mustChangePassword !== true) {
+        initOnboardingTour();
+      }
+
     } catch (e) {
       console.error(e);
       SSC_API.setToken(null);
@@ -1860,6 +1864,141 @@
     const d = document.createElement('div');
     d.textContent = s == null ? '' : String(s);
     return d.innerHTML;
+  }
+
+  function initOnboardingTour() {
+    if (localStorage.getItem('ssc_onboarding_done') === 'true') {
+      return;
+    }
+
+    const steps = [
+      {
+        element: '.dash-side',
+        title: 'Sidebar Navigation',
+        body: 'Navigate between different panels in your workspace. Use the sections to access academic data, personal profiles, and utility panels.',
+        placement: 'right'
+      },
+      {
+        element: '#global-search-wrap',
+        title: 'Global Search',
+        body: 'Quickly find subjects, results, notices, or other information. Press Ctrl+K to focus this search box instantly from anywhere.',
+        placement: 'bottom'
+      },
+      {
+        element: '#topbar-notif-btn',
+        title: 'Notifications Hub',
+        body: 'Stay updated with live college announcements, alerts, and system notifications. Click the bell to view recent messages.',
+        placement: 'bottom'
+      },
+      {
+        element: '.topbar-profile',
+        title: 'User Profile & Settings',
+        body: 'View your personal details, access settings, or log out of your account.',
+        placement: 'left'
+      }
+    ];
+
+    let currentStep = 0;
+    let overlay = null;
+    let popover = null;
+
+    function createTourElements() {
+      overlay = document.createElement('div');
+      overlay.className = 'tour-overlay';
+      document.body.appendChild(overlay);
+
+      popover = document.createElement('div');
+      popover.className = 'tour-popover';
+      document.body.appendChild(popover);
+
+      renderStep();
+
+      setTimeout(() => {
+        overlay.classList.add('active');
+        popover.classList.add('active');
+      }, 300);
+    }
+
+    function removeTour() {
+      if (overlay) overlay.remove();
+      if (popover) popover.remove();
+      document.querySelectorAll('.tour-highlighted-element').forEach(e => {
+        e.classList.remove('tour-highlighted-element');
+      });
+      localStorage.setItem('ssc_onboarding_done', 'true');
+    }
+
+    function renderStep() {
+      document.querySelectorAll('.tour-highlighted-element').forEach(e => {
+        e.classList.remove('tour-highlighted-element');
+      });
+
+      const step = steps[currentStep];
+      const target = document.querySelector(step.element);
+
+      if (!target || target.offsetWidth === 0 || target.offsetHeight === 0) {
+        if (currentStep < steps.length - 1) {
+          currentStep++;
+          renderStep();
+        } else {
+          removeTour();
+        }
+        return;
+      }
+
+      target.classList.add('tour-highlighted-element');
+
+      popover.innerHTML = `
+        <div class="tour-popover-header">
+          <h4 class="tour-popover-title">${esc(step.title)}</h4>
+        </div>
+        <div class="tour-popover-body">${esc(step.body)}</div>
+        <div class="tour-popover-footer">
+          <span class="tour-step-indicator">Step ${currentStep + 1} of ${steps.length}</span>
+          <div class="tour-buttons">
+            <button type="button" class="tour-btn tour-btn-skip">Skip</button>
+            <button type="button" class="tour-btn tour-btn-next">${currentStep === steps.length - 1 ? 'Finish' : 'Next'}</button>
+          </div>
+        </div>
+      `;
+
+      const rect = target.getBoundingClientRect();
+      let top = 0;
+      let left = 0;
+
+      if (step.placement === 'right') {
+        top = rect.top + window.scrollY + (rect.height / 2) - 80;
+        left = rect.right + 15;
+      } else if (step.placement === 'bottom') {
+        top = rect.bottom + window.scrollY + 15;
+        left = rect.left + (rect.width / 2) - 160;
+      } else if (step.placement === 'left') {
+        top = rect.top + window.scrollY + (rect.height / 2) - 80;
+        left = rect.left - 335;
+      } else {
+        top = rect.top + window.scrollY - 160;
+        left = rect.left + (rect.width / 2) - 160;
+      }
+
+      if (left < 10) left = 10;
+      if (left + 320 > window.innerWidth) left = window.innerWidth - 330;
+      if (top < 10) top = 10;
+
+      popover.style.top = `${top}px`;
+      popover.style.left = `${left}px`;
+
+      popover.querySelector('.tour-btn-skip').addEventListener('click', removeTour);
+      popover.querySelector('.tour-btn-next').addEventListener('click', () => {
+        if (currentStep === steps.length - 1) {
+          removeTour();
+        } else {
+          currentStep++;
+          renderStep();
+        }
+      });
+    }
+
+    createTourElements();
   }
 
   window.panel = panel;

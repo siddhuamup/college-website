@@ -28,6 +28,11 @@ function storage(subdir) {
 }
 
 const docFilter = (_req, file, cb) => {
+  const mime = file.mimetype.toLowerCase();
+  const ext = path.extname(file.originalname).toLowerCase();
+  if (mime === 'image/svg+xml' || ext === '.svg') {
+    return cb(new Error('SVG files are not allowed for security reasons'));
+  }
   const ok =
     /pdf|jpeg|jpg|png|image\//i.test(file.mimetype) ||
     /\.(pdf|jpe?g|png)$/i.test(file.originalname);
@@ -36,6 +41,11 @@ const docFilter = (_req, file, cb) => {
 };
 
 const imageFilter = (_req, file, cb) => {
+  const mime = file.mimetype.toLowerCase();
+  const ext = path.extname(file.originalname).toLowerCase();
+  if (mime === 'image/svg+xml' || ext === '.svg') {
+    return cb(new Error('SVG files are not allowed for security reasons'));
+  }
   if (/^image\//.test(file.mimetype)) cb(null, true);
   else cb(new Error('Only image files allowed'));
 };
