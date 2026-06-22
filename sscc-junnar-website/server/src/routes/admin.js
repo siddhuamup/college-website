@@ -100,6 +100,39 @@ export function adminRouter({ jwtSecret }) {
     res.json({ ok: true });
   });
 
+  r.get('/students/:id/history', async (req, res) => {
+    const { id } = req.params;
+    const student = await prisma.user.findFirst({
+      where: { id, role: Role.student }
+    });
+    if (!student) {
+      return res.status(404).json({ error: 'Student not found' });
+    }
+
+    const [marks, attendance, placementApplications] = await Promise.all([
+      prisma.mark.findMany({
+        where: { studentId: id },
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.attendance.findMany({
+        where: { studentId: id },
+        orderBy: { date: 'desc' },
+      }),
+      prisma.placementApplication.findMany({
+        where: { studentId: id },
+        include: { drive: true },
+        orderBy: { appliedAt: 'desc' },
+      }),
+    ]);
+
+    res.json({
+      student: stripHash(student),
+      marks: marks.map(withMongoId),
+      attendance: attendance.map(withMongoId),
+      placementApplications: placementApplications.map(withMongoId),
+    });
+  });
+
   r.post('/students/:id/resend-credentials', async (req, res) => {
     const student = await prisma.user.findFirst({
       where: { id: req.params.id, role: Role.student }

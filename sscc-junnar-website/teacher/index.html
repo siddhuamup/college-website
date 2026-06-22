@@ -411,45 +411,67 @@
             </form>
           </div>
           
-          <div class="card" id="card-change-password">
-            <h3>Change Password</h3>
-            <form id="form-change-password" class="form-grid">
-              <div>
-                <label class="field-label" for="profile-current-pwd">Current Password</label>
-                <input type="password" id="profile-current-pwd" class="input" required autocomplete="current-password"/>
-              </div>
-              <div>
-                <label class="field-label" for="profile-new-pwd">New Password</label>
-                <input type="password" id="profile-new-pwd" class="input" required autocomplete="new-password"/>
-              </div>
-              <div>
-                <label class="field-label" for="profile-confirm-pwd">Confirm New Password</label>
-                <input type="password" id="profile-confirm-pwd" class="input" required autocomplete="new-password"/>
-              </div>
-              <div class="password-strength-checklist small mt-2" style="display: flex; flex-direction: column; gap: 0.25rem;">
-                <div id="criteria-length" class="criteria text-secondary" style="display: flex; align-items: center; gap: 0.4rem;">
-                  <span class="dot" style="width: 6px; height: 6px; border-radius: 50%; background: var(--muted); display: inline-block;"></span>
-                  At least 8 characters
+          <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+            <!-- My Credentials card -->
+            <div class="card" id="card-my-credentials">
+              <h3>My Credentials</h3>
+              <p class="small text-secondary" style="margin-bottom: 0.75rem;">Your registration details for copying:</p>
+              <div class="form-grid">
+                <div>
+                  <label class="field-label" for="creds-email">Email / Login ID</label>
+                  <input type="text" id="creds-email" class="input" readonly style="background: rgba(0,0,0,0.1); border-color: transparent;" />
                 </div>
-                <div id="criteria-upper" class="criteria text-secondary" style="display: flex; align-items: center; gap: 0.4rem;">
-                  <span class="dot" style="width: 6px; height: 6px; border-radius: 50%; background: var(--muted); display: inline-block;"></span>
-                  At least one uppercase letter (A-Z)
+                <div>
+                  <label class="field-label" for="creds-erp-id">College ERP ID</label>
+                  <input type="text" id="creds-erp-id" class="input" readonly style="background: rgba(0,0,0,0.1); border-color: transparent;" />
                 </div>
-                <div id="criteria-lower" class="criteria text-secondary" style="display: flex; align-items: center; gap: 0.4rem;">
-                  <span class="dot" style="width: 6px; height: 6px; border-radius: 50%; background: var(--muted); display: inline-block;"></span>
-                  At least one lowercase letter (a-z)
-                </div>
-                <div id="criteria-digit" class="criteria text-secondary" style="display: flex; align-items: center; gap: 0.4rem;">
-                  <span class="dot" style="width: 6px; height: 6px; border-radius: 50%; background: var(--muted); display: inline-block;"></span>
-                  At least one number (0-9)
-                </div>
-                <div id="criteria-special" class="criteria text-secondary" style="display: flex; align-items: center; gap: 0.4rem;">
-                  <span class="dot" style="width: 6px; height: 6px; border-radius: 50%; background: var(--muted); display: inline-block;"></span>
-                  At least one special character (!@#$%^&*()_+-=)
+                <div>
+                  <button type="button" class="btn secondary small" id="btn-copy-creds" style="margin-top: 0.5rem; width: 100%;">Copy Credentials</button>
                 </div>
               </div>
-              <button type="submit" class="btn mt-2" style="color: #000;">Change Password</button>
-            </form>
+            </div>
+
+            <!-- Change Password card -->
+            <div class="card" id="card-change-password">
+              <h3>Change Password</h3>
+              <form id="form-change-password" class="form-grid">
+                <div>
+                  <label class="field-label" for="profile-current-pwd">Current Password</label>
+                  <input type="password" id="profile-current-pwd" class="input" required autocomplete="current-password"/>
+                </div>
+                <div>
+                  <label class="field-label" for="profile-new-pwd">New Password</label>
+                  <input type="password" id="profile-new-pwd" class="input" required autocomplete="new-password"/>
+                </div>
+                <div>
+                  <label class="field-label" for="profile-confirm-pwd">Confirm New Password</label>
+                  <input type="password" id="profile-confirm-pwd" class="input" required autocomplete="new-password"/>
+                </div>
+                <div class="password-strength-checklist small mt-2" style="display: flex; flex-direction: column; gap: 0.25rem;">
+                  <div id="criteria-length" class="criteria text-secondary" style="display: flex; align-items: center; gap: 0.4rem;">
+                    <span class="dot" style="width: 6px; height: 6px; border-radius: 50%; background: var(--muted); display: inline-block;"></span>
+                    At least 8 characters
+                  </div>
+                  <div id="criteria-upper" class="criteria text-secondary" style="display: flex; align-items: center; gap: 0.4rem;">
+                    <span class="dot" style="width: 6px; height: 6px; border-radius: 50%; background: var(--muted); display: inline-block;"></span>
+                    At least one uppercase letter (A-Z)
+                  </div>
+                  <div id="criteria-lower" class="criteria text-secondary" style="display: flex; align-items: center; gap: 0.4rem;">
+                    <span class="dot" style="width: 6px; height: 6px; border-radius: 50%; background: var(--muted); display: inline-block;"></span>
+                    At least one lowercase letter (a-z)
+                  </div>
+                  <div id="criteria-digit" class="criteria text-secondary" style="display: flex; align-items: center; gap: 0.4rem;">
+                    <span class="dot" style="width: 6px; height: 6px; border-radius: 50%; background: var(--muted); display: inline-block;"></span>
+                    At least one number (0-9)
+                  </div>
+                  <div id="criteria-special" class="criteria text-secondary" style="display: flex; align-items: center; gap: 0.4rem;">
+                    <span class="dot" style="width: 6px; height: 6px; border-radius: 50%; background: var(--muted); display: inline-block;"></span>
+                    At least one special character (!@#$%^&*()_+-=)
+                  </div>
+                </div>
+                <button type="submit" class="btn mt-2" style="color: #000;">Change Password</button>
+              </form>
+            </div>
           </div>
         </div>
       </section>

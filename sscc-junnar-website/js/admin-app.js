@@ -243,9 +243,15 @@
 
   function navigateToPanel(panelId) {
     const allBtns = document.querySelectorAll('.dash-nav button[data-panel]');
-    allBtns.forEach(b => b.classList.remove('active'));
+    allBtns.forEach(b => {
+      b.classList.remove('active');
+      b.removeAttribute('aria-current');
+    });
     const target = document.querySelector(`.dash-nav button[data-panel="${panelId}"]`);
-    if (target) target.classList.add('active');
+    if (target) {
+      target.classList.add('active');
+      target.setAttribute('aria-current', 'page');
+    }
     document.querySelectorAll('.dash-panel').forEach(p => {
       p.classList.toggle('active', p.getAttribute('data-panel') === panelId);
     });
@@ -330,6 +336,7 @@
 
   async function boot() {
     setupGateForm();
+    initStudentProfileTabs();
     if (!SSC_API.token()) {
       showGate();
       return;
@@ -363,14 +370,18 @@
     const notifBtn = document.getElementById('topbar-notif-btn');
     const notifDropdown = document.getElementById('notif-dropdown');
     if (notifBtn && notifDropdown) {
+      notifBtn.setAttribute('aria-expanded', 'false');
       notifBtn.addEventListener('click', (e) => {
         e.stopPropagation();
-        notifDropdown.style.display = notifDropdown.style.display === 'none' ? 'block' : 'none';
+        const isShown = notifDropdown.style.display === 'none' ? 'block' : 'none';
+        notifDropdown.style.display = isShown;
+        notifBtn.setAttribute('aria-expanded', isShown === 'block' ? 'true' : 'false');
       });
 
       document.addEventListener('click', (e) => {
         if (!e.target.closest('.topbar-notif-wrap')) {
           notifDropdown.style.display = 'none';
+          notifBtn.setAttribute('aria-expanded', 'false');
         }
       });
     }
@@ -386,8 +397,12 @@
     // Sidebar navigation — support multiple .dash-nav groups
     document.querySelectorAll('.dash-nav button[data-panel]').forEach((btn) => {
       btn.addEventListener('click', () => {
-        document.querySelectorAll('.dash-nav button[data-panel]').forEach((b) => b.classList.remove('active'));
+        document.querySelectorAll('.dash-nav button[data-panel]').forEach((b) => {
+          b.classList.remove('active');
+          b.removeAttribute('aria-current');
+        });
         btn.classList.add('active');
+        btn.setAttribute('aria-current', 'page');
         const id = btn.getAttribute('data-panel');
         document.querySelectorAll('.dash-panel').forEach((p) => {
           p.classList.toggle('active', p.getAttribute('data-panel') === id);
@@ -692,12 +707,22 @@
     tb.innerHTML = '';
     rows.forEach((u) => {
       const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${esc(u.name)}</td><td>${esc(u.email)}</td><td>${esc(u.studentProfile?.className || '')}</td>
-        <td>
+      tr.innerHTML = `
+        <td data-label="Name"><a href="#" class="student-name-click text-primary" style="font-weight:600;" data-sid="${u._id || u.id}">${esc(u.name)}</a></td>
+        <td data-label="Email">${esc(u.email)}</td>
+        <td data-label="Class">${esc(u.studentProfile?.className || '')}</td>
+        <td data-label="Actions">
           <button class="btn small" data-edit-student="${u._id}">Edit</button>
           <button class="btn small danger" data-del-student="${u._id}">Delete</button>
         </td>`;
       tb.appendChild(tr);
+    });
+
+    tb.querySelectorAll('.student-name-click').forEach((a) => {
+      a.addEventListener('click', (e) => {
+        e.preventDefault();
+        openStudentProfile(a.getAttribute('data-sid'));
+      });
     });
 
     tb.querySelectorAll('[data-edit-student]').forEach((b) =>
@@ -736,6 +761,156 @@
         }
       })
     );
+  }
+
+  function initStudentProfileTabs() {
+    const modal = document.getElementById('modal-student-profile');
+    if (!modal) return;
+    const tabs = modal.querySelectorAll('.id-tab');
+    tabs.forEach((tab) => {
+      tab.addEventListener('click', () => {
+        const tabName = tab.getAttribute('data-prof-tab');
+        tabs.forEach((t) => t.classList.remove('active'));
+        tab.classList.add('active');
+        modal.querySelectorAll('.prof-tab-content').forEach((sect) => {
+          sect.style.display = 'none';
+        });
+        const sect = document.getElementById(`prof-sect-${tabName}`);
+        if (sect) {
+          sect.style.display = 'block';
+        }
+      });
+    });
+  }
+
+  async function openStudentProfile(id) {
+    const modal = document.getElementById('modal-student-profile');
+    if (!modal) return;
+    
+    // Switch to details tab initially
+    const tabs = modal.querySelectorAll('.id-tab');
+    tabs.forEach(t => {
+      if (t.getAttribute('data-prof-tab') === 'details') {
+        t.classList.add('active');
+      } else {
+        t.classList.remove('active');
+      }
+    });
+    modal.querySelectorAll('.prof-tab-content').forEach(sect => {
+      sect.style.display = sect.id === 'prof-sect-details' ? 'block' : 'none';
+    });
+    
+    // Show placeholder loading states
+    document.getElementById('prof-details-name').textContent = 'Loading...';
+    document.getElementById('prof-details-erp-id').textContent = 'Loading...';
+    document.getElementById('prof-details-roll').textContent = 'Loading...';
+    document.getElementById('prof-details-course').textContent = 'Loading...';
+    document.getElementById('prof-details-class').textContent = 'Loading...';
+    document.getElementById('prof-details-email').textContent = 'Loading...';
+    document.getElementById('prof-details-phone').textContent = 'Loading...';
+    document.getElementById('prof-details-bio').textContent = 'Loading...';
+    
+    document.getElementById('prof-details-avatar-placeholder').style.display = 'grid';
+    document.getElementById('prof-details-avatar-img').style.display = 'none';
+    
+    // Clear lists
+    document.querySelector('#tbl-prof-attendance tbody').innerHTML = '<tr><td colspan="4" class="text-center text-muted">Loading attendance...</td></tr>';
+    document.querySelector('#tbl-prof-marks tbody').innerHTML = '<tr><td colspan="5" class="text-center text-muted">Loading marks...</td></tr>';
+    document.querySelector('#tbl-prof-placements tbody').innerHTML = '<tr><td colspan="4" class="text-center text-muted">Loading placement history...</td></tr>';
+    
+    modal.style.display = 'flex';
+    
+    try {
+      const data = await SSC_API.get(`/admin/students/${id}/history`);
+      const s = data.student;
+      const sp = s.studentProfile || {};
+      
+      // Populate Details tab
+      document.getElementById('prof-details-name').textContent = s.name || '—';
+      document.getElementById('prof-details-erp-id').textContent = sp.studentId || s.id || '—';
+      document.getElementById('prof-details-roll').textContent = sp.rollNumber || '—';
+      document.getElementById('prof-details-course').textContent = sp.courseName || sp.course || '—';
+      document.getElementById('prof-details-class').textContent = sp.className || '—';
+      document.getElementById('prof-details-email').textContent = s.email || '—';
+      document.getElementById('prof-details-phone').textContent = s.phone || '—';
+      document.getElementById('prof-details-bio').textContent = s.bio || '—';
+      
+      const avatarPlaceholder = document.getElementById('prof-details-avatar-placeholder');
+      const avatarImg = document.getElementById('prof-details-avatar-img');
+      if (s.avatarUrl) {
+        avatarImg.src = s.avatarUrl;
+        avatarImg.style.display = 'block';
+        avatarPlaceholder.style.display = 'none';
+      } else {
+        avatarImg.style.display = 'none';
+        avatarPlaceholder.style.display = 'grid';
+        avatarPlaceholder.textContent = (s.name || 'S').charAt(0).toUpperCase();
+      }
+      
+      // Populate Attendance tab
+      const att = data.attendance || [];
+      const totalDays = att.length;
+      const presentDays = att.filter(a => a.status === 'present').length;
+      const attRate = totalDays > 0 ? Math.round((presentDays / totalDays) * 100) : 0;
+      
+      document.getElementById('prof-att-total').textContent = totalDays;
+      document.getElementById('prof-att-present').textContent = presentDays;
+      document.getElementById('prof-att-rate').textContent = `${attRate}%`;
+      
+      const attTbody = document.querySelector('#tbl-prof-attendance tbody');
+      if (totalDays === 0) {
+        attTbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No attendance log recorded.</td></tr>';
+      } else {
+        attTbody.innerHTML = att.map(a => `
+          <tr>
+            <td data-label="Date">${new Date(a.date).toLocaleDateString()}</td>
+            <td data-label="Status"><span class="badge ${a.status === 'present' ? 'success' : 'danger'}">${a.status}</span></td>
+            <td data-label="Subject">${esc(a.subject || '—')}</td>
+            <td data-label="Marked By">${esc(a.markedByTeacherName || 'Teacher')}</td>
+          </tr>
+        `).join('');
+      }
+      
+      // Populate Marks tab
+      const marks = data.marks || [];
+      const marksTbody = document.querySelector('#tbl-prof-marks tbody');
+      if (marks.length === 0) {
+        marksTbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">No marks recorded.</td></tr>';
+      } else {
+        marksTbody.innerHTML = marks.map(m => {
+          const pct = m.maxMarks > 0 ? Math.round((m.marksObtained / m.maxMarks) * 100) : 0;
+          return `
+            <tr>
+              <td data-label="Subject">${esc(m.subject)}</td>
+              <td data-label="Exam Name">${esc(m.examName)}</td>
+              <td data-label="Marks Obtained">${m.marksObtained}</td>
+              <td data-label="Max Marks">${m.maxMarks}</td>
+              <td data-label="Percentage">${pct}%</td>
+            </tr>
+          `;
+        }).join('');
+      }
+      
+      // Populate Placement tab
+      const placements = data.placementApplications || [];
+      const plTbody = document.querySelector('#tbl-prof-placements tbody');
+      if (placements.length === 0) {
+        plTbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No placement drive applications.</td></tr>';
+      } else {
+        plTbody.innerHTML = placements.map(p => `
+          <tr>
+            <td data-label="Company">${esc(p.drive?.companyName || '—')}</td>
+            <td data-label="Role">${esc(p.drive?.roleName || '—')}</td>
+            <td data-label="Date">${new Date(p.appliedAt).toLocaleDateString()}</td>
+            <td data-label="Status"><span class="badge ${p.applicationStatus === 'selected' ? 'success' : p.applicationStatus === 'rejected' ? 'danger' : 'info'}">${p.applicationStatus}</span></td>
+          </tr>
+        `).join('');
+      }
+      
+    } catch (err) {
+      document.getElementById('prof-details-name').textContent = 'Error';
+      msg('Failed to fetch student details: ' + err.message, true);
+    }
   }
 
   // Student form bindings
@@ -1013,9 +1188,12 @@
       const badges = Array.isArray(assignments)
         ? assignments.map(a => `<span class="assignment-badge">${esc(a.subject)} • ${esc(a.className)}</span>`).join(' ')
         : '';
-      tr.innerHTML = `<td>${esc(u.name)}</td><td>${esc(u.email)}</td><td>${esc(u.teacherProfile?.department || '')}</td>
-        <td><div style="display:flex;flex-wrap:wrap;gap:0.25rem;">${badges}</div></td>
-        <td>
+      tr.innerHTML = `
+        <td data-label="Name">${esc(u.name)}</td>
+        <td data-label="Email">${esc(u.email)}</td>
+        <td data-label="Department">${esc(u.teacherProfile?.department || '')}</td>
+        <td data-label="Assigned Classes"><div style="display:flex;flex-wrap:wrap;gap:0.25rem;">${badges}</div></td>
+        <td data-label="Actions">
           <button class="btn small" data-edit-teacher="${u._id}">Edit</button>
           <button class="btn small danger" data-del-teacher="${u._id}">Delete</button>
         </td>`;
@@ -1253,9 +1431,13 @@
     tb.innerHTML = '';
     rows.forEach((a) => {
       const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${esc(a.applicationNumber)}</td><td>${esc(a.fullName)}</td><td>${esc(a.courseApplied)}</td>
-        <td>${a.marks12}/${a.maxMarks12}</td><td>${esc(a.status)}</td>
-        <td>
+      tr.innerHTML = `
+        <td data-label="App No">${esc(a.applicationNumber)}</td>
+        <td data-label="Full Name">${esc(a.fullName)}</td>
+        <td data-label="Course">${esc(a.courseApplied)}</td>
+        <td data-label="12th Marks">${a.marks12}/${a.maxMarks12}</td>
+        <td data-label="Status">${esc(a.status)}</td>
+        <td data-label="Actions">
           <button class="btn small" data-verify="${a._id}">Toggle verify</button>
           <button class="btn small" data-approve="${a._id}">Approve+account</button>
           <button class="btn small danger" data-reject="${a._id}">Reject</button>
@@ -1867,12 +2049,12 @@
     rows.forEach((c) => {
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td><strong>${esc(c.companyName)}</strong><br><span class="small">${esc(c.website || '')}</span></td>
-        <td>${esc(c.industry)}</td>
-        <td>${esc(c.packageOffered)}</td>
-        <td>${esc(c.location)}</td>
-        <td>${c.drives || 0}</td>
-        <td>
+        <td data-label="Company"><strong>${esc(c.companyName)}</strong><br><span class="small">${esc(c.website || '')}</span></td>
+        <td data-label="Industry">${esc(c.industry)}</td>
+        <td data-label="Package">${esc(c.packageOffered)}</td>
+        <td data-label="Location">${esc(c.location)}</td>
+        <td data-label="Drives">${c.drives || 0}</td>
+        <td data-label="Actions">
           <button class="btn small" data-edit-company="${c._id}">Edit</button>
           <button class="btn small danger" data-del-company="${c._id}">Delete</button>
         </td>`;
@@ -1928,13 +2110,13 @@
       const deadline = d.applicationDeadline ? new Date(d.applicationDeadline).toLocaleDateString('en-IN') : '—';
       const sColor = statusColor[d.status] || '#94a3b8';
       tr.innerHTML = `
-        <td>${esc(d.company?.companyName || '')}</td>
-        <td><strong>${esc(d.title)}</strong></td>
-        <td>${driveDate}</td>
-        <td>${deadline}</td>
-        <td><span style="color:${sColor};font-weight:600">${esc(d.status)}</span></td>
-        <td>${d.applicationCount || 0}</td>
-        <td>
+        <td data-label="Company">${esc(d.company?.companyName || '')}</td>
+        <td data-label="Title"><strong>${esc(d.title)}</strong></td>
+        <td data-label="Date">${driveDate}</td>
+        <td data-label="Deadline">${deadline}</td>
+        <td data-label="Status"><span style="color:${sColor};font-weight:600">${esc(d.status)}</span></td>
+        <td data-label="Applications">${d.applicationCount || 0}</td>
+        <td data-label="Actions">
           <button class="btn small" data-close-drive="${d._id}" ${d.status!=='active'?'disabled':''}>Close</button>
           <button class="btn small danger" data-del-drive="${d._id}">Delete</button>
         </td>`;

@@ -873,6 +873,27 @@
     }
     const uploadInput = document.getElementById('teacher-avatar-upload');
     if (uploadInput) uploadInput.value = '';
+
+    // Populate Credentials
+    const tp = user.teacherProfile || {};
+    const credsEmail = document.getElementById('creds-email');
+    const credsErpId = document.getElementById('creds-erp-id');
+    const copyBtn = document.getElementById('btn-copy-creds');
+    if (credsEmail) credsEmail.value = user.email || '';
+    if (credsErpId) credsErpId.value = tp.employeeId || tp.teacherId || user.id || '';
+    if (copyBtn && !copyBtn.dataset.wired) {
+      copyBtn.dataset.wired = 'true';
+      copyBtn.addEventListener('click', () => {
+        const emailVal = credsEmail ? credsEmail.value : '';
+        const erpVal = credsErpId ? credsErpId.value : '';
+        const textToCopy = `Login ID/Email: ${emailVal}\nERP ID: ${erpVal}`;
+        navigator.clipboard.writeText(textToCopy).then(() => {
+          showToast('Credentials copied to clipboard!', 'success');
+        }).catch(err => {
+          showToast('Failed to copy: ' + err.message, 'error');
+        });
+      });
+    }
   }
 
   function filterAttendanceStudents() {
@@ -1393,6 +1414,12 @@
     const saveBtn = document.getElementById('btn-save-bulk-marks');
     
     if (!subSel) return;
+
+    let debounceTimeout = null;
+    function debouncedLoadRoster() {
+      clearTimeout(debounceTimeout);
+      debounceTimeout = setTimeout(loadRoster, 300);
+    }
     
     // Load assigned subjects
     try {
@@ -1476,8 +1503,8 @@
     }
     
     subSel.addEventListener('change', loadRoster);
-    examInput.addEventListener('change', loadRoster);
-    maxInput.addEventListener('change', loadRoster);
+    examInput.addEventListener('input', debouncedLoadRoster);
+    maxInput.addEventListener('input', debouncedLoadRoster);
     
     // Bind Tab/Enter keydown focus shift
     function setupRosterInputs(totalCount) {
@@ -1520,15 +1547,21 @@
       
       if (!subject || !examName) return;
       
-      saveBtn.disabled = true;
-      const origText = saveBtn.textContent;
-      saveBtn.textContent = 'Saving...';
-      
       const inputs = Array.from(tbody.querySelectorAll('.bulk-mark-input'));
       const entries = inputs.map(inp => ({
         studentId: inp.getAttribute('data-sid'),
         marksObtained: inp.value.trim() !== '' ? Number(inp.value) : null
       })).filter(e => e.marksObtained !== null);
+
+      const invalid = entries.filter(e => e.marksObtained > maxMarks || e.marksObtained < 0);
+      if (invalid.length > 0) {
+        showToast(`${invalid.length} entries exceed max marks (${maxMarks}) or are negative. Please fix before saving.`, 'error');
+        return;
+      }
+      
+      saveBtn.disabled = true;
+      const origText = saveBtn.textContent;
+      saveBtn.textContent = 'Saving...';
       
       // Cache previous state for Undo
       const previousState = inputs.map(inp => ({
@@ -1628,57 +1661,81 @@
     if (!idBtn || !modal) return;
     
     idBtn.addEventListener('click', () => {
-      const tp = user.teacherProfile || {};
-      const designation = tp.designation || 'Faculty Member';
-      const department = tp.department || 'General';
-      const joinYear = user.createdAt ? new Date(user.createdAt).getFullYear() : new Date().getFullYear();
-      const validityYear = Number(joinYear) + 3;
-      const validity = `May ${validityYear}`;
-      const verificationId = `SSC-FAC-${(user.id || 'unknown').slice(-6).toUpperCase()}`;
-      
-      document.getElementById('id-card-name').textContent = user.name;
-      document.getElementById('id-card-designation').textContent = designation;
-      document.getElementById('id-card-erp-id').textContent = tp.teacherId || user.id || '—';
-      document.getElementById('id-card-dept').textContent = department;
-      document.getElementById('id-card-email').textContent = user.email;
-      document.getElementById('id-card-phone').textContent = user.phone || '—';
-      document.getElementById('id-card-validity').textContent = validity;
-      
-      document.getElementById('id-card-qual').textContent = tp.qualifications || '—';
-      document.getElementById('id-card-bio').textContent = user.bio || '—';
-      document.getElementById('id-card-verify-id').textContent = verificationId;
-      document.getElementById('id-card-emergency').textContent = user.phone || '—';
-      
-      const photo = document.getElementById('id-card-photo');
-      const placeholder = document.getElementById('id-card-photo-placeholder');
-      if (photo && placeholder) {
-        if (user.avatarUrl) {
-          photo.src = user.avatarUrl;
-          photo.style.display = 'block';
-          placeholder.style.display = 'none';
-        } else {
-          photo.style.display = 'none';
-          placeholder.style.display = 'grid';
+      try {
+        const tp = user.teacherProfile || {};
+        const designation = tp.designation || 'Faculty Member';
+        const department = tp.department || 'General';
+        const joinYear = user.createdAt ? new Date(user.createdAt).getFullYear() : new Date().getFullYear();
+        const validityYear = Number(joinYear) + 3;
+        const validity = `May ${validityYear}`;
+        const verificationId = `SSC-FAC-${(user.id || 'unknown').slice(-6).toUpperCase()}`;
+        
+        const nameEl = document.getElementById('id-card-name');
+        if (nameEl) nameEl.textContent = user.name;
+        
+        const desEl = document.getElementById('id-card-designation');
+        if (desEl) desEl.textContent = designation;
+        
+        const erpEl = document.getElementById('id-card-erp-id');
+        if (erpEl) erpEl.textContent = tp.employeeId || tp.teacherId || user.id || '—';
+        
+        const deptEl = document.getElementById('id-card-dept');
+        if (deptEl) deptEl.textContent = department;
+        
+        const emailEl = document.getElementById('id-card-email');
+        if (emailEl) emailEl.textContent = user.email;
+        
+        const phoneEl = document.getElementById('id-card-phone');
+        if (phoneEl) phoneEl.textContent = user.phone || '—';
+        
+        const valEl = document.getElementById('id-card-validity');
+        if (valEl) valEl.textContent = validity;
+        
+        const qualEl = document.getElementById('id-card-qual');
+        if (qualEl) qualEl.textContent = tp.qualifications || '—';
+        
+        const bioEl = document.getElementById('id-card-bio');
+        if (bioEl) bioEl.textContent = user.bio || '—';
+        
+        const verEl = document.getElementById('id-card-verify-id');
+        if (verEl) verEl.textContent = verificationId;
+        
+        const emEl = document.getElementById('id-card-emergency');
+        if (emEl) emEl.textContent = user.phone || '—';
+        
+        const photo = document.getElementById('id-card-photo');
+        const placeholder = document.getElementById('id-card-photo-placeholder');
+        if (photo && placeholder) {
+          if (user.avatarUrl) {
+            photo.src = user.avatarUrl;
+            photo.style.display = 'block';
+            placeholder.style.display = 'none';
+          } else {
+            photo.style.display = 'none';
+            placeholder.style.display = 'grid';
+          }
         }
-      }
-      
-      const qrCanvas = document.getElementById('id-card-qr');
-      if (qrCanvas && window.QRious) {
-        new QRious({
-          element: qrCanvas,
-          value: JSON.stringify({
-            role: 'teacher',
-            id: tp.teacherId || user.id,
-            name: user.name,
-            designation,
-            department,
-            verificationId
-          }),
-          size: 128,
-          background: '#ffffff',
-          foreground: '#0f172a',
-          level: 'M'
-        });
+        
+        const qrCanvas = document.getElementById('id-card-qr');
+        if (qrCanvas && window.QRious) {
+          new QRious({
+            element: qrCanvas,
+            value: JSON.stringify({
+              role: 'teacher',
+              id: tp.employeeId || tp.teacherId || user.id,
+              name: user.name,
+              designation,
+              department,
+              verificationId
+            }),
+            size: 128,
+            background: '#ffffff',
+            foreground: '#0f172a',
+            level: 'M'
+          });
+        }
+      } catch (err) {
+        console.error('Error rendering ID card content:', err);
       }
       
       showTab('front');

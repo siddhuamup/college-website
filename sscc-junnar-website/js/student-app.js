@@ -1,17 +1,23 @@
 (function () {
   let cachedSettings = null;
+  let settingsFetchedAt = 0;
+  const SETTINGS_TTL = 5 * 60 * 1000; // 5 minutes
   let noticesCache = [];
   let examResultsCache = [];
   let activeNotifications = [];
   let readNotifications = [];
 
   async function getSettings() {
-    if (cachedSettings) return cachedSettings;
+    if (cachedSettings && (Date.now() - settingsFetchedAt < SETTINGS_TTL)) {
+      return cachedSettings;
+    }
     try {
       cachedSettings = await SSC_API.get('/public/settings');
+      settingsFetchedAt = Date.now();
     } catch (e) {
       console.error('Failed to fetch settings', e);
       cachedSettings = { attendanceThreshold: 75 };
+      settingsFetchedAt = Date.now();
     }
     return cachedSettings;
   }
@@ -1461,6 +1467,27 @@
       }
       el('student-avatar-upload').value = '';
       
+      // Populate Credentials
+      const sp = u.studentProfile || {};
+      const credsEmail = el('creds-email');
+      const credsErpId = el('creds-erp-id');
+      const copyBtn = el('btn-copy-creds');
+      if (credsEmail) credsEmail.value = u.email || '';
+      if (credsErpId) credsErpId.value = sp.studentId || u.id || '';
+      if (copyBtn && !copyBtn.dataset.wired) {
+        copyBtn.dataset.wired = 'true';
+        copyBtn.addEventListener('click', () => {
+          const emailVal = credsEmail ? credsEmail.value : '';
+          const erpVal = credsErpId ? credsErpId.value : '';
+          const textToCopy = `Login ID/Email: ${emailVal}\nERP ID: ${erpVal}`;
+          navigator.clipboard.writeText(textToCopy).then(() => {
+            showToast('Credentials copied to clipboard!', 'success');
+          }).catch(err => {
+            showToast('Failed to copy: ' + err.message, 'error');
+          });
+        });
+      }
+
       await loadEnrollmentStatus();
     } catch (err) {
       console.error('Failed to load edit profile information', err);
@@ -1472,9 +1499,8 @@
     if (!contentEl) return;
     try {
       const data = await SSC_API.get('/student/admission-status');
-      if (!data.linked || !data.application) {
-        contentEl.textContent =
-          'No admission application is linked to this account yet. If you applied online with the same email, it will appear here once the office processes it. Otherwise contact the admission cell.';
+      if (data.linked === false || !data.application) {
+        contentEl.textContent = 'No linked application found.';
         return;
       }
       const a = data.application;

@@ -463,6 +463,10 @@ function daysAgo(n) {
 // ─── MAIN DEMO SEED ──────────────────────────────────────────────────────────
 
 export async function performDemoSeed() {
+  if (process.env.NODE_ENV === 'production') {
+    console.error('FATAL: demoSeed must not run in production.');
+    process.exit(1);
+  }
   console.log('\n🌱 Starting demo data seed...\n');
 
   // Check sentinel
