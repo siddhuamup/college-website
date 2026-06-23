@@ -130,6 +130,7 @@
       setupMobileMenu();
       setupTeacherIdCard(user);
       setupStudentDrawer();
+      setupProfileSubTabs();
 
       if (user.mustChangePassword !== true) {
         initOnboardingTour();
@@ -721,6 +722,25 @@
   }
 
   async function loadAttendancePanel() {
+    // Fetch assigned subjects to populate select dropdown automatically
+    try {
+      const res = await SSC_API.get('/teacher/subjects');
+      const assignments = Array.isArray(res) ? res : [];
+      const attSubSelect = document.getElementById('att-subject');
+      if (attSubSelect) {
+        const currentVal = attSubSelect.value;
+        attSubSelect.innerHTML = assignments.map(a => `<option value="${esc(a.subject)}">${esc(a.subject)} (${esc(a.className)})</option>`).join('');
+        // Restore value if existed and was valid
+        if (currentVal && assignments.some(a => a.subject === currentVal)) {
+          attSubSelect.value = currentVal;
+        } else if (assignments.length > 0) {
+          attSubSelect.value = assignments[0].subject;
+        }
+      }
+    } catch (err) {
+      console.error('Failed to populate subjects select dropdown', err);
+    }
+
     await loadStudents();
     const box = document.getElementById('att-rows');
     if (box) {
@@ -869,13 +889,153 @@
       } else {
         img.style.display = 'none';
         placeholder.style.display = 'grid';
+        placeholder.textContent = (user.name || 'T').charAt(0).toUpperCase();
       }
     }
     const uploadInput = document.getElementById('teacher-avatar-upload');
     if (uploadInput) uploadInput.value = '';
 
-    // Populate Credentials
     const tp = user.teacherProfile || {};
+    
+    // Wire Edit Button in Overview
+    const btnTriggerEdit = document.getElementById('btn-trigger-teacher-edit');
+    if (btnTriggerEdit && !btnTriggerEdit.dataset.wired) {
+      btnTriggerEdit.dataset.wired = 'true';
+      btnTriggerEdit.addEventListener('click', () => {
+        const editTab = document.querySelector('[data-sub-tab="edit-info"]');
+        if (editTab) editTab.click();
+      });
+    }
+
+    // Populate Overview fields
+    if (document.getElementById('view-name')) document.getElementById('view-name').textContent = user.name || '—';
+    if (document.getElementById('view-erp-id')) document.getElementById('view-erp-id').textContent = tp.employeeId || tp.teacherId || user.id || '—';
+    if (document.getElementById('view-dept')) document.getElementById('view-dept').textContent = tp.department || '—';
+    if (document.getElementById('view-desg')) document.getElementById('view-desg').textContent = tp.designation || 'Faculty Member';
+    if (document.getElementById('view-qual')) document.getElementById('view-qual').textContent = tp.qualifications || '—';
+    if (document.getElementById('view-phone')) document.getElementById('view-phone').textContent = tp.mobile || user.phone || '—';
+    if (document.getElementById('view-email')) document.getElementById('view-email').textContent = tp.collegeEmail || user.email || '—';
+    if (document.getElementById('view-bio')) {
+      document.getElementById('view-bio').textContent = user.bio || 'No bio written yet.';
+      document.getElementById('view-bio').style.fontStyle = user.bio ? 'normal' : 'italic';
+    }
+
+    // Populate Header metadata
+    if (document.getElementById('profile-display-name')) document.getElementById('profile-display-name').textContent = user.name || 'Faculty Name';
+    if (document.getElementById('profile-hdr-erp')) document.getElementById('profile-hdr-erp').textContent = 'Emp ID: ' + (tp.employeeId || tp.teacherId || '—');
+    if (document.getElementById('profile-hdr-dept')) document.getElementById('profile-hdr-dept').textContent = 'Dept: ' + (tp.department || '—');
+    if (document.getElementById('profile-hdr-desg')) document.getElementById('profile-hdr-desg').textContent = 'Designation: ' + (tp.designation || 'Faculty');
+    if (document.getElementById('profile-hdr-status')) document.getElementById('profile-hdr-status').textContent = user.status || 'Active';
+
+    // Fetch lists in parallel
+    let assignments = [];
+    let leavesList = [];
+    let materialsList = [];
+    let attendanceLogs = [];
+    
+    try {
+      const [subjRes, leavesRes, matRes, attRes] = await Promise.all([
+        SSC_API.get('/teacher/subjects').catch(() => []),
+        SSC_API.get('/teacher/leave').catch(() => []),
+        SSC_API.get('/teacher/materials').catch(() => []),
+        SSC_API.get('/teacher/attendance').catch(() => [])
+      ]);
+      assignments = Array.isArray(subjRes) ? subjRes : [];
+      leavesList = Array.isArray(leavesRes) ? leavesRes : [];
+      materialsList = Array.isArray(matRes) ? matRes : [];
+      attendanceLogs = Array.isArray(attRes) ? attRes : [];
+    } catch (err) {
+      console.error('Failed to load teacher history details', err);
+    }
+
+    // Populate Summary Cards
+    const uniqueClasses = new Set(assignments.map(a => a.className));
+    if (document.getElementById('prof-sum-subjects')) document.getElementById('prof-sum-subjects').textContent = assignments.length;
+    if (document.getElementById('prof-sum-classes')) document.getElementById('prof-sum-classes').textContent = uniqueClasses.size;
+    if (document.getElementById('prof-sum-attendance-sessions')) document.getElementById('prof-sum-attendance-sessions').textContent = attendanceLogs.length;
+    if (document.getElementById('prof-sum-materials')) document.getElementById('prof-sum-materials').textContent = materialsList.length;
+    const lastLoginStr = user.lastLogin ? new Date(user.lastLogin).toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '—';
+    if (document.getElementById('prof-sum-login')) document.getElementById('prof-sum-login').textContent = lastLoginStr;
+
+    // Populate Subjects tab table
+    const tblProfTeachSubjects = document.querySelector('#tbl-prof-teach-subjects tbody');
+    if (tblProfTeachSubjects) {
+      tblProfTeachSubjects.innerHTML = '';
+      if (!assignments.length) {
+        tblProfTeachSubjects.innerHTML = '<tr><td colspan="2" class="text-center text-muted">No courses assigned.</td></tr>';
+      } else {
+        assignments.forEach(a => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `<td><strong>${esc(a.subject)}</strong></td><td>${esc(a.className)}</td>`;
+          tblProfTeachSubjects.appendChild(tr);
+        });
+      }
+    }
+
+    // Populate Attendance logs tab table
+    const tblProfTeachAttendance = document.querySelector('#tbl-prof-teach-attendance tbody');
+    if (tblProfTeachAttendance) {
+      tblProfTeachAttendance.innerHTML = '';
+      if (!attendanceLogs.length) {
+        tblProfTeachAttendance.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No lecture logs found.</td></tr>';
+      } else {
+        attendanceLogs.forEach(a => {
+          const dtStr = new Date(a.date).toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' });
+          const tr = document.createElement('tr');
+          const studentCount = Array.isArray(a.entries) ? a.entries.length : 0;
+          tr.innerHTML = `<td>${dtStr}</td><td><strong>${esc(a.subject)}</strong></td><td>${studentCount} Students</td><td><span class="badge success">Saved</span></td>`;
+          tblProfTeachAttendance.appendChild(tr);
+        });
+      }
+    }
+
+    // Populate Materials tab table
+    const tblProfTeachMaterials = document.querySelector('#tbl-prof-teach-materials tbody');
+    if (tblProfTeachMaterials) {
+      tblProfTeachMaterials.innerHTML = '';
+      if (!materialsList.length) {
+        tblProfTeachMaterials.innerHTML = '<tr><td colspan="5" class="text-center text-muted">No materials uploaded yet.</td></tr>';
+      } else {
+        materialsList.forEach(m => {
+          const dtStr = m.createdAt ? new Date(m.createdAt).toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' }) : '—';
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td><strong>${esc(m.title)}</strong></td>
+            <td>${esc(m.subject)}</td>
+            <td>${esc(m.className)}</td>
+            <td>${dtStr}</td>
+            <td>${m.fileUrl ? `<a class="btn small secondary" href="${esc(m.fileUrl)}" target="_blank" style="color:var(--text); padding:0.2rem 0.5rem; font-size:0.75rem;">Download</a>` : '—'}</td>
+          `;
+          tblProfTeachMaterials.appendChild(tr);
+        });
+      }
+    }
+
+    // Populate Leave tab table
+    const tblProfTeachLeaves = document.querySelector('#tbl-prof-teach-leaves tbody');
+    if (tblProfTeachLeaves) {
+      tblProfTeachLeaves.innerHTML = '';
+      if (!leavesList.length) {
+        tblProfTeachLeaves.innerHTML = '<tr><td colspan="5" class="text-center text-muted">No leave requests found.</td></tr>';
+      } else {
+        leavesList.forEach(l => {
+          const startStr = new Date(l.startDate).toLocaleDateString('en-IN', { day:'2-digit', month:'short' });
+          const endStr = new Date(l.endDate).toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' });
+          const tr = document.createElement('tr');
+          const stColor = l.status === 'approved' ? 'success' : (l.status === 'rejected' ? 'danger' : 'warning');
+          tr.innerHTML = `
+            <td>${startStr}</td>
+            <td>${endStr}</td>
+            <td>${esc(l.type || 'Casual')}</td>
+            <td><span class="badge ${stColor}">${esc(l.status || 'pending')}</span></td>
+            <td style="font-style:italic;">${esc(l.reviewReason || 'No review notes.')}</td>
+          `;
+          tblProfTeachLeaves.appendChild(tr);
+        });
+      }
+    }
+
+    // Populate Credentials
     const credsEmail = document.getElementById('creds-email');
     const credsErpId = document.getElementById('creds-erp-id');
     const copyBtn = document.getElementById('btn-copy-creds');
@@ -894,6 +1054,76 @@
         });
       });
     }
+
+    // Populate Activity History
+    const profileActivityLogs = document.getElementById('profile-activity-logs');
+    if (profileActivityLogs) {
+      profileActivityLogs.innerHTML = '';
+      const logs = [];
+      if (user.lastLogin) {
+        logs.push({
+          time: new Date(user.lastLogin).toLocaleString('en-IN'),
+          text: 'User successfully logged in to the teacher portal.'
+        });
+      }
+      if (user.updatedAt) {
+        logs.push({
+          time: new Date(user.updatedAt).toLocaleString('en-IN'),
+          text: 'Faculty profile and assignment credentials synchronized.'
+        });
+      }
+      if (!logs.length) {
+        profileActivityLogs.innerHTML = '<div class="activity-log-item"><span class="activity-log-time">Now</span><span class="activity-log-text">No activity history recorded yet.</span></div>';
+      } else {
+        profileActivityLogs.innerHTML = logs.map(l => `
+          <div class="activity-log-item">
+            <span class="activity-log-time">${l.time}</span>
+            <span class="activity-log-text">${esc(l.text)}</span>
+          </div>
+        `).join('');
+      }
+    }
+
+    // Reset inner tabs to overview
+    const tabsContainer = document.getElementById('profile-inner-tabs');
+    if (tabsContainer) {
+      const tabs = tabsContainer.querySelectorAll('.id-tab');
+      tabs.forEach(t => {
+        if (t.getAttribute('data-sub-tab') === 'overview') {
+          t.classList.add('active');
+        } else {
+          t.classList.remove('active');
+        }
+      });
+      const contents = ['overview', 'subjects', 'attendance', 'materials', 'leaves', 'creds', 'activity', 'edit-info', 'security'];
+      contents.forEach(c => {
+        const contentEl = document.getElementById(`profile-sub-${c}`);
+        if (contentEl) {
+          contentEl.style.display = c === 'overview' ? 'block' : 'none';
+        }
+      });
+    }
+  }
+
+  function setupProfileSubTabs() {
+    const tabsContainer = document.getElementById('profile-inner-tabs');
+    if (!tabsContainer) return;
+    const tabs = tabsContainer.querySelectorAll('.id-tab');
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        tabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        
+        const target = tab.getAttribute('data-sub-tab');
+        const contents = ['overview', 'subjects', 'attendance', 'materials', 'leaves', 'creds', 'activity', 'edit-info', 'security'];
+        contents.forEach(c => {
+          const contentEl = document.getElementById(`profile-sub-${c}`);
+          if (contentEl) {
+            contentEl.style.display = c === target ? 'block' : 'none';
+          }
+        });
+      });
+    });
   }
 
   function filterAttendanceStudents() {

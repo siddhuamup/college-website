@@ -4,9 +4,9 @@ import fs from 'fs';
 import path from 'path';
 
 const prisma = new PrismaClient();
-const API_URL = 'http://127.0.0.1:3000/api';
-const BASE_URL = 'http://127.0.0.1:3000';
-const ARTIFACT_DIR = 'C:\\Users\\Siddhu\\.gemini\\antigravity-ide\\brain\\0b66d80b-9122-4539-a4a1-991d2a048f97';
+const API_URL = 'http://localhost:3000/api';
+const BASE_URL = 'http://localhost:3000';
+const ARTIFACT_DIR = 'C:\\Users\\Siddhu\\.gemini\\antigravity-ide\\brain\\305c8135-2fa2-44d5-be0b-6bce1eacce5f';
 
 async function loginAdmin() {
   const res = await fetch(`${API_URL}/auth/login`, {
@@ -36,6 +36,12 @@ async function apiCall(token, method, endpoint, body = null) {
 async function runTests() {
   let mdReport = `# CRUD Verification Report\n\n`;
   const token = await loginAdmin();
+  const adminUser = await prisma.user.findUnique({ where: { email: 'principal@ssccjunnar.edu' } });
+  const adminId = adminUser ? adminUser.id : null;
+  
+  // Cleanup leftover test data from previous failed runs
+  await prisma.user.deleteMany({ where: { email: { in: ['test.edit@student.ssccjunnar.edu', 'jane.doe@student.ssccjunnar.edu'] } } });
+  await prisma.admissionApplication.deleteMany({ where: { email: 'jane.doe@example.com' } });
   
   const browser = await puppeteer.launch({ headless: "new", args: ['--no-sandbox', '--disable-setuid-sandbox'] });
   const page = await browser.newPage();
@@ -63,7 +69,7 @@ async function runTests() {
   
   // Create a dummy student first
   const dummyStudent = await prisma.user.create({
-    data: { name: 'Test Student Edit', email: 'test.edit@student.ssccjunnar.edu', role: 'STUDENT', passwordHash: 'hash' }
+    data: { name: 'Test Student Edit', email: 'test.edit@student.ssccjunnar.edu', role: 'student', passwordHash: 'hash' }
   });
   
   await page.goto(`${BASE_URL}/admin/index.html`);
@@ -73,14 +79,14 @@ async function runTests() {
   const beforeEditDb = await prisma.user.findUnique({ where: { id: dummyStudent.id } });
   
   browserConsole.length = 0; // Clear console
-  const editRes = await apiCall(token, 'PUT', `/admin/users/${dummyStudent.id}`, { name: 'Test Student Edited', role: 'STUDENT' });
+  const editRes = await apiCall(token, 'PATCH', `/admin/students/${dummyStudent.id}`, { name: 'Test Student Edited', role: 'student' });
   
   await page.goto(`${BASE_URL}/admin/index.html`);
   await new Promise(r => setTimeout(r, 2000));
   const afterEditImg = await takeScreenshot('student_edit_after');
   const afterEditDb = await prisma.user.findUnique({ where: { id: dummyStudent.id } });
   
-  mdReport += `* **API endpoint used**: PUT /api/admin/users/:id\n`;
+  mdReport += `* **API endpoint used**: PATCH /api/admin/students/:id\n`;
   mdReport += `* **Before state**: Name was "${beforeEditDb.name}"\n`;
   mdReport += `* **Action performed**: Edited name to "Test Student Edited"\n`;
   mdReport += `* **After state**: Name is "${afterEditDb.name}" (Status: ${editRes.status})\n`;
@@ -91,14 +97,14 @@ async function runTests() {
   // --- Student Delete ---
   mdReport += `## 2. Student Delete\n`;
   browserConsole.length = 0;
-  const delRes = await apiCall(token, 'DELETE', `/admin/users/${dummyStudent.id}`);
+  const delRes = await apiCall(token, 'DELETE', `/admin/students/${dummyStudent.id}`);
   
   await page.goto(`${BASE_URL}/admin/index.html`);
   await new Promise(r => setTimeout(r, 2000));
   const afterDelImg = await takeScreenshot('student_del_after');
   const afterDelDb = await prisma.user.findUnique({ where: { id: dummyStudent.id } });
   
-  mdReport += `* **API endpoint used**: DELETE /api/admin/users/:id\n`;
+  mdReport += `* **API endpoint used**: DELETE /api/admin/students/:id\n`;
   mdReport += `* **Before state**: Student exists (ID: ${dummyStudent.id})\n`;
   mdReport += `* **Action performed**: Deleted student\n`;
   mdReport += `* **After state**: ${afterDelDb === null ? 'Successfully Deleted' : 'Failed'} (Status: ${delRes.status})\n`;
@@ -112,7 +118,7 @@ async function runTests() {
   // ----------------------------------------------------
   mdReport += `## 5 & 6. Notice Edit & Delete\n`;
   const dummyNotice = await prisma.notice.create({
-    data: { title: 'Test Notice', content: 'Test Content', priority: 'NORMAL', authorId: dummyStudent.id } // using any valid user id
+    data: { title: 'Test Notice', body: 'Test Content', priority: 'NORMAL', createdById: adminId } // using any valid user id
   });
   
   await page.goto(`${BASE_URL}/admin/index.html`);
@@ -122,7 +128,7 @@ async function runTests() {
   const noticeBeforeImg = await takeScreenshot('notice_before');
   
   browserConsole.length = 0;
-  const noticeEditRes = await apiCall(token, 'PUT', `/admin/notices/${dummyNotice.id}`, { title: 'Test Notice EDITED', content: 'Edited', priority: 'HIGH' });
+  const noticeEditRes = await apiCall(token, 'PATCH', `/admin/notices/${dummyNotice.id}`, { title: 'Test Notice EDITED', body: 'Edited', priority: 'HIGH' });
   const noticeEditDb = await prisma.notice.findUnique({ where: { id: dummyNotice.id } });
   
   await page.evaluate(() => { window.location.reload(); });
@@ -152,13 +158,16 @@ async function runTests() {
   // Admission Approve / Reject
   // ----------------------------------------------------
   mdReport += `## 10. Admission Approve / Reject\n`;
-  const dummyAd = await prisma.admissionForm.create({
+  const dummyAd = await prisma.admissionApplication.create({
     data: {
-      firstName: 'Jane', lastName: 'Doe',
+      applicationNumber: 'APP-TEST-9999',
+      fullName: 'Jane Doe',
       email: 'jane.doe@example.com',
       phone: '1234567890',
-      course: 'BCS', status: 'pending',
-      submissionDate: new Date()
+      address: 'Test Address',
+      courseApplied: 'BCS',
+      marks12: 450.0,
+      status: 'pending'
     }
   });
 
@@ -169,9 +178,14 @@ async function runTests() {
   
   browserConsole.length = 0;
   // Approve the admission
-  const adApproveRes = await apiCall(token, 'POST', `/admin/admissions/${dummyAd.id}/approve`, { rollNumber: 'FYBCS-2026-999' });
-  const adAfterDb = await prisma.admissionForm.findUnique({ where: { id: dummyAd.id } });
-  const newStudentDb = await prisma.user.findFirst({ where: { email: 'jane.doe@student.ssccjunnar.edu' } });
+  const adApproveRes = await apiCall(token, 'POST', `/admin/admissions/${dummyAd.id}/decision`, {
+    status: 'approved',
+    createAccount: true,
+    className: 'FYBCS',
+    courseName: 'BCS'
+  });
+  const adAfterDb = await prisma.admissionApplication.findUnique({ where: { id: dummyAd.id } });
+  const newStudentDb = await prisma.user.findFirst({ where: { name: 'Jane Doe' } });
 
   await page.evaluate(() => { window.location.reload(); });
   await new Promise(r => setTimeout(r, 2000));
@@ -179,7 +193,7 @@ async function runTests() {
   await new Promise(r => setTimeout(r, 1000));
   const adAfterImg = await takeScreenshot('admission_after');
 
-  mdReport += `* **API endpoint used**: POST /api/admin/admissions/:id/approve\n`;
+  mdReport += `* **API endpoint used**: POST /api/admin/admissions/:id/decision\n`;
   mdReport += `* **Before state**: Status was "pending"\n`;
   mdReport += `* **Action performed**: Approved admission, auto-generated ID/Email.\n`;
   mdReport += `* **After state**: Status is "${adAfterDb?.status}". New user created? ${newStudentDb ? 'Yes' : 'No'}\n`;
@@ -188,8 +202,12 @@ async function runTests() {
   mdReport += `* **Database verification**: Admission status updated to approved. New User and StudentProfile inserted.\n\n`;
 
   // Clean up
-  if (newStudentDb) await prisma.user.delete({ where: { id: newStudentDb.id } });
-  await prisma.admissionForm.delete({ where: { id: dummyAd.id } });
+  if (newStudentDb) {
+    // Delete any dependent records if cascade is not set
+    // Let's delete studentUser
+    await prisma.user.delete({ where: { id: newStudentDb.id } });
+  }
+  await prisma.admissionApplication.delete({ where: { id: dummyAd.id } });
 
   fs.writeFileSync(path.join(ARTIFACT_DIR, 'crud-verification-report.md'), mdReport);
   console.log('Report generated successfully.');

@@ -283,11 +283,11 @@
 
       // Search students
       searchIndex.students.filter(s => (s.name || '').toLowerCase().includes(lq) || (s.email || '').toLowerCase().includes(lq))
-        .slice(0, 4).forEach(s => results.push({ group: 'Students', panel: 'students', label: s.name, sub: s.email }));
+        .slice(0, 4).forEach(s => results.push({ group: 'Students', panel: 'students', id: s._id || s.id, label: s.name, sub: s.email }));
 
       // Search teachers
       searchIndex.teachers.filter(t => (t.name || '').toLowerCase().includes(lq) || (t.email || '').toLowerCase().includes(lq))
-        .slice(0, 4).forEach(t => results.push({ group: 'Faculty', panel: 'teachers', label: t.name, sub: t.email }));
+        .slice(0, 4).forEach(t => results.push({ group: 'Faculty', panel: 'teachers', id: t._id || t.id, label: t.name, sub: t.email }));
 
       // Search admissions
       searchIndex.admissions.filter(a => (a.fullName || a.name || '').toLowerCase().includes(lq) || (a.coursePref || '').toLowerCase().includes(lq))
@@ -314,7 +314,7 @@
         for (const [group, items] of Object.entries(grouped)) {
           html += `<div class="search-result-group"><div class="search-result-group-label">${esc(group)}</div>`;
           items.forEach(item => {
-            html += `<div class="search-result-item" data-panel="${item.panel}">
+            html += `<div class="search-result-item" data-panel="${item.panel}" data-id="${item.id || ''}">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
               <span>${esc(item.label)}${item.sub ? ' <span style="color:var(--muted);font-size:0.78rem;">— ' + esc(item.sub) + '</span>' : ''}</span>
             </div>`;
@@ -324,7 +324,15 @@
         resultsEl.innerHTML = html;
         resultsEl.querySelectorAll('.search-result-item').forEach(el => {
           el.addEventListener('click', () => {
-            navigateToPanel(el.dataset.panel);
+            const panel = el.dataset.panel;
+            const id = el.dataset.id;
+            if (panel === 'students' && id) {
+              openStudentProfile(id);
+            } else if (panel === 'teachers' && id) {
+              openTeacherProfile(id);
+            } else {
+              navigateToPanel(panel);
+            }
             resultsEl.classList.remove('visible');
             input.value = '';
           });
@@ -337,6 +345,7 @@
   async function boot() {
     setupGateForm();
     initStudentProfileTabs();
+    initTeacherProfileTabs();
     if (!SSC_API.token()) {
       showGate();
       return;
@@ -712,8 +721,8 @@
         <td data-label="Email">${esc(u.email)}</td>
         <td data-label="Class">${esc(u.studentProfile?.className || '')}</td>
         <td data-label="Actions">
-          <button class="btn small" data-edit-student="${u._id}">Edit</button>
-          <button class="btn small danger" data-del-student="${u._id}">Delete</button>
+          <button class="btn small" data-edit-student="${u._id || u.id}">Edit</button>
+          <button class="btn small danger" data-del-student="${u._id || u.id}">Delete</button>
         </td>`;
       tb.appendChild(tr);
     });
@@ -727,24 +736,7 @@
 
     tb.querySelectorAll('[data-edit-student]').forEach((b) =>
       b.addEventListener('click', () => {
-        const id = b.getAttribute('data-edit-student');
-        const cur = rows.find((x) => x._id === id);
-        if (!cur) return;
-        
-        document.getElementById('edit-student-id').value = cur._id || cur.id;
-        document.getElementById('edit-student-name').value = cur.name || '';
-        document.getElementById('edit-student-erp-id').value = cur.studentProfile?.studentId || '';
-        document.getElementById('edit-student-email').value = cur.email || '';
-        document.getElementById('edit-student-personal-email').value = cur.studentProfile?.personalEmail || '';
-        document.getElementById('edit-student-phone').value = cur.phone || '';
-        document.getElementById('edit-student-class').value = cur.studentProfile?.className || '';
-        document.getElementById('edit-student-roll').value = cur.studentProfile?.rollNumber || '';
-        document.getElementById('edit-student-course').value = cur.studentProfile?.courseName || '';
-        document.getElementById('edit-student-year').value = cur.studentProfile?.year || '';
-        document.getElementById('edit-student-division').value = cur.studentProfile?.division || '';
-        document.getElementById('edit-student-password').value = '';
-        
-        document.getElementById('modal-edit-student').style.display = 'flex';
+        openStudentProfile(b.getAttribute('data-edit-student'));
       })
     );
 
@@ -776,6 +768,26 @@
           sect.style.display = 'none';
         });
         const sect = document.getElementById(`prof-sect-${tabName}`);
+        if (sect) {
+          sect.style.display = 'block';
+        }
+      });
+    });
+  }
+
+  function initTeacherProfileTabs() {
+    const modal = document.getElementById('modal-teacher-profile');
+    if (!modal) return;
+    const tabs = modal.querySelectorAll('.id-tab');
+    tabs.forEach((tab) => {
+      tab.addEventListener('click', () => {
+        const tabName = tab.getAttribute('data-teach-prof-tab');
+        tabs.forEach((t) => t.classList.remove('active'));
+        tab.classList.add('active');
+        modal.querySelectorAll('.teach-prof-tab-content').forEach((sect) => {
+          sect.style.display = 'none';
+        });
+        const sect = document.getElementById(`teach-prof-sect-${tabName}`);
         if (sect) {
           sect.style.display = 'block';
         }
@@ -907,9 +919,227 @@
         `).join('');
       }
       
+      const editBtn = document.getElementById('btn-prof-edit-student');
+      if (editBtn) {
+        editBtn.onclick = () => {
+          modal.style.display = 'none';
+          const editFormModal = document.getElementById('modal-edit-student');
+          if (editFormModal) {
+            document.getElementById('edit-student-id').value = s._id || s.id;
+            document.getElementById('edit-student-name').value = s.name || '';
+            document.getElementById('edit-student-erp-id').value = sp.studentId || '';
+            document.getElementById('edit-student-email').value = s.email || '';
+            document.getElementById('edit-student-personal-email').value = sp.personalEmail || '';
+            document.getElementById('edit-student-phone').value = s.phone || '';
+            document.getElementById('edit-student-class').value = sp.className || '';
+            document.getElementById('edit-student-roll').value = sp.rollNumber || '';
+            document.getElementById('edit-student-course').value = sp.courseName || '';
+            document.getElementById('edit-student-year').value = sp.year || '';
+            document.getElementById('edit-student-division').value = sp.division || '';
+            document.getElementById('edit-student-password').value = '';
+            editFormModal.style.display = 'flex';
+          }
+        };
+      }
     } catch (err) {
       document.getElementById('prof-details-name').textContent = 'Error';
       msg('Failed to fetch student details: ' + err.message, true);
+    }
+  }
+
+  async function openTeacherProfile(id) {
+    const modal = document.getElementById('modal-teacher-profile');
+    if (!modal) return;
+    
+    // Switch to details tab initially
+    const tabs = modal.querySelectorAll('.id-tab');
+    tabs.forEach(t => {
+      if (t.getAttribute('data-teach-prof-tab') === 'details') {
+        t.classList.add('active');
+      } else {
+        t.classList.remove('active');
+      }
+    });
+    modal.querySelectorAll('.teach-prof-tab-content').forEach(sect => {
+      sect.style.display = sect.id === 'teach-prof-sect-details' ? 'block' : 'none';
+    });
+    
+    // Show placeholder loading states
+    document.getElementById('teach-prof-name').textContent = 'Loading...';
+    document.getElementById('teach-prof-erp-id').textContent = 'Loading...';
+    document.getElementById('teach-prof-dept').textContent = 'Loading...';
+    document.getElementById('teach-prof-desg').textContent = 'Loading...';
+    document.getElementById('teach-prof-qual').textContent = 'Loading...';
+    document.getElementById('teach-prof-email').textContent = 'Loading...';
+    document.getElementById('teach-prof-phone').textContent = 'Loading...';
+    document.getElementById('teach-prof-bio').textContent = 'Loading...';
+    
+    document.getElementById('teach-prof-avatar-placeholder').style.display = 'grid';
+    document.getElementById('teach-prof-avatar-img').style.display = 'none';
+    
+    // Clear lists
+    document.querySelector('#tbl-teach-prof-subjects tbody').innerHTML = '<tr><td colspan="2" class="text-center text-muted">Loading subjects...</td></tr>';
+    document.querySelector('#tbl-teach-prof-attendance tbody').innerHTML = '<tr><td colspan="3" class="text-center text-muted">Loading attendance...</td></tr>';
+    document.querySelector('#tbl-teach-prof-leaves tbody').innerHTML = '<tr><td colspan="4" class="text-center text-muted">Loading leaves...</td></tr>';
+    document.querySelector('#tbl-teach-prof-materials tbody').innerHTML = '<tr><td colspan="4" class="text-center text-muted">Loading study materials...</td></tr>';
+    
+    modal.style.display = 'flex';
+    
+    try {
+      const data = await SSC_API.get(`/admin/teachers/${id}/history`);
+      const t = data.teacher;
+      const tp = t.teacherProfile || {};
+      
+      // Populate Details tab
+      document.getElementById('teach-prof-name').textContent = t.name || '—';
+      document.getElementById('teach-prof-erp-id').textContent = tp.employeeId || tp.teacherId || t.id || '—';
+      document.getElementById('teach-prof-dept').textContent = tp.department || '—';
+      document.getElementById('teach-prof-desg').textContent = tp.designation || 'Faculty Member';
+      document.getElementById('teach-prof-qual').textContent = tp.qualifications || '—';
+      document.getElementById('teach-prof-email').textContent = t.email || '—';
+      document.getElementById('teach-prof-phone').textContent = tp.mobile || t.phone || '—';
+      document.getElementById('teach-prof-bio').textContent = t.bio || '—';
+      
+      const avatarPlaceholder = document.getElementById('teach-prof-avatar-placeholder');
+      const avatarImg = document.getElementById('teach-prof-avatar-img');
+      if (t.avatarUrl) {
+        avatarImg.src = t.avatarUrl;
+        avatarImg.style.display = 'block';
+        avatarPlaceholder.style.display = 'none';
+      } else {
+        avatarImg.style.display = 'none';
+        avatarPlaceholder.style.display = 'grid';
+        avatarPlaceholder.textContent = (t.name || 'T').charAt(0).toUpperCase();
+      }
+      
+      // Populate Subjects tab
+      const subjects = tp.assignments || [];
+      const tblSubjects = document.querySelector('#tbl-teach-prof-subjects tbody');
+      if (tblSubjects) {
+        tblSubjects.innerHTML = '';
+        if (!subjects.length) {
+          tblSubjects.innerHTML = '<tr><td colspan="2" class="text-center text-muted">No assigned subjects.</td></tr>';
+        } else {
+          subjects.forEach(a => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td><strong>${esc(a.subject)}</strong></td><td>${esc(a.className)}</td>`;
+            tblSubjects.appendChild(tr);
+          });
+        }
+      }
+      
+      // Populate Attendance tab
+      const attendance = data.attendance || [];
+      const tblAttendance = document.querySelector('#tbl-teach-prof-attendance tbody');
+      if (tblAttendance) {
+        tblAttendance.innerHTML = '';
+        if (!attendance.length) {
+          tblAttendance.innerHTML = '<tr><td colspan="3" class="text-center text-muted">No attendance logs.</td></tr>';
+        } else {
+          attendance.forEach(a => {
+            const tr = document.createElement('tr');
+            const dtStr = new Date(a.date).toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' });
+            const count = Array.isArray(a.entries) ? a.entries.length : 0;
+            tr.innerHTML = `<td>${dtStr}</td><td><strong>${esc(a.subject)}</strong></td><td>${count} Students</td>`;
+            tblAttendance.appendChild(tr);
+          });
+        }
+      }
+      
+      // Populate Leaves tab
+      const leaves = data.leaves || [];
+      const tblLeaves = document.querySelector('#tbl-teach-prof-leaves tbody');
+      if (tblLeaves) {
+        tblLeaves.innerHTML = '';
+        if (!leaves.length) {
+          tblLeaves.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No leave requests.</td></tr>';
+        } else {
+          leaves.forEach(l => {
+            const tr = document.createElement('tr');
+            const startStr = new Date(l.startDate).toLocaleDateString('en-IN', { day:'2-digit', month:'short' });
+            const endStr = new Date(l.endDate).toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' });
+            const stColor = l.status === 'approved' ? 'success' : (l.status === 'rejected' ? 'danger' : 'warning');
+            tr.innerHTML = `<td>${startStr}</td><td>${endStr}</td><td>${esc(l.type)}</td><td><span class="badge ${stColor}">${esc(l.status)}</span></td>`;
+            tblLeaves.appendChild(tr);
+          });
+        }
+      }
+      
+      // Populate Materials tab
+      const materials = data.studyMaterials || [];
+      const tblMaterials = document.querySelector('#tbl-teach-prof-materials tbody');
+      if (tblMaterials) {
+        tblMaterials.innerHTML = '';
+        if (!materials.length) {
+          tblMaterials.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No uploaded study materials.</td></tr>';
+        } else {
+          materials.forEach(m => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+              <td><strong>${esc(m.title)}</strong></td>
+              <td>${esc(m.subject)}</td>
+              <td>${esc(m.className)}</td>
+              <td>${m.fileUrl ? `<a class="btn small secondary" href="${esc(m.fileUrl)}" target="_blank" style="color:var(--text); padding:0.2rem 0.5rem; font-size:0.75rem;">Download</a>` : '—'}</td>
+            `;
+            tblMaterials.appendChild(tr);
+          });
+        }
+      }
+      
+      // Bind Edit button click to open edit modal
+      const editBtn = document.getElementById('btn-prof-edit-teacher');
+      if (editBtn) {
+        editBtn.onclick = () => {
+          modal.style.display = 'none'; // Close read-only
+          
+          // Trigger the teacher edit form populator
+          const editFormModal = document.getElementById('modal-edit-teacher');
+          if (editFormModal) {
+            document.getElementById('edit-teacher-id').value = t._id || t.id;
+            document.getElementById('edit-teacher-name').value = t.name || '';
+            document.getElementById('edit-teacher-email').value = t.email || '';
+            document.getElementById('edit-teacher-phone').value = tp.mobile || t.phone || '';
+            document.getElementById('edit-teacher-dept').value = tp.department || '';
+            document.getElementById('edit-teacher-designation').value = tp.designation || '';
+            document.getElementById('edit-teacher-qual').value = tp.qualifications || '';
+            document.getElementById('edit-teacher-exp').value = tp.experience || '';
+            document.getElementById('edit-teacher-spec').value = tp.specialization || '';
+            document.getElementById('edit-teacher-bio').value = t.bio || '';
+            document.getElementById('edit-teacher-password').value = '';
+            document.getElementById('edit-teacher-avatar').value = '';
+            document.getElementById('edit-teacher-remove-avatar-flag').value = 'false';
+            
+            const prevImg = document.getElementById('edit-teacher-avatar-img');
+            const prevPlaceholder = document.getElementById('edit-teacher-avatar-placeholder');
+            const removePhotoBtn = document.getElementById('btn-edit-teacher-remove-photo');
+            if (t.avatarUrl) {
+              prevImg.src = t.avatarUrl;
+              prevImg.style.display = 'block';
+              prevPlaceholder.style.display = 'none';
+              if (removePhotoBtn) removePhotoBtn.style.display = 'inline-block';
+            } else {
+              prevImg.src = '';
+              prevImg.style.display = 'none';
+              prevPlaceholder.style.display = 'grid';
+              prevPlaceholder.textContent = (t.name || 'T').charAt(0).toUpperCase();
+              if (removePhotoBtn) removePhotoBtn.style.display = 'none';
+            }
+            
+            // Populate assignments list
+            const asgnList = document.getElementById('edit-teacher-assignments-list');
+            if (asgnList) {
+              asgnList.innerHTML = '';
+              const list = tp.assignments || [];
+              list.forEach(a => addAssignmentRow(a.subject, a.className));
+            }
+            
+            editFormModal.style.display = 'flex';
+          }
+        };
+      }
+    } catch (err) {
+      console.error(err);
+      showModalAlert('Failed to load teacher history details: ' + err.message, 'Error');
     }
   }
 
@@ -1189,59 +1419,27 @@
         ? assignments.map(a => `<span class="assignment-badge">${esc(a.subject)} • ${esc(a.className)}</span>`).join(' ')
         : '';
       tr.innerHTML = `
-        <td data-label="Name">${esc(u.name)}</td>
+        <td data-label="Name"><a href="#" class="teacher-name-click text-primary" style="font-weight:600;" data-tid="${u._id || u.id}">${esc(u.name)}</a></td>
         <td data-label="Email">${esc(u.email)}</td>
         <td data-label="Department">${esc(u.teacherProfile?.department || '')}</td>
         <td data-label="Assigned Classes"><div style="display:flex;flex-wrap:wrap;gap:0.25rem;">${badges}</div></td>
         <td data-label="Actions">
-          <button class="btn small" data-edit-teacher="${u._id}">Edit</button>
-          <button class="btn small danger" data-del-teacher="${u._id}">Delete</button>
+          <button class="btn small" data-edit-teacher="${u._id || u.id}">Edit</button>
+          <button class="btn small danger" data-del-teacher="${u._id || u.id}">Delete</button>
         </td>`;
       tb.appendChild(tr);
     });
 
+    tb.querySelectorAll('.teacher-name-click').forEach((a) => {
+      a.addEventListener('click', (e) => {
+        e.preventDefault();
+        openTeacherProfile(a.getAttribute('data-tid'));
+      });
+    });
+
     tb.querySelectorAll('[data-edit-teacher]').forEach((b) =>
       b.addEventListener('click', () => {
-        const id = b.getAttribute('data-edit-teacher');
-        const cur = rows.find((x) => x._id === id);
-        if (!cur) return;
-        
-        document.getElementById('edit-teacher-id').value = cur._id || cur.id;
-        document.getElementById('edit-teacher-name').value = cur.name || '';
-        document.getElementById('edit-teacher-email').value = cur.email || '';
-        document.getElementById('edit-teacher-phone').value = cur.phone || '';
-        document.getElementById('edit-teacher-dept').value = cur.teacherProfile?.department || '';
-        document.getElementById('edit-teacher-designation').value = cur.teacherProfile?.designation || '';
-        document.getElementById('edit-teacher-qual').value = cur.teacherProfile?.qualifications || '';
-        document.getElementById('edit-teacher-exp').value = cur.teacherProfile?.experience || '';
-        document.getElementById('edit-teacher-spec').value = cur.teacherProfile?.specialization || '';
-        document.getElementById('edit-teacher-bio').value = cur.bio || '';
-        document.getElementById('edit-teacher-password').value = '';
-        document.getElementById('edit-teacher-avatar').value = '';
-        document.getElementById('edit-teacher-remove-avatar-flag').value = 'false';
-
-        const prevImg = document.getElementById('edit-teacher-avatar-img');
-        const prevPlaceholder = document.getElementById('edit-teacher-avatar-placeholder');
-        const removePhotoBtn = document.getElementById('btn-edit-teacher-remove-photo');
-        if (cur.avatarUrl) {
-          prevImg.src = cur.avatarUrl;
-          prevImg.style.display = 'block';
-          prevPlaceholder.style.display = 'none';
-          removePhotoBtn.style.display = 'inline-block';
-        } else {
-          prevImg.src = '';
-          prevImg.style.display = 'none';
-          prevPlaceholder.style.display = 'grid';
-          removePhotoBtn.style.display = 'none';
-        }
-        
-        // Populate assignments list
-        const asgnList = document.getElementById('edit-teacher-assignments-list');
-        asgnList.innerHTML = '';
-        const list = cur.teacherProfile?.assignments || [];
-        list.forEach(a => addAssignmentRow(a.subject, a.className));
-        
-        document.getElementById('modal-edit-teacher').style.display = 'flex';
+        openTeacherProfile(b.getAttribute('data-edit-teacher'));
       })
     );
 

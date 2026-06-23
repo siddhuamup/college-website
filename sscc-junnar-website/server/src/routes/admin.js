@@ -51,6 +51,13 @@ export function adminRouter({ jwtSecret }) {
     if (!email || !password || !name) return res.status(400).json({ error: 'email, password, name required' });
     const exists = await prisma.user.findUnique({ where: { email: String(email).toLowerCase() } });
     if (exists) return res.status(409).json({ error: 'Email already registered' });
+
+    // Generate Student ID and Roll Number if not provided
+    const courseAbbr = (courseName || 'GEN').toUpperCase().replace(/[^A-Z0-9]/g, '') || 'GEN';
+    const finalStudentId = await nextStudentId(courseAbbr);
+    const finalRollNumber = rollNumber || await nextRollNumber(courseAbbr);
+    const finalVerificationId = `SSC-VER-${finalStudentId}`;
+
     const user = await prisma.user.create({
       data: {
         email: String(email).toLowerCase().trim(),
@@ -59,10 +66,21 @@ export function adminRouter({ jwtSecret }) {
         name: String(name).trim(),
         phone: phone || '',
         studentProfile: {
-          rollNumber: rollNumber || '',
-          className: className || '',
+          studentId: finalStudentId,
+          personalEmail: email,
+          collegeEmail: email,
+          mobile: phone || '',
+          course: courseName || '',
           courseName: courseName || '',
-          year: year || '',
+          className: className || '',
+          year: year || '1',
+          division: 'A',
+          rollNumber: finalRollNumber,
+          address: '',
+          parentContact: '',
+          emergencyContact: '',
+          admissionYear: new Date().getFullYear(),
+          verificationId: finalVerificationId,
         },
       },
     });
@@ -194,6 +212,39 @@ export function adminRouter({ jwtSecret }) {
       orderBy: { name: 'asc' },
     });
     res.json(list.map(stripHash));
+  });
+
+  r.get('/teachers/:id/history', async (req, res) => {
+    const { id } = req.params;
+    const teacher = await prisma.user.findFirst({
+      where: { id, role: Role.teacher }
+    });
+    if (!teacher) {
+      return res.status(404).json({ error: 'Teacher not found' });
+    }
+
+    const [leaves, attendanceLogs, studyMaterials] = await Promise.all([
+      prisma.leaveRequest.findMany({
+        where: { teacherId: id },
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.attendance.findMany({
+        where: { teacherId: id },
+        orderBy: { date: 'desc' },
+        take: 100
+      }),
+      prisma.studyMaterial.findMany({
+        where: { teacherId: id },
+        orderBy: { createdAt: 'desc' }
+      })
+    ]);
+
+    res.json({
+      teacher: stripHash(teacher),
+      leaves: leaves.map(withMongoId),
+      attendance: attendanceLogs.map(withMongoId),
+      studyMaterials: studyMaterials.map(withMongoId)
+    });
   });
 
   function optionalTeacherAvatar(req, res, next) {

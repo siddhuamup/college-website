@@ -63,7 +63,7 @@
         </button>
         <button type="button" data-panel="edit-profile">
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-          Edit profile
+          My Profile
         </button>
       </nav>
 
@@ -341,7 +341,7 @@
             <span id="att-loaded-status" class="small highlight" style="display:none; font-weight:600;"></span>
           </div>
           <div class="form-grid two mt-2">
-            <div><label class="field-label">Subject</label><input class="input" id="att-subject" required/></div>
+             <div><label class="field-label">Subject</label><select class="select input" id="att-subject" required></select></div>
             <div><label class="field-label">Date</label><input class="input" id="att-date" type="date" required/></div>
           </div>
           <div class="mt-3" style="display:flex; gap:1rem; align-items:center; justify-content:space-between; flex-wrap:wrap; border-bottom:1px solid rgba(56,189,248,0.15); padding-bottom:0.75rem;">
@@ -375,102 +375,273 @@
       </section>
 
       <section class="dash-panel" data-panel="edit-profile">
-        <div class="grid grid-2" style="align-items: start; gap: 1.5rem;">
-          <div class="card">
-            <h3>Edit Profile</h3>
-            <form id="form-edit-profile" class="form-grid">
-              <div style="display:flex;align-items:center;gap:1.5rem;margin-bottom:1rem;flex-wrap:wrap;">
-                <div id="teacher-avatar-preview-wrap">
-                  <div class="faculty-avatar-placeholder" id="teacher-avatar-placeholder" style="width:80px;height:80px;border-radius:50%;border:1px solid rgba(56,189,248,0.2);background:rgba(0,0,0,0.25);display:grid;place-items:center;"></div>
-                  <img id="teacher-avatar-img" src="" alt="Profile picture" style="width:80px;height:80px;border-radius:50%;object-fit:cover;display:none;margin:0;border:1px solid rgba(56,189,248,0.2);"/>
+        <div class="profile-main-card">
+          <!-- Banner Image Cover -->
+          <div class="profile-cover">
+            <div class="profile-avatar-container">
+              <div class="profile-avatar-wrap">
+                <div class="profile-avatar-glow"></div>
+                <div class="faculty-avatar-placeholder" id="teacher-avatar-placeholder">T</div>
+                <img id="teacher-avatar-img" src="" alt="Profile picture" style="display:none;"/>
+              </div>
+              <div class="profile-meta-info">
+                <h2 id="profile-display-name" class="profile-meta-name">Faculty Name</h2>
+                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.4rem; align-items: center;">
+                  <span class="profile-meta-role" id="profile-hdr-role">Faculty</span>
+                  <span class="profile-meta-role" id="profile-hdr-erp" style="background: rgba(99,102,241,0.25);">Emp ID: —</span>
+                  <span class="profile-meta-role" id="profile-hdr-dept" style="background: rgba(34,197,94,0.25);">Dept: —</span>
+                  <span class="profile-meta-role" id="profile-hdr-desg" style="background: rgba(245,158,11,0.25);">Designation: —</span>
+                  <span class="profile-meta-role" id="profile-hdr-status" style="background: rgba(16,185,129,0.25);">Active</span>
                 </div>
-                <div>
-                  <label class="field-label" for="teacher-avatar-upload">Upload profile picture</label>
-                  <input type="file" id="teacher-avatar-upload" name="avatar" accept="image/*"/>
-                </div>
               </div>
-              <div>
-                <label class="field-label" for="teacher-profile-name">Full Name</label>
-                <input class="input" id="teacher-profile-name" name="name" required/>
-              </div>
-              <div>
-                <label class="field-label" for="teacher-profile-phone">Phone number</label>
-                <input class="input" id="teacher-profile-phone" name="phone"/>
-              </div>
-              <div>
-                <label class="field-label" for="teacher-profile-qual">Qualifications</label>
-                <input class="input" id="teacher-profile-qual" name="qualifications"/>
-              </div>
-              <div>
-                <label class="field-label" for="teacher-profile-bio">Bio / Statement</label>
-                <textarea class="input" id="teacher-profile-bio" name="bio" rows="3"></textarea>
-              </div>
-              <div>
-                <button class="btn" type="submit" style="color: #000;">Save Changes</button>
-              </div>
-            </form>
+            </div>
           </div>
           
-          <div style="display: flex; flex-direction: column; gap: 1.5rem;">
-            <!-- My Credentials card -->
-            <div class="card" id="card-my-credentials">
-              <h3>My Credentials</h3>
-              <p class="small text-secondary" style="margin-bottom: 0.75rem;">Your registration details for copying:</p>
-              <div class="form-grid">
+          <!-- Inner Tabs -->
+          <div class="profile-navigation-tabs" id="profile-inner-tabs">
+            <button type="button" class="id-tab active" data-sub-tab="overview">Overview</button>
+            <button type="button" class="id-tab" data-sub-tab="subjects">Subjects</button>
+            <button type="button" class="id-tab" data-sub-tab="attendance">Attendance Logs</button>
+            <button type="button" class="id-tab" data-sub-tab="materials">Materials</button>
+            <button type="button" class="id-tab" data-sub-tab="leaves">Leave History</button>
+            <button type="button" class="id-tab" data-sub-tab="creds">Credentials</button>
+            <button type="button" class="id-tab" data-sub-tab="activity">Activity History</button>
+            <button type="button" class="id-tab" data-sub-tab="edit-info">Edit Profile</button>
+            <button type="button" class="id-tab" data-sub-tab="security">Change Password</button>
+          </div>
+          
+          <!-- Tab Contents -->
+          <div class="profile-content-area">
+            <!-- Profile Summary Cards Row -->
+            <div class="profile-summary-cards">
+              <div class="profile-summary-card">
+                <span class="card-label">Assigned Subjects</span>
+                <span class="card-value" id="prof-sum-subjects">—</span>
+                <span class="card-desc">Active Courses</span>
+              </div>
+              <div class="profile-summary-card">
+                <span class="card-label">Classes Assigned</span>
+                <span class="card-value" id="prof-sum-classes">—</span>
+                <span class="card-desc">Assigned Divisions</span>
+              </div>
+              <div class="profile-summary-card">
+                <span class="card-label">Attendance Sessions</span>
+                <span class="card-value" id="prof-sum-attendance-sessions">—</span>
+                <span class="card-desc">Logged Lectures</span>
+              </div>
+              <div class="profile-summary-card">
+                <span class="card-label">Materials Uploaded</span>
+                <span class="card-value" id="prof-sum-materials">—</span>
+                <span class="card-desc">Study Documents</span>
+              </div>
+              <div class="profile-summary-card">
+                <span class="card-label">Last Login</span>
+                <span class="card-value" id="prof-sum-login" style="font-size: 0.95rem; font-weight: 700; line-height: 1.8rem;">—</span>
+                <span class="card-desc">System Timestamp</span>
+              </div>
+            </div>
+
+            <!-- Tab: Overview -->
+            <div id="profile-sub-overview" class="profile-sub-content">
+              <div class="profile-info-grid">
                 <div>
-                  <label class="field-label" for="creds-email">Email / Login ID</label>
-                  <input type="text" id="creds-email" class="input" readonly style="background: rgba(0,0,0,0.1); border-color: transparent;" />
-                </div>
-                <div>
-                  <label class="field-label" for="creds-erp-id">College ERP ID</label>
-                  <input type="text" id="creds-erp-id" class="input" readonly style="background: rgba(0,0,0,0.1); border-color: transparent;" />
-                </div>
-                <div>
-                  <button type="button" class="btn secondary small" id="btn-copy-creds" style="margin-top: 0.5rem; width: 100%;">Copy Credentials</button>
+                  <h3 style="margin-top:0; border-bottom: 2px solid var(--primary-muted); padding-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem; color: var(--text);">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-primary"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    Faculty Details
+                  </h3>
+                  <table class="profile-details-table">
+                    <tbody>
+                      <tr><th>Full Name</th><td id="view-name">—</td></tr>
+                      <tr><th>Employee ID</th><td id="view-erp-id">—</td></tr>
+                      <tr><th>Department</th><td id="view-dept">—</td></tr>
+                      <tr><th>Designation</th><td id="view-desg">—</td></tr>
+                      <tr><th>Qualifications</th><td id="view-qual">—</td></tr>
+                      <tr><th>Phone Number</th><td id="view-phone">—</td></tr>
+                      <tr><th>Official Email</th><td id="view-email">—</td></tr>
+                      <tr><th>Personal Bio</th><td id="view-bio" style="font-style: italic; color: var(--text-secondary);">No bio written yet.</td></tr>
+                    </tbody>
+                  </table>
+                  <button type="button" class="btn small" id="btn-trigger-teacher-edit" style="color: #000; margin-top: 1rem;">Edit Profile Details</button>
                 </div>
               </div>
             </div>
 
-            <!-- Change Password card -->
-            <div class="card" id="card-change-password">
-              <h3>Change Password</h3>
-              <form id="form-change-password" class="form-grid">
+            <!-- Tab: Subjects -->
+            <div id="profile-sub-subjects" class="profile-sub-content" style="display:none;">
+              <h3 style="margin-top:0; border-bottom: 2px solid var(--primary-muted); padding-bottom: 0.5rem; color: var(--text);">Assigned Course Workload</h3>
+              <div class="table-wrap mt-2">
+                <table class="table small" id="tbl-prof-teach-subjects">
+                  <thead>
+                    <tr><th>Subject / Course Name</th><th>Class Assigned</th></tr>
+                  </thead>
+                  <tbody>
+                    <tr><td colspan="2" class="text-center text-muted">No courses assigned.</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Tab: Attendance Logs -->
+            <div id="profile-sub-attendance" class="profile-sub-content" style="display:none;">
+              <h3 style="margin-top:0; border-bottom: 2px solid var(--primary-muted); padding-bottom: 0.5rem; color: var(--text);">Lecture Log History</h3>
+              <div class="table-wrap mt-2">
+                <table class="table small" id="tbl-prof-teach-attendance">
+                  <thead>
+                    <tr><th>Date</th><th>Subject / Course</th><th>Total Students</th><th>Status</th></tr>
+                  </thead>
+                  <tbody>
+                    <tr><td colspan="4" class="text-center text-muted">No lecture logs found.</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Tab: Materials -->
+            <div id="profile-sub-materials" class="profile-sub-content" style="display:none;">
+              <h3 style="margin-top:0; border-bottom: 2px solid var(--primary-muted); padding-bottom: 0.5rem; color: var(--text);">Uploaded Materials</h3>
+              <div class="table-wrap mt-2">
+                <table class="table small" id="tbl-prof-teach-materials">
+                  <thead>
+                    <tr><th>Title</th><th>Subject</th><th>Class Name</th><th>Date Uploaded</th><th>Action</th></tr>
+                  </thead>
+                  <tbody>
+                    <tr><td colspan="5" class="text-center text-muted">No materials uploaded yet.</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Tab: Leave History -->
+            <div id="profile-sub-leaves" class="profile-sub-content" style="display:none;">
+              <h3 style="margin-top:0; border-bottom: 2px solid var(--primary-muted); padding-bottom: 0.5rem; color: var(--text);">Leave Application Records</h3>
+              <div class="table-wrap mt-2">
+                <table class="table small" id="tbl-prof-teach-leaves">
+                  <thead>
+                    <tr><th>Start Date</th><th>End Date</th><th>Type</th><th>Status</th><th>Verification Note</th></tr>
+                  </thead>
+                  <tbody>
+                    <tr><td colspan="5" class="text-center text-muted">No leave requests found.</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Tab: Credentials -->
+            <div id="profile-sub-creds" class="profile-sub-content" style="display:none;">
+              <div style="max-width: 600px; margin: 0 auto;">
+                <div class="profile-cred-card">
+                  <div class="profile-cred-chip"></div>
+                  <h3 style="margin: 0 0 0.5rem 0; font-size: 1.3rem;">SSC ERP Access Card</h3>
+                  <p class="small" style="margin-bottom: 1.5rem; opacity: 0.7;">Official system identifiers and login information.</p>
+                  
+                  <div class="form-grid" style="grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+                    <div>
+                      <label class="field-label" style="opacity: 0.8; color: #fff;">Faculty Email / Login ID</label>
+                      <input type="text" id="creds-email" class="input" readonly style="background: rgba(255,255,255,0.07); border-color: rgba(255,255,255,0.15); color: #fff;" />
+                    </div>
+                    <div>
+                      <label class="field-label" style="opacity: 0.8; color: #fff;">College ERP ID</label>
+                      <input type="text" id="creds-erp-id" class="input" readonly style="background: rgba(255,255,255,0.07); border-color: rgba(255,255,255,0.15); color: #fff;" />
+                    </div>
+                    <div style="grid-column: 1 / -1; margin-top: 0.5rem;">
+                      <button type="button" class="btn secondary small" id="btn-copy-creds" style="width: 100%; color: var(--primary); background: #fff; font-weight: 700; border: none; box-shadow: 0 4px 10px rgba(0,0,0,0.15);">Copy Credentials</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tab: Activity History -->
+            <div id="profile-sub-activity" class="profile-sub-content" style="display:none;">
+              <h3 style="margin-top:0; border-bottom: 2px solid var(--primary-muted); padding-bottom: 0.5rem; color: var(--text);">ERP Audit Trail</h3>
+              <p class="small text-secondary" style="margin-top: -0.25rem; margin-bottom: 1.5rem;">Audit logs of account actions and timestamps.</p>
+              <div class="activity-logs-list" id="profile-activity-logs">
+                <div class="activity-log-item">
+                  <span class="activity-log-time">Now</span>
+                  <span class="activity-log-text">Viewing profile audit logs...</span>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Tab: Edit Info (Form) -->
+            <div id="profile-sub-edit-info" class="profile-sub-content" style="display:none;">
+              <form id="form-edit-profile" class="form-grid">
                 <div>
-                  <label class="field-label" for="profile-current-pwd">Current Password</label>
-                  <input type="password" id="profile-current-pwd" class="input" required autocomplete="current-password"/>
+                  <label class="field-label" style="font-weight:600;">Update Profile Avatar</label>
+                  <div style="display: flex; align-items: center; gap: 1rem; margin-top: 0.5rem; flex-wrap: wrap;">
+                    <input type="file" id="teacher-avatar-upload" name="avatar" accept="image/*" class="input" style="max-width: 300px; padding: 0.25rem;" />
+                    <span class="small text-secondary">Only JPEG, PNG formats under 2MB.</span>
+                  </div>
                 </div>
                 <div>
-                  <label class="field-label" for="profile-new-pwd">New Password</label>
-                  <input type="password" id="profile-new-pwd" class="input" required autocomplete="new-password"/>
+                  <label class="field-label" for="teacher-profile-name">Full Name</label>
+                  <input class="input" id="teacher-profile-name" name="name" required placeholder="Enter full name"/>
                 </div>
                 <div>
-                  <label class="field-label" for="profile-confirm-pwd">Confirm New Password</label>
-                  <input type="password" id="profile-confirm-pwd" class="input" required autocomplete="new-password"/>
+                  <label class="field-label" for="teacher-profile-phone">Phone number</label>
+                  <input class="input" id="teacher-profile-phone" name="phone" placeholder="Enter phone number"/>
                 </div>
-                <div class="password-strength-checklist small mt-2" style="display: flex; flex-direction: column; gap: 0.25rem;">
-                  <div id="criteria-length" class="criteria text-secondary" style="display: flex; align-items: center; gap: 0.4rem;">
-                    <span class="dot" style="width: 6px; height: 6px; border-radius: 50%; background: var(--muted); display: inline-block;"></span>
-                    At least 8 characters
-                  </div>
-                  <div id="criteria-upper" class="criteria text-secondary" style="display: flex; align-items: center; gap: 0.4rem;">
-                    <span class="dot" style="width: 6px; height: 6px; border-radius: 50%; background: var(--muted); display: inline-block;"></span>
-                    At least one uppercase letter (A-Z)
-                  </div>
-                  <div id="criteria-lower" class="criteria text-secondary" style="display: flex; align-items: center; gap: 0.4rem;">
-                    <span class="dot" style="width: 6px; height: 6px; border-radius: 50%; background: var(--muted); display: inline-block;"></span>
-                    At least one lowercase letter (a-z)
-                  </div>
-                  <div id="criteria-digit" class="criteria text-secondary" style="display: flex; align-items: center; gap: 0.4rem;">
-                    <span class="dot" style="width: 6px; height: 6px; border-radius: 50%; background: var(--muted); display: inline-block;"></span>
-                    At least one number (0-9)
-                  </div>
-                  <div id="criteria-special" class="criteria text-secondary" style="display: flex; align-items: center; gap: 0.4rem;">
-                    <span class="dot" style="width: 6px; height: 6px; border-radius: 50%; background: var(--muted); display: inline-block;"></span>
-                    At least one special character (!@#$%^&*()_+-=)
-                  </div>
+                <div>
+                  <label class="field-label" for="teacher-profile-qual">Qualifications</label>
+                  <input class="input" id="teacher-profile-qual" name="qualifications" placeholder="Enter qualifications"/>
                 </div>
-                <button type="submit" class="btn mt-2" style="color: #000;">Change Password</button>
+                <div>
+                  <label class="field-label" for="teacher-profile-bio">Bio / Statement</label>
+                  <textarea class="input" id="teacher-profile-bio" name="bio" rows="3" placeholder="Tell us about yourself..."></textarea>
+                </div>
+                <div style="margin-top: 1rem;">
+                  <button class="btn" type="submit" style="color: #000; min-width: 140px;">Save Changes</button>
+                </div>
               </form>
+            </div>
+            
+            <!-- Tab: Security -->
+            <div id="profile-sub-security" class="profile-sub-content" style="display:none;">
+              <div class="grid grid-2" style="gap: 2rem; align-items: start;">
+                <form id="form-change-password" class="form-grid">
+                  <div>
+                    <label class="field-label" for="profile-current-pwd">Current Password</label>
+                    <input type="password" id="profile-current-pwd" class="input" required autocomplete="current-password"/>
+                  </div>
+                  <div>
+                    <label class="field-label" for="profile-new-pwd">New Password</label>
+                    <input type="password" id="profile-new-pwd" class="input" required autocomplete="new-password"/>
+                  </div>
+                  <div>
+                    <label class="field-label" for="profile-confirm-pwd">Confirm New Password</label>
+                    <input type="password" id="profile-confirm-pwd" class="input" required autocomplete="new-password"/>
+                  </div>
+                  <div style="margin-top: 1rem;">
+                    <button type="submit" class="btn" style="color: #000;">Change Password</button>
+                  </div>
+                </form>
+                
+                <div class="card" style="background: var(--surface); border: 1px solid var(--card-border); padding: 1.25rem;">
+                  <h4 style="margin-top: 0; color: var(--text);">Password Strength Guidelines</h4>
+                  <div class="password-strength-checklist small mt-2" style="display: flex; flex-direction: column; gap: 0.4rem;">
+                    <div id="criteria-length" class="criteria text-secondary" style="display: flex; align-items: center; gap: 0.4rem;">
+                      <span class="dot" style="width: 6px; height: 6px; border-radius: 50%; background: var(--muted); display: inline-block;"></span>
+                      At least 8 characters
+                    </div>
+                    <div id="criteria-upper" class="criteria text-secondary" style="display: flex; align-items: center; gap: 0.4rem;">
+                      <span class="dot" style="width: 6px; height: 6px; border-radius: 50%; background: var(--muted); display: inline-block;"></span>
+                      At least one uppercase letter (A-Z)
+                    </div>
+                    <div id="criteria-lower" class="criteria text-secondary" style="display: flex; align-items: center; gap: 0.4rem;">
+                      <span class="dot" style="width: 6px; height: 6px; border-radius: 50%; background: var(--muted); display: inline-block;"></span>
+                      At least one lowercase letter (a-z)
+                    </div>
+                    <div id="criteria-digit" class="criteria text-secondary" style="display: flex; align-items: center; gap: 0.4rem;">
+                      <span class="dot" style="width: 6px; height: 6px; border-radius: 50%; background: var(--muted); display: inline-block;"></span>
+                      At least one number (0-9)
+                    </div>
+                    <div id="criteria-special" class="criteria text-secondary" style="display: flex; align-items: center; gap: 0.4rem;">
+                      <span class="dot" style="width: 6px; height: 6px; border-radius: 50%; background: var(--muted); display: inline-block;"></span>
+                      At least one special character (!@#$%^&*()_+-=)
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
