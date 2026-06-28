@@ -144,12 +144,36 @@ app.use(errorHandler);
 async function boot() {
   try {
     await prisma.$connect();
-    app.listen(PORT, () => {
+    const server = app.listen(PORT, () => {
       console.log(`SSC College CMS running at http://localhost:${PORT}`);
       console.log(`SQLite via Prisma (DATABASE_URL in .env)`);
       console.log(`Health: http://localhost:${PORT}/api/health`);
       console.log(`Security: helmet ✓ | rate-limit ✓ | CORS: ${CORS_ORIGIN}`);
     });
+
+    const shutdown = async (signal) => {
+      console.log(`\nReceived ${signal}. Starting graceful shutdown...`);
+      server.close(async () => {
+        console.log('HTTP server closed.');
+        try {
+          await prisma.$disconnect();
+          console.log('Prisma disconnected.');
+          process.exit(0);
+        } catch (err) {
+          console.error('Error during Prisma disconnect:', err);
+          process.exit(1);
+        }
+      });
+      // Force exit after 10 seconds if hanging
+      setTimeout(() => {
+        console.error('Graceful shutdown timed out. Forcing exit.');
+        process.exit(1);
+      }, 10000);
+    };
+
+    process.on('SIGTERM', () => shutdown('SIGTERM'));
+    process.on('SIGINT', () => shutdown('SIGINT'));
+
   } catch (err) {
     console.error('Database connection failed:', err.message);
     console.error('Run: npx prisma db push');

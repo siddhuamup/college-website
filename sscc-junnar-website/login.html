@@ -24,7 +24,10 @@
           <input class="input" id="email" name="email" type="text" autocomplete="username" required/>
         </div>
         <div>
-          <label class="field-label" for="password">Password</label>
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <label class="field-label" for="password">Password</label>
+            <a href="#" id="forgot-password-link" class="small" style="color: var(--primary); text-decoration: none; margin-bottom: 0.25rem;">Forgot password?</a>
+          </div>
           <input class="input" id="password" name="password" type="password" autocomplete="current-password" required/>
         </div>
         <button class="btn" type="submit">Continue</button>
@@ -37,6 +40,28 @@
       <p class="small mt-2">For account setup or access issues, contact the administrator.</p>
     </div>
   </section>
+
+  <!-- Forgot Password Modal -->
+  <div class="modal-overlay" id="forgot-modal" style="display:none; z-index: 9999;">
+    <div class="modal-container" style="max-width: 400px;">
+      <div class="modal-header">
+        <h3 class="modal-title">Reset Password</h3>
+        <button type="button" class="btn-close" id="close-forgot" style="background:transparent; border:none; color:var(--text-secondary); font-size:1.5rem; cursor:pointer;">&times;</button>
+      </div>
+      <form id="forgot-form" style="padding: 1rem 0 0 0;" class="form-grid">
+        <p class="small" style="color: var(--text-secondary); margin-bottom: 1rem;">
+          Enter your registered email address below. If the email exists in our records, a secure password reset link will be sent to you.
+        </p>
+        <div>
+          <label class="field-label" for="forgot-email">Email Address</label>
+          <input class="input" id="forgot-email" type="email" required style="width:100%;"/>
+        </div>
+        <button class="btn mt-3" type="submit" style="width:100%;">Send Reset Link</button>
+        <p id="forgot-msg" class="small mt-2" role="status"></p>
+      </form>
+    </div>
+  </div>
+
   <div id="site-footer"></div>
   <script src="js/layout.js"></script>
   <script src="js/api.js"></script>
@@ -92,6 +117,60 @@
         const detail = err.data && err.data.error ? err.data.error : err.message;
         loginMsg.textContent = detail || 'Sign in failed';
         loginMsg.className = 'small mt-3 alert error';
+      }
+    });
+
+    // Forgot Password Logic
+    const forgotLink = document.getElementById('forgot-password-link');
+    const forgotModal = document.getElementById('forgot-modal');
+    const closeForgot = document.getElementById('close-forgot');
+    const forgotForm = document.getElementById('forgot-form');
+    const forgotMsg = document.getElementById('forgot-msg');
+
+    forgotLink.addEventListener('click', (e) => {
+      e.preventDefault();
+      forgotModal.style.display = 'flex';
+      document.getElementById('forgot-email').focus();
+      forgotMsg.textContent = '';
+      forgotMsg.className = 'small mt-2';
+    });
+
+    closeForgot.addEventListener('click', () => {
+      forgotModal.style.display = 'none';
+    });
+
+    // Close modal on escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && forgotModal.style.display === 'flex') {
+        forgotModal.style.display = 'none';
+      }
+    });
+
+    forgotForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      forgotMsg.textContent = 'Sending reset link...';
+      forgotMsg.className = 'small mt-2 text-muted';
+      
+      const email = document.getElementById('forgot-email').value.trim();
+      try {
+        const res = await fetch('/api/auth/forgot-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to send reset link');
+        
+        forgotMsg.textContent = data.message || 'If the email exists, a reset link has been sent.';
+        forgotMsg.className = 'small mt-2 alert success';
+        
+        setTimeout(() => {
+          forgotModal.style.display = 'none';
+          forgotForm.reset();
+        }, 3000);
+      } catch (err) {
+        forgotMsg.textContent = err.message;
+        forgotMsg.className = 'small mt-2 alert error';
       }
     });
   </script>

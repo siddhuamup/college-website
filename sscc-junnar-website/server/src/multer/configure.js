@@ -33,11 +33,10 @@ const docFilter = (_req, file, cb) => {
   if (mime === 'image/svg+xml' || ext === '.svg') {
     return cb(new Error('SVG files are not allowed for security reasons'));
   }
-  const ok =
-    /pdf|jpeg|jpg|png|image\//i.test(file.mimetype) ||
-    /\.(pdf|jpe?g|png)$/i.test(file.originalname);
-  if (ok) cb(null, true);
-  else cb(new Error('Only PDF or image files allowed'));
+  const isImage = (mime === 'image/jpeg' || mime === 'image/png') && /\.(jpe?g|png)$/i.test(file.originalname);
+  const isPdf = mime === 'application/pdf' && /\.pdf$/i.test(file.originalname);
+  if (isImage || isPdf) cb(null, true);
+  else cb(new Error('Only PDF or image files (JPEG, PNG) allowed'));
 };
 
 const imageFilter = (_req, file, cb) => {
@@ -46,18 +45,21 @@ const imageFilter = (_req, file, cb) => {
   if (mime === 'image/svg+xml' || ext === '.svg') {
     return cb(new Error('SVG files are not allowed for security reasons'));
   }
-  if (/^image\//.test(file.mimetype)) cb(null, true);
-  else cb(new Error('Only image files allowed'));
+  const isImage = (mime === 'image/jpeg' || mime === 'image/png') && /\.(jpe?g|png)$/i.test(file.originalname);
+  if (isImage) cb(null, true);
+  else cb(new Error('Only image files (JPEG, PNG) allowed'));
 };
 
 const pdfFilter = (_req, file, cb) => {
-  if (file.mimetype === 'application/pdf' || /\.pdf$/i.test(file.originalname)) cb(null, true);
+  const mime = file.mimetype.toLowerCase();
+  const ext = path.extname(file.originalname).toLowerCase();
+  if (mime === 'application/pdf' && /\.pdf$/i.test(file.originalname)) cb(null, true);
   else cb(new Error('Only PDF allowed'));
 };
 
 export const uploadAdmissionDocs = multer({
   storage: storage('admissions'),
-  limits: { fileSize: 8 * 1024 * 1024, files: 5 },
+  limits: { fileSize: 8 * 1024 * 1024, files: 4 },
   fileFilter: docFilter,
 });
 

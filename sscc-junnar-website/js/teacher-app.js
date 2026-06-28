@@ -56,6 +56,96 @@
     tbody.innerHTML = html;
   }
 
+  function makeTableSortableAndFilterable(tableId) {
+    const table = document.getElementById(tableId);
+    if (!table) return;
+    
+    const tbody = table.querySelector('tbody');
+    if (!tbody) return;
+
+    // 1. Setup/Inject Filter Search Box (only if not already present)
+    const parent = table.parentElement;
+    let searchInput = parent.querySelector(`.table-filter-input-${tableId}`);
+    if (!searchInput) {
+      const searchWrap = document.createElement('div');
+      searchWrap.className = 'table-filter-wrap';
+      searchWrap.style.marginBottom = '1rem';
+      searchWrap.style.display = 'flex';
+      searchWrap.style.justify = 'flex-end';
+      
+      searchInput = document.createElement('input');
+      searchInput.type = 'text';
+      searchInput.className = `input small table-filter-input-${tableId}`;
+      searchInput.placeholder = 'Filter table rows...';
+      searchInput.style.maxWidth = '250px';
+      searchInput.style.fontSize = '0.82rem';
+      searchInput.style.padding = '0.4rem 0.75rem';
+      searchInput.style.borderRadius = '8px';
+      
+      searchWrap.appendChild(searchInput);
+      parent.insertBefore(searchWrap, table);
+      
+      searchInput.addEventListener('input', () => {
+        const query = searchInput.value.toLowerCase().trim();
+        const rows = tbody.querySelectorAll('tr');
+        if (rows.length === 1 && rows[0].querySelector('td[colspan]')) return;
+        
+        rows.forEach(row => {
+          const match = row.textContent.toLowerCase().includes(query);
+          row.style.display = match ? '' : 'none';
+        });
+      });
+    } else {
+      // Clear previous query on reload
+      searchInput.value = '';
+    }
+
+    // 2. Setup Sorting on headers (only if not already done)
+    if (table.dataset.sortableInitialized) return;
+    table.dataset.sortableInitialized = '1';
+
+    const thead = table.querySelector('thead');
+    if (!thead) return;
+    const headers = thead.querySelectorAll('th');
+
+    headers.forEach((header, index) => {
+      if (header.textContent.trim().toLowerCase() === 'actions' || header.textContent.trim() === '') return;
+      
+      header.style.cursor = 'pointer';
+      header.style.userSelect = 'none';
+      header.title = 'Click to sort by this column';
+      
+      let asc = true;
+      header.addEventListener('click', () => {
+        const rows = Array.from(tbody.querySelectorAll('tr'));
+        if (rows.length <= 1 && rows[0] && rows[0].querySelector('td[colspan]')) return;
+        
+        rows.sort((rowA, rowB) => {
+          const cellA = rowA.cells[index]?.textContent.trim() || '';
+          const cellB = rowB.cells[index]?.textContent.trim() || '';
+          
+          const numA = parseFloat(cellA.replace(/[^\d.-]/g, ''));
+          const numB = parseFloat(cellB.replace(/[^\d.-]/g, ''));
+          
+          if (!isNaN(numA) && !isNaN(numB) && cellA.replace(/[^\d.-]/g, '') === String(numA) && cellB.replace(/[^\d.-]/g, '') === String(numB)) {
+            return asc ? numA - numB : numB - numA;
+          }
+          
+          return asc ? cellA.localeCompare(cellB) : cellB.localeCompare(cellA);
+        });
+        
+        asc = !asc;
+        
+        headers.forEach(h => {
+          h.textContent = h.textContent.replace(/ [▲▼]/g, '');
+        });
+        header.textContent += asc ? ' ▲' : ' ▼';
+        
+        rows.forEach(r => tbody.appendChild(r));
+      });
+    });
+  }
+
   function msg(t, err) {
     if (t) {
       showToast(t, err ? 'error' : 'success');
@@ -64,6 +154,28 @@
     if (el) {
       el.textContent = t || '';
       el.className = 'small mt-3' + (err ? ' alert error' : t ? ' alert success' : '');
+    }
+  }
+
+  function updateBreadcrumbs(panelName) {
+    let container = document.getElementById('breadcrumb-container');
+    if (!container) {
+      const contentEl = document.querySelector('.dash-content');
+      if (contentEl) {
+        container = document.createElement('nav');
+        container.id = 'breadcrumb-container';
+        container.className = 'breadcrumb';
+        contentEl.insertBefore(container, contentEl.firstChild);
+      }
+    }
+    if (container) {
+      container.innerHTML = `
+        <a href="/index.html">Home</a>
+        <span>›</span>
+        <a href="#" onclick="event.preventDefault(); window.panel('profile')">Teacher Portal</a>
+        <span>›</span>
+        <span>${panelName}</span>
+      `;
     }
   }
 
@@ -82,6 +194,7 @@
     if (activeBtn && titleEl) {
       titleEl.textContent = activeBtn.textContent.trim();
     }
+    updateBreadcrumbs(activeBtn ? activeBtn.textContent.trim() : (id === 'profile' ? 'Dashboard' : id));
   }
   window.panel = panel; // Exposed globally
 
@@ -380,9 +493,45 @@
       });
     }
 
+    setupKeyboardShortcuts();
     load('subjects');
   }
   window.load = load;
+
+  function setupKeyboardShortcuts() {
+    document.addEventListener('keydown', (e) => {
+      // Ctrl+K: Global search focus
+      if (e.ctrlKey && e.key.toLowerCase() === 'k') {
+        const searchInput = document.getElementById('global-search');
+        if (searchInput) {
+          e.preventDefault();
+          searchInput.focus();
+        }
+      }
+      
+      // Escape: Close all active modals
+      if (e.key === 'Escape') {
+        const activeModals = document.querySelectorAll('.modal-overlay');
+        activeModals.forEach(m => {
+          if (m.style.display !== 'none') {
+            m.style.display = 'none';
+          }
+        });
+      }
+      
+      // Ctrl+S: Save active form (submit form)
+      if (e.ctrlKey && e.key.toLowerCase() === 's') {
+        const activePanel = document.querySelector('.dash-panel.active');
+        if (activePanel) {
+          const form = activePanel.querySelector('form');
+          if (form) {
+            e.preventDefault();
+            form.requestSubmit();
+          }
+        }
+      }
+    });
+  }
 
   async function load(id) {
     msg('');
@@ -649,6 +798,8 @@
             openStudentDrawer(el.dataset.sid);
           });
         });
+        
+        makeTableSortableAndFilterable('tbl-stu');
       }
     }
   }
@@ -717,6 +868,7 @@
           )}</td><td data-label="Score">${m.marksObtained}/${m.maxMarks}</td>`;
           tb.appendChild(tr);
         });
+        makeTableSortableAndFilterable('tbl-marks');
       }
     }
   }
@@ -1294,6 +1446,7 @@
         `;
         tbody.appendChild(tr);
       });
+      makeTableSortableAndFilterable('tbl-teacher-leaves');
     }
   }
 

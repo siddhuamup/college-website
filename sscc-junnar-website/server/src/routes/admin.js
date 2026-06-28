@@ -21,6 +21,21 @@ function noticePdfUrl(n) {
   return stored ? `/uploads/notices/${stored}` : null;
 }
 
+function logAdminAction(userId, action, target, details = {}) {
+  const logDir = path.join(process.cwd(), 'logs');
+  if (!fs.existsSync(logDir)) {
+    fs.mkdirSync(logDir, { recursive: true });
+  }
+  const logPath = path.join(logDir, 'audit.log');
+  const timestamp = new Date().toISOString();
+  const logMsg = `[${timestamp}] User: ${userId || 'SYSTEM'} | Action: ${action} | Target: ${target} | Details: ${JSON.stringify(details)}\n`;
+  try {
+    fs.appendFileSync(logPath, logMsg);
+  } catch (err) {
+    console.error('Failed to write audit log:', err);
+  }
+}
+
 export function adminRouter({ jwtSecret }) {
   const r = Router();
   const auth = createAuthMiddleware(jwtSecret);
@@ -84,6 +99,7 @@ export function adminRouter({ jwtSecret }) {
         },
       },
     });
+    logAdminAction(req.user.id, 'CREATE_STUDENT', user.id, { email: user.email, studentId: finalStudentId });
     res.status(201).json({ user: stripHash(user) });
   });
 
@@ -109,12 +125,14 @@ export function adminRouter({ jwtSecret }) {
       data.studentProfile = { ...cur, ...studentProfile };
     }
     const updated = await prisma.user.update({ where: { id: u.id }, data });
+    logAdminAction(req.user.id, 'UPDATE_STUDENT', u.id, { fields: Object.keys(data) });
     res.json({ user: stripHash(updated) });
   });
 
   r.delete('/students/:id', async (req, res) => {
     const r0 = await prisma.user.deleteMany({ where: { id: req.params.id, role: Role.student } });
     if (!r0.count) return res.status(404).json({ error: 'Not found' });
+    logAdminAction(req.user.id, 'DELETE_STUDENT', req.params.id);
     res.json({ ok: true });
   });
 
@@ -203,6 +221,7 @@ export function adminRouter({ jwtSecret }) {
       console.error('Failed to send credentials email:', emailErr);
     }
 
+    logAdminAction(req.user.id, 'RESEND_STUDENT_CREDENTIALS', req.params.id);
     res.json({ ok: true, message: 'New credentials generated and sent' });
   });
 
@@ -287,6 +306,7 @@ export function adminRouter({ jwtSecret }) {
         },
       },
     });
+    logAdminAction(req.user.id, 'CREATE_TEACHER', user.id, { email: user.email });
     res.status(201).json({ user: stripHash(user) });
   });
 
@@ -338,12 +358,14 @@ export function adminRouter({ jwtSecret }) {
     };
     data.teacherProfile = mergedProfile;
     const updated = await prisma.user.update({ where: { id: u.id }, data });
+    logAdminAction(req.user.id, 'UPDATE_TEACHER', u.id, { fields: Object.keys(data) });
     res.json({ user: stripHash(updated) });
   });
 
   r.delete('/teachers/:id', async (req, res) => {
     const r0 = await prisma.user.deleteMany({ where: { id: req.params.id, role: Role.teacher } });
     if (!r0.count) return res.status(404).json({ error: 'Not found' });
+    logAdminAction(req.user.id, 'DELETE_TEACHER', req.params.id);
     res.json({ ok: true });
   });
 
@@ -381,6 +403,7 @@ export function adminRouter({ jwtSecret }) {
           : {}),
       },
     });
+    logAdminAction(req.user.id, 'VERIFY_ADMISSION', doc.id, { verified: Boolean(req.body?.documentsVerified) });
     res.json(withMongoId(updated));
   });
 
@@ -397,6 +420,7 @@ export function adminRouter({ jwtSecret }) {
     let plainPassword;
     let generatedStudentId = '';
     let collegeEmail = '';
+    let generatedRollNumber = '';
 
     if (status === 'approved' && createAccount) {
       // Atomic Student-ID generation using Counter model (prevents race-condition duplicates)
@@ -430,39 +454,64 @@ export function adminRouter({ jwtSecret }) {
       }
 
       // Atomic Roll-Number generation using Counter model
-      const generatedRollNumber = await nextRollNumber(courseAbbr);
+      generatedRollNumber = await nextRollNumber(courseAbbr);
 
       const generatedVerificationId = `SSC-VER-${String(generatedStudentId || generatedRollNumber || 'unknown').replace(/\s+/g, '')}`;
 
-      createdUser = await prisma.user.create({
-        data: {
-          email: collegeEmail,
-          passwordHash: await hashPassword(plainPassword),
-          role: Role.student,
-          name: doc.fullName,
-          phone: doc.phone,
-          studentProfile: {
-            studentId: generatedStudentId,
-            personalEmail: doc.email,
-            collegeEmail: collegeEmail,
-            mobile: doc.phone || '',
-            course: doc.courseApplied,
-            courseName: doc.courseApplied,
-            className: className || '',
-            year: '1',
-            division: 'A',
-            rollNumber: generatedRollNumber,
-            admissionApplicationId: doc.id,
-            address: doc.address || '',
-            parentContact: doc.parentContact || '',
-            emergencyContact: doc.parentContact || '',
-            admissionYear: new Date().getFullYear(),
-            verificationId: generatedVerificationId,
-          },
-        },
-      });
+      // We will perform user creation and application update inside a Prisma Transaction
+      let txResult;
+      try {
+        txResult = await prisma.$transaction(async (tx) => {
+          const userObj = await tx.user.create({
+            data: {
+              email: collegeEmail,
+              passwordHash: await hashPassword(plainPassword),
+              role: Role.student,
+              name: doc.fullName,
+              phone: doc.phone,
+              studentProfile: {
+                studentId: generatedStudentId,
+                personalEmail: doc.email,
+                collegeEmail: collegeEmail,
+                mobile: doc.phone || '',
+                course: doc.courseApplied,
+                courseName: doc.courseApplied,
+                className: className || '',
+                year: '1',
+                division: 'A',
+                rollNumber: generatedRollNumber,
+                admissionApplicationId: doc.id,
+                address: doc.address || '',
+                parentContact: doc.parentContact || '',
+                emergencyContact: doc.parentContact || '',
+                admissionYear: new Date().getFullYear(),
+                verificationId: generatedVerificationId,
+              },
+            },
+          });
 
-      // Dispatch real email using sendEmail abstraction
+          const appObj = await tx.admissionApplication.update({
+            where: { id: doc.id },
+            data: {
+              status,
+              ...(notes !== undefined ? { verificationNotes: String(notes) } : {}),
+              reviewedById: req.user.id,
+              reviewedAt: new Date(),
+              createdStudentUserId: userObj.id,
+              tempPasswordHint: 'Credentials generated and logged to console',
+            },
+          });
+
+          return { userObj, appObj };
+        });
+      } catch (txErr) {
+        return res.status(500).json({ error: 'Database transaction failed during admission approval: ' + txErr.message });
+      }
+
+      createdUser = txResult.userObj;
+      const application = txResult.appObj;
+
+      // Dispatch real email using sendEmail abstraction (outside database transaction)
       try {
         await sendEmail({
           to: doc.email,
@@ -483,6 +532,19 @@ export function adminRouter({ jwtSecret }) {
       } catch (emailErr) {
         console.error('Failed to send admission approval email:', emailErr);
       }
+
+      logAdminAction(req.user.id, 'ADMISSION_DECISION', doc.id, { status, createAccount: true, studentId: generatedStudentId });
+      res.json({
+        application: withMongoId(application),
+        studentAccount: {
+          email: collegeEmail,
+          temporaryPassword: plainPassword,
+          studentId: generatedStudentId,
+          userId: createdUser.id,
+          rollNumber: generatedRollNumber
+        },
+      });
+      return;
     }
 
     const application = await prisma.admissionApplication.update({
@@ -492,27 +554,12 @@ export function adminRouter({ jwtSecret }) {
         ...(notes !== undefined ? { verificationNotes: String(notes) } : {}),
         reviewedById: req.user.id,
         reviewedAt: new Date(),
-        ...(createdUser
-          ? {
-              createdStudentUserId: createdUser.id,
-              tempPasswordHint: 'Credentials generated and logged to console',
-            }
-          : {}),
       },
     });
-
+    logAdminAction(req.user.id, 'ADMISSION_DECISION', doc.id, { status, createAccount: false });
     res.json({
       application: withMongoId(application),
-      studentAccount:
-        createdUser && plainPassword
-          ? {
-              email: collegeEmail,
-              temporaryPassword: plainPassword,
-              studentId: generatedStudentId,
-              userId: createdUser.id,
-              rollNumber: generatedRollNumber
-            }
-          : null,
+      studentAccount: null,
     });
   });
 
@@ -540,6 +587,7 @@ export function adminRouter({ jwtSecret }) {
         createdById: req.user.id,
       },
     });
+    logAdminAction(req.user.id, 'CREATE_NOTICE', n.id, { title: n.title });
     res.status(201).json(withMongoId(n));
   });
 
@@ -564,16 +612,44 @@ export function adminRouter({ jwtSecret }) {
       const v = req.body.isPublished;
       data.isPublished = !(v === false || v === 'false');
     }
-    if (req.file) {
-      const old = n.pdfFile;
-      const oldName = old && typeof old === 'object' && old !== null && 'storedName' in old ? old.storedName : null;
-      if (oldName) {
-        const oldPath = path.join(uploadsPath(), 'notices', oldName);
-        if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+    
+    let updated;
+    try {
+      if (req.file) {
+        data.pdfFile = { originalName: req.file.originalname, storedName: req.file.filename };
       }
-      data.pdfFile = { originalName: req.file.originalname, storedName: req.file.filename };
+      updated = await prisma.notice.update({ where: { id: n.id }, data });
+      
+      // Clean up old file only after successful database update
+      if (req.file) {
+        const old = n.pdfFile;
+        const oldName = old && typeof old === 'object' && old !== null && 'storedName' in old ? old.storedName : null;
+        if (oldName) {
+          const oldPath = path.join(uploadsPath(), 'notices', oldName);
+          if (fs.existsSync(oldPath)) {
+            try {
+              fs.unlinkSync(oldPath);
+            } catch (err) {
+              console.error('Failed to unlink old notice PDF:', err);
+            }
+          }
+        }
+      }
+    } catch (dbErr) {
+      // Rollback: if a new file was uploaded, clean it up from disk to avoid orphan files
+      if (req.file) {
+        const newPath = path.join(uploadsPath(), 'notices', req.file.filename);
+        if (fs.existsSync(newPath)) {
+          try {
+            fs.unlinkSync(newPath);
+          } catch (err) {
+            console.error('Failed to clean up newly uploaded notice PDF on error:', err);
+          }
+        }
+      }
+      return res.status(500).json({ error: 'Failed to update notice: ' + dbErr.message });
     }
-    const updated = await prisma.notice.update({ where: { id: n.id }, data });
+    logAdminAction(req.user.id, 'UPDATE_NOTICE', n.id, { title: updated.title });
     res.json(withMongoId(updated));
   });
 
@@ -587,6 +663,7 @@ export function adminRouter({ jwtSecret }) {
       if (fs.existsSync(fp)) fs.unlinkSync(fp);
     }
     await prisma.notice.delete({ where: { id: n.id } });
+    logAdminAction(req.user.id, 'DELETE_NOTICE', n.id, { title: n.title });
     res.json({ ok: true });
   });
 
@@ -596,16 +673,69 @@ export function adminRouter({ jwtSecret }) {
   });
 
   r.post('/departments', async (req, res) => {
-    const d = await prisma.department.create({ data: req.body || {} });
+    const { name, stream, hodName, description, subjects } = req.body || {};
+    if (!name || typeof name !== 'string' || !name.trim()) {
+      return res.status(400).json({ error: 'name is required' });
+    }
+    
+    // Ensure subjects is valid JSON array
+    let parsedSubjects = '[]';
+    if (subjects !== undefined) {
+      try {
+        const parsed = typeof subjects === 'string' ? JSON.parse(subjects) : subjects;
+        if (Array.isArray(parsed)) {
+          parsedSubjects = JSON.stringify(parsed);
+        }
+      } catch {
+        return res.status(400).json({ error: 'subjects must be a valid JSON array' });
+      }
+    }
+
+    const d = await prisma.department.create({
+      data: {
+        name: String(name).trim(),
+        stream: stream ? String(stream).trim() : 'Other',
+        hodName: hodName ? String(hodName).trim() : '',
+        description: description ? String(description).trim() : '',
+        subjects: parsedSubjects,
+      }
+    });
+    logAdminAction(req.user.id, 'CREATE_DEPARTMENT', d.id, { name: d.name });
     res.status(201).json(withMongoId(d));
   });
 
   r.patch('/departments/:id', async (req, res) => {
     try {
+      const data = {};
+      const { name, stream, hodName, description, subjects } = req.body || {};
+      
+      if (name !== undefined) {
+        if (typeof name !== 'string' || !name.trim()) {
+          return res.status(400).json({ error: 'name cannot be empty' });
+        }
+        data.name = name.trim();
+      }
+      if (stream !== undefined) data.stream = String(stream).trim();
+      if (hodName !== undefined) data.hodName = String(hodName).trim();
+      if (description !== undefined) data.description = String(description).trim();
+      if (subjects !== undefined) {
+        try {
+          const parsed = typeof subjects === 'string' ? JSON.parse(subjects) : subjects;
+          if (Array.isArray(parsed)) {
+            data.subjects = JSON.stringify(parsed);
+          } else {
+            return res.status(400).json({ error: 'subjects must be an array' });
+          }
+        } catch {
+          return res.status(400).json({ error: 'subjects must be a valid JSON array' });
+        }
+      }
+
       const d = await prisma.department.update({
         where: { id: req.params.id },
-        data: req.body || {},
+        data,
       });
+      logAdminAction(req.user.id, 'UPDATE_DEPARTMENT', req.params.id, { fields: Object.keys(data) });
       res.json(withMongoId(d));
     } catch {
       res.status(404).json({ error: 'Not found' });
@@ -615,6 +745,7 @@ export function adminRouter({ jwtSecret }) {
   r.delete('/departments/:id', async (req, res) => {
     try {
       await prisma.department.delete({ where: { id: req.params.id } });
+      logAdminAction(req.user.id, 'DELETE_DEPARTMENT', req.params.id);
       res.json({ ok: true });
     } catch {
       res.status(404).json({ error: 'Not found' });
@@ -638,16 +769,61 @@ export function adminRouter({ jwtSecret }) {
   });
 
   r.post('/courses', async (req, res) => {
-    const c = await prisma.course.create({ data: req.body || {} });
+    const { name, code, departmentId, durationYears, description, level } = req.body || {};
+    if (!name || typeof name !== 'string' || !name.trim()) {
+      return res.status(400).json({ error: 'name is required' });
+    }
+    if (!code || typeof code !== 'string' || !code.trim()) {
+      return res.status(400).json({ error: 'code is required' });
+    }
+    if (!departmentId || typeof departmentId !== 'string') {
+      return res.status(400).json({ error: 'departmentId is required' });
+    }
+    // Verify department exists
+    const dept = await prisma.department.findUnique({ where: { id: departmentId } });
+    if (!dept) return res.status(400).json({ error: 'Invalid departmentId' });
+
+    const c = await prisma.course.create({
+      data: {
+        name: String(name).trim(),
+        code: String(code).trim(),
+        departmentId: String(departmentId),
+        durationYears: durationYears ? Number(durationYears) : 3,
+        description: description ? String(description).trim() : '',
+        level: level ? Number(level) : 1,
+      }
+    });
+    logAdminAction(req.user.id, 'CREATE_COURSE', c.id, { name: c.name, code: c.code });
     res.status(201).json(withMongoId(c));
   });
 
   r.patch('/courses/:id', async (req, res) => {
     try {
+      const data = {};
+      const { name, code, departmentId, durationYears, description, level } = req.body || {};
+      
+      if (name !== undefined) {
+        if (typeof name !== 'string' || !name.trim()) return res.status(400).json({ error: 'name cannot be empty' });
+        data.name = name.trim();
+      }
+      if (code !== undefined) {
+        if (typeof code !== 'string' || !code.trim()) return res.status(400).json({ error: 'code cannot be empty' });
+        data.code = code.trim();
+      }
+      if (departmentId !== undefined) {
+        const dept = await prisma.department.findUnique({ where: { id: departmentId } });
+        if (!dept) return res.status(400).json({ error: 'Invalid departmentId' });
+        data.departmentId = departmentId;
+      }
+      if (durationYears !== undefined) data.durationYears = Number(durationYears);
+      if (description !== undefined) data.description = String(description).trim();
+      if (level !== undefined) data.level = Number(level);
+
       const c = await prisma.course.update({
         where: { id: req.params.id },
-        data: req.body || {},
+        data,
       });
+      logAdminAction(req.user.id, 'UPDATE_COURSE', req.params.id, { fields: Object.keys(data) });
       res.json(withMongoId(c));
     } catch {
       res.status(404).json({ error: 'Not found' });
@@ -657,6 +833,7 @@ export function adminRouter({ jwtSecret }) {
   r.delete('/courses/:id', async (req, res) => {
     try {
       await prisma.course.delete({ where: { id: req.params.id } });
+      logAdminAction(req.user.id, 'DELETE_COURSE', req.params.id);
       res.json({ ok: true });
     } catch {
       res.status(404).json({ error: 'Not found' });
@@ -731,6 +908,7 @@ export function adminRouter({ jwtSecret }) {
         update: { value },
       });
     }
+    logAdminAction(req.user.id, 'UPDATE_SETTINGS', 'SYSTEM', { keys: Object.keys(body) });
     const rows = await prisma.collegeSettings.findMany();
     const obj = {};
     for (const row of rows) obj[row.key] = row.value;
@@ -1072,6 +1250,7 @@ export function adminRouter({ jwtSecret }) {
         teacher: { select: { id: true, name: true, email: true } }
       }
     });
+    logAdminAction(req.user.id, 'REVIEW_LEAVE', req.params.id, { status });
     res.json(withMongoId(updated));
   });
   

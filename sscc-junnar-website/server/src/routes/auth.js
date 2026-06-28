@@ -4,6 +4,10 @@ import { hashPassword, verifyPassword, signToken, verifyToken } from '../utils/a
 import { Role } from '@prisma/client';
 import { loginLimiter, adminAccessLimiter } from '../middleware/rateLimit.js';
 import { createAuthMiddleware } from '../middleware/auth.js';
+import { sendEmail } from '../utils/email.js';
+
+const resetTokens = new Map(); // token -> { userId, expiresAt }
+
 
 export function authRouter({ jwtSecret, jwtExpiresIn }) {
   const r = Router();
@@ -61,16 +65,16 @@ export function authRouter({ jwtSecret, jwtExpiresIn }) {
       where: { email: searchId },
     });
     if (!user) {
-      const allStudents = await prisma.user.findMany({
-        where: { role: Role.student }
-      });
-      user = allStudents.find(s => {
-        const sp = s.studentProfile && typeof s.studentProfile === 'object' ? s.studentProfile : {};
-        const sId = String(sp.studentId || '').toLowerCase().trim();
-        const pEmail = String(sp.personalEmail || '').toLowerCase().trim();
-        const cEmail = String(sp.collegeEmail || '').toLowerCase().trim();
-        return sId === searchId || pEmail === searchId || cEmail === searchId;
-      });
+      // O(1) performance using SQLite JSON extraction function (avoid loading entire database into memory)
+      const rawUsers = await prisma.$queryRaw`
+        SELECT * FROM User 
+        WHERE role = 'student' AND (
+          lower(json_extract(studentProfile, '$.studentId')) = ${searchId} OR 
+          lower(json_extract(studentProfile, '$.personalEmail')) = ${searchId} OR 
+          lower(json_extract(studentProfile, '$.collegeEmail')) = ${searchId}
+        ) LIMIT 1
+      `;
+      user = rawUsers[0] || null;
     }
     if (!user || !user.isActive) {
       return res.status(401).json({ error: 'Invalid credentials' });
@@ -88,8 +92,8 @@ export function authRouter({ jwtSecret, jwtExpiresIn }) {
         role: user.role,
         name: user.name,
         phone: user.phone,
-        teacherProfile: user.teacherProfile,
-        studentProfile: user.studentProfile,
+        teacherProfile: typeof user.teacherProfile === 'string' ? JSON.parse(user.teacherProfile) : user.teacherProfile,
+        studentProfile: typeof user.studentProfile === 'string' ? JSON.parse(user.studentProfile) : user.studentProfile,
       }),
     });
   });
@@ -160,6 +164,75 @@ export function authRouter({ jwtSecret, jwtExpiresIn }) {
     } catch {
       res.status(401).json({ error: 'Invalid token' });
     }
+  });
+
+  r.post('/forgot-password', async (req, res) => {
+    const { email } = req.body || {};
+    if (!email) return res.status(400).json({ error: 'Email is required' });
+    const user = await prisma.user.findUnique({
+      where: { email: String(email).toLowerCase().trim() },
+    });
+    if (!user) {
+      // Return 200 to prevent user enumeration security issues, but don't send email
+      return res.json({ message: 'If the email exists, a reset link has been sent.' });
+    }
+    
+    // Generate a random secure token
+    const token = Math.random().toString(36).slice(2, 15) + Math.random().toString(36).slice(2, 15);
+    const expiresAt = Date.now() + 15 * 60 * 1000; // 15 minutes
+    
+    resetTokens.set(token, { userId: user.id, expiresAt });
+    
+    // Send email with reset url
+    const resetUrl = `${req.protocol}://${req.get('host')}/reset-password.html?token=${token}`;
+    try {
+      await sendEmail({
+        to: user.email,
+        subject: 'Password Reset Request — SSC College Junnar',
+        text: `Dear ${user.name},\n\nYou requested a password reset. Click the link below to reset your password:\n${resetUrl}\n\nIf you did not request this, please ignore this email.\n\nBest regards,\nSSC College Junnar`,
+        html: `<p>Dear <strong>${user.name}</strong>,</p>
+               <p>You requested a password reset. Click the link below to reset your password:</p>
+               <p><a href="${resetUrl}" style="padding: 10px 15px; background: #0284c7; color: white; text-decoration: none; border-radius: 5px; display: inline-block;">Reset Password</a></p>
+               <p>Or copy and paste this link in your browser:</p>
+               <p>${resetUrl}</p>
+               <p>This link is valid for 15 minutes.</p>
+               <p>Best regards,<br/>SSC College Junnar</p>`
+      });
+    } catch (err) {
+      console.error('Failed to send reset password email:', err);
+    }
+    
+    res.json({ message: 'If the email exists, a reset link has been sent.' });
+  });
+
+  r.post('/reset-password', async (req, res) => {
+    const { token, newPassword } = req.body || {};
+    if (!token || !newPassword) {
+      return res.status(400).json({ error: 'Token and newPassword are required' });
+    }
+    if (newPassword.length < 8) {
+      return res.status(400).json({ error: 'Password must be at least 8 characters' });
+    }
+    const record = resetTokens.get(token);
+    if (!record || record.expiresAt < Date.now()) {
+      resetTokens.delete(token);
+      return res.status(400).json({ error: 'Invalid or expired reset token' });
+    }
+    
+    const user = await prisma.user.findUnique({ where: { id: record.userId } });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    
+    // Update password hash and turn off forced password change
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        passwordHash: await hashPassword(String(newPassword)),
+        mustChangePassword: false,
+      },
+    });
+    
+    resetTokens.delete(token);
+    res.json({ ok: true, message: 'Password has been reset successfully.' });
   });
 
   return r;

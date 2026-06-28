@@ -45,16 +45,16 @@ export function studentRouter({ jwtSecret, jwtExpiresIn }) {
       where: { email: searchId },
     });
     if (!user) {
-      const allStudents = await prisma.user.findMany({
-        where: { role: Role.student }
-      });
-      user = allStudents.find(s => {
-        const sp = s.studentProfile && typeof s.studentProfile === 'object' ? s.studentProfile : {};
-        const sId = String(sp.studentId || '').toLowerCase().trim();
-        const pEmail = String(sp.personalEmail || '').toLowerCase().trim();
-        const cEmail = String(sp.collegeEmail || '').toLowerCase().trim();
-        return sId === searchId || pEmail === searchId || cEmail === searchId;
-      });
+      // O(1) performance using SQLite JSON extraction function (avoid loading entire database into memory)
+      const rawUsers = await prisma.$queryRaw`
+        SELECT * FROM User 
+        WHERE role = 'student' AND (
+          lower(json_extract(studentProfile, '$.studentId')) = ${searchId} OR 
+          lower(json_extract(studentProfile, '$.personalEmail')) = ${searchId} OR 
+          lower(json_extract(studentProfile, '$.collegeEmail')) = ${searchId}
+        ) LIMIT 1
+      `;
+      user = rawUsers[0] || null;
     }
     if (!user || !user.isActive || user.role !== Role.student) {
       return res.status(401).json({ error: 'Invalid credentials' });
@@ -71,7 +71,7 @@ export function studentRouter({ jwtSecret, jwtExpiresIn }) {
         role: user.role,
         name: user.name,
         phone: user.phone,
-        studentProfile: user.studentProfile,
+        studentProfile: typeof user.studentProfile === 'string' ? JSON.parse(user.studentProfile) : user.studentProfile,
       }),
     });
   });

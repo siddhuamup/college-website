@@ -40,35 +40,45 @@
       </div>
     </div>
   </section>
-
   <section class="container mt-4 no-print-section">
     <div class="card">
       <h3>Online application</h3>
-      <div class="steps" id="adm-steps">
-        <span class="step-pill active" data-step="1">1. Personal Info</span>
-        <span class="step-pill" data-step="2">2. Academic Info</span>
-        <span class="step-pill" data-step="3">3. Document Uploads</span>
+      
+      <!-- Stepper Wizard -->
+      <div class="stepper" id="adm-steps">
+        <div class="step active" data-step="1">
+          <div class="step-icon">1</div>
+          <div class="step-label">Personal Info</div>
+        </div>
+        <div class="step" data-step="2">
+          <div class="step-icon">2</div>
+          <div class="step-label">Academic Info</div>
+        </div>
+        <div class="step" data-step="3">
+          <div class="step-icon">3</div>
+          <div class="step-label">Document Uploads</div>
+        </div>
       </div>
-
-      <form id="adm-form">
+ 
+      <form id="adm-form" novalidate>
         <!-- STEP 1: Personal Info -->
         <div class="adm-panel" data-panel="1">
           <div class="form-grid two">
             <div>
               <label class="field-label" for="fullName">Full Name</label>
-              <input class="input" id="fullName" name="fullName" required/>
+              <input class="input" id="fullName" name="fullName" placeholder="Enter your full name" required/>
             </div>
             <div>
               <label class="field-label" for="email">Personal Email</label>
-              <input class="input" id="email" name="email" type="email" required/>
+              <input class="input" id="email" name="email" type="email" placeholder="email@example.com" required/>
             </div>
             <div>
               <label class="field-label" for="phone">Mobile Number</label>
-              <input class="input" id="phone" name="phone" required/>
+              <input class="input" id="phone" name="phone" placeholder="10-digit mobile number" required/>
             </div>
             <div>
               <label class="field-label" for="parentContact">Parent Mobile Number</label>
-              <input class="input" id="parentContact" name="parentContact" required/>
+              <input class="input" id="parentContact" name="parentContact" placeholder="10-digit mobile number" required/>
             </div>
             <div>
               <label class="field-label" for="dob">Date of Birth</label>
@@ -77,6 +87,7 @@
             <div>
               <label class="field-label" for="gender">Gender</label>
               <select class="select input" id="gender" name="gender" required>
+                <option value="" disabled selected>Select Gender</option>
                 <option value="Male">Male</option>
                 <option value="Female">Female</option>
                 <option value="Other">Other</option>
@@ -85,11 +96,11 @@
           </div>
           <div class="mt-3">
             <label class="field-label" for="address">Address</label>
-            <textarea class="input" id="address" name="address" rows="3" required></textarea>
+            <textarea class="input" id="address" name="address" rows="3" placeholder="Current address details" required></textarea>
           </div>
           <button type="button" class="btn mt-3" data-next="2">Next</button>
         </div>
-
+ 
         <!-- STEP 2: Academic Info -->
         <div class="adm-panel" data-panel="2" hidden>
           <div class="form-grid two">
@@ -103,11 +114,11 @@
             </div>
             <div>
               <label class="field-label" for="sscMarks">SSC Marks Obtained (Out of 500/600)</label>
-              <input class="input" id="sscMarks" name="sscMarks" type="number" min="0" step="0.01" required/>
+              <input class="input" id="sscMarks" name="sscMarks" type="number" min="0" step="0.01" placeholder="SSC Marks" required/>
             </div>
             <div>
               <label class="field-label" for="marks12">HSC Marks Obtained</label>
-              <input class="input" id="marks12" name="marks12" type="number" min="0" step="0.01" required/>
+              <input class="input" id="marks12" name="marks12" type="number" min="0" step="0.01" placeholder="HSC Marks" required/>
             </div>
             <div>
               <label class="field-label" for="maxMarks12">HSC Max Marks</label>
@@ -119,7 +130,7 @@
             </div>
             <div>
               <label class="field-label" for="previousCollege">Previous School / College Name</label>
-              <input class="input" id="previousCollege" name="previousCollege" required/>
+              <input class="input" id="previousCollege" name="previousCollege" placeholder="School/College name" required/>
             </div>
             <div>
               <label class="field-label" for="category">Category</label>
@@ -137,7 +148,7 @@
             <button type="button" class="btn" data-next="3">Next</button>
           </div>
         </div>
-
+ 
         <!-- STEP 3: Document Uploads -->
         <div class="adm-panel" data-panel="3" hidden>
           <p class="small mb-3">Please upload scanned copies of the following documents (PDF, JPG or PNG. Max 8 MB each):</p>
@@ -168,7 +179,7 @@
       <p id="adm-msg" class="small mt-3" role="status"></p>
     </div>
   </section>
-
+ 
   <!-- Printable Receipt Section -->
   <section class="container mt-4" id="receipt-section" style="display: none;">
     <div class="card" style="max-width: 800px; margin: 0 auto; border: 2px solid #e2e8f0; padding: 2rem; border-radius: 12px; background: var(--bg-card, #ffffff);">
@@ -185,7 +196,7 @@
           </div>
         </div>
       </div>
-
+ 
       <div class="form-grid two" style="margin-bottom: 1.5rem;">
         <div>
           <span class="field-label" style="text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; opacity: 0.7;">Application Number</span>
@@ -196,7 +207,7 @@
           <strong style="font-size: 1.1rem; display: block;" id="r-timestamp">16/06/2026, 08:41 AM</strong>
         </div>
       </div>
-
+ 
       <div style="margin-bottom: 1.5rem;">
         <h4 style="border-bottom: 1px solid var(--border-color, #e2e8f0); padding-bottom: 0.25rem; margin-bottom: 0.75rem; color: var(--primary);">Personal Information</h4>
         <div class="form-grid two" style="font-size: 0.9rem; row-gap: 0.75rem;">
@@ -209,7 +220,7 @@
           <div style="grid-column: span 2;"><strong>Address:</strong> <span id="r-address"></span></div>
         </div>
       </div>
-
+ 
       <div style="margin-bottom: 1.5rem;">
         <h4 style="border-bottom: 1px solid var(--border-color, #e2e8f0); padding-bottom: 0.25rem; margin-bottom: 0.75rem; color: var(--primary);">Educational Information</h4>
         <div class="form-grid two" style="font-size: 0.9rem; row-gap: 0.75rem;">
@@ -222,7 +233,7 @@
           <div style="grid-column: span 2;"><strong>Previous College:</strong> <span id="r-prev-college"></span></div>
         </div>
       </div>
-
+ 
       <div style="margin-bottom: 2rem;">
         <h4 style="border-bottom: 1px solid var(--border-color, #e2e8f0); padding-bottom: 0.25rem; margin-bottom: 0.75rem; color: var(--primary);">Uploaded Documents</h4>
         <div style="display: flex; gap: 1rem; flex-wrap: wrap; font-size: 0.85rem;">
@@ -232,7 +243,7 @@
           <span class="badge success">✓ Leaving Certificate</span>
         </div>
       </div>
-
+ 
       <div class="no-print" style="display: flex; gap: 1rem; border-top: 1px solid var(--border-color, #e2e8f0); padding-top: 1.5rem; margin-top: 1.5rem;">
         <button class="btn" onclick="window.print()" style="color: #000; display: flex; align-items: center; gap: 0.5rem;">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
@@ -242,7 +253,7 @@
       </div>
     </div>
   </section>
-
+ 
   <div id="site-footer"></div>
   <script src="js/layout.js"></script>
   <script src="js/app.js"></script>
@@ -253,13 +264,42 @@
       document.querySelectorAll('.adm-panel').forEach((p) => {
         p.hidden = p.getAttribute('data-panel') !== String(n);
       });
-      document.querySelectorAll('#adm-steps .step-pill').forEach((p) => {
-        p.classList.toggle('active', p.getAttribute('data-step') === String(n));
+      document.querySelectorAll('#adm-steps .step').forEach((p) => {
+        const stepNum = Number(p.getAttribute('data-step'));
+        p.classList.toggle('active', stepNum === n);
+        p.classList.toggle('completed', stepNum < n);
       });
     }
-    document.querySelectorAll('[data-next]').forEach((btn) => {
-      btn.addEventListener('click', () => showStep(Number(btn.getAttribute('data-next'))));
+
+    // Auto-setup wrapper class for inline validation indicators
+    document.querySelectorAll('#adm-form input, #adm-form select, #adm-form textarea').forEach(input => {
+      if (!input.placeholder) input.placeholder = " ";
+      const parent = input.parentElement;
+      if (parent) {
+        parent.classList.add('form-control-validate');
+      }
     });
+
+    document.querySelectorAll('[data-next]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const nextStep = Number(btn.getAttribute('data-next'));
+        if (nextStep > step) {
+          // Validate fields in current step before moving forward
+          const currentPanel = document.querySelector(`.adm-panel[data-panel="${step}"]`);
+          const inputs = currentPanel.querySelectorAll('input, select, textarea');
+          let allValid = true;
+          inputs.forEach(input => {
+            if (!input.checkValidity()) {
+              allValid = false;
+              input.reportValidity();
+            }
+          });
+          if (!allValid) return;
+        }
+        showStep(nextStep);
+      });
+    });
+ 
     function validEmail(s) {
       return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(s).trim().toLowerCase());
     }
