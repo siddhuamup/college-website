@@ -45,8 +45,8 @@ export function adminRouter({ jwtSecret }) {
     const [students, teachers, totalAdmissions, pendingAdmissions, noticesCount, feedbackCount] = await Promise.all([
       prisma.user.count({ where: { role: Role.student, isActive: true } }),
       prisma.user.count({ where: { role: Role.teacher, isActive: true } }),
-      prisma.admissionApplication.count(),
-      prisma.admissionApplication.count({ where: { status: 'pending' } }),
+      prisma.admissionApplication.count({ where: { isDeleted: false } }),
+      prisma.admissionApplication.count({ where: { status: 'pending', isDeleted: false } }),
       prisma.notice.count({ where: { isPublished: true } }),
       prisma.feedback.count(),
     ]);
@@ -369,26 +369,75 @@ export function adminRouter({ jwtSecret }) {
     res.json({ ok: true });
   });
 
-  r.get('/admissions', async (_req, res) => {
-    const list = await prisma.admissionApplication.findMany({
-      orderBy: { createdAt: 'desc' },
-      take: 200,
+  r.get('/admissions', async (req, res) => {
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 25));
+    const skip = (page - 1) * limit;
+    const q = (req.query.q || '').trim().toLowerCase();
+    const status = (req.query.status || '').trim().toLowerCase();
+    const course = (req.query.course || '').trim();
+
+    // Build where clause — always exclude soft-deleted
+    const where = { isDeleted: false };
+    if (status && status !== 'all') where.status = status;
+    if (course) where.courseApplied = course;
+    if (q) {
+      where.OR = [
+        { fullName: { contains: q } },
+        { email: { contains: q } },
+        { applicationNumber: { contains: q } },
+        { phone: { contains: q } },
+      ];
+    }
+
+    const [list, total] = await Promise.all([
+      prisma.admissionApplication.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      prisma.admissionApplication.count({ where }),
+    ]);
+
+    res.json({
+      data: list.map(withMongoId),
+      pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
     });
-    res.json(list.map(withMongoId));
   });
 
   r.get('/admissions/:id', async (req, res) => {
     const doc = await prisma.admissionApplication.findUnique({ where: { id: req.params.id } });
-    if (!doc) return res.status(404).json({ error: 'Not found' });
+    if (!doc || doc.isDeleted) return res.status(404).json({ error: 'Not found' });
     const rawFiles = doc.documentFiles;
     const files = Array.isArray(rawFiles) ? rawFiles : [];
     const documentFiles = files.map((f) => ({
+      field: f.field,
       originalName: f.originalName,
       mimeType: f.mimeType,
       url: f.storedName ? `/uploads/admissions/${f.storedName}` : null,
     }));
     const { documentFiles: _drop, ...rest } = doc;
     res.json(withMongoId({ ...rest, documentFiles }));
+  });
+
+  // Soft-delete admission application
+  r.delete('/admissions/:id', async (req, res) => {
+    const doc = await prisma.admissionApplication.findUnique({ where: { id: req.params.id } });
+    if (!doc || doc.isDeleted) return res.status(404).json({ error: 'Not found' });
+    if (doc.status === 'approved' && doc.createdStudentUserId) {
+      return res.status(400).json({ error: 'Cannot delete an approved application with a linked student account. Revoke the account first.' });
+    }
+    await prisma.admissionApplication.update({
+      where: { id: doc.id },
+      data: {
+        isDeleted: true,
+        deletedAt: new Date(),
+        deletedBy: req.user.id,
+      },
+    });
+    logAdminAction(req.user.id, 'SOFT_DELETE_ADMISSION', doc.id);
+    res.json({ ok: true });
   });
 
   r.patch('/admissions/:id/verify', async (req, res) => {

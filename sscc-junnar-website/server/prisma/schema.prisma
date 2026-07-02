@@ -71,10 +71,16 @@ model AdmissionApplication {
   createdStudentUserId String?
   createdStudentUser   User?     @relation("AdmCreatedStudent", fields: [createdStudentUserId], references: [id], onDelete: SetNull)
   tempPasswordHint     String    @default("")
+  academicYear         Int       @default(2026)
+  isDeleted            Boolean   @default(false)
+  deletedAt            DateTime?
+  deletedBy            String    @default("")
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
 
   @@index([email])
+  @@index([email, courseApplied, academicYear])
+  @@index([isDeleted])
 }
 
 model Notice {

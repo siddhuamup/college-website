@@ -327,8 +327,41 @@
 
       <section class="dash-panel" data-panel="admissions">
         <div class="card">
-          <h3>Applications</h3>
-          <div class="table-wrap"><table class="table small" id="tbl-admissions"><thead><tr><th>#</th><th>Name</th><th>Course</th><th>Marks</th><th>Status</th><th></th></tr></thead><tbody></tbody></table></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.75rem;margin-bottom:1rem;">
+            <h3 style="margin:0;">Applications</h3>
+            <div style="display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center;">
+              <input class="input" type="text" id="adm-search" placeholder="Search name, email, app#..." style="width:220px;padding:0.4rem 0.75rem;font-size:0.85rem;" />
+              <select class="input" id="adm-filter-status" style="width:130px;padding:0.4rem 0.5rem;font-size:0.85rem;">
+                <option value="all">All Status</option>
+                <option value="pending">Pending</option>
+                <option value="approved">Approved</option>
+                <option value="rejected">Rejected</option>
+              </select>
+              <select class="input" id="adm-filter-course" style="width:150px;padding:0.4rem 0.5rem;font-size:0.85rem;">
+                <option value="">All Courses</option>
+              </select>
+              <button class="btn small secondary" id="btn-adm-export" title="Export CSV" style="padding:0.4rem 0.75rem;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Export
+              </button>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table class="table small" id="tbl-admissions">
+              <thead><tr>
+                <th>#</th><th>Name</th><th>Course</th><th>Marks</th><th>Verified</th><th>Status</th><th></th>
+              </tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <!-- Pagination -->
+          <div id="adm-pagination" style="display:flex;align-items:center;justify-content:space-between;margin-top:1rem;flex-wrap:wrap;gap:0.5rem;">
+            <span class="small" id="adm-page-info" style="color:var(--muted);"></span>
+            <div style="display:flex;gap:0.35rem;">
+              <button class="btn small secondary" id="adm-prev-page" disabled>← Prev</button>
+              <button class="btn small secondary" id="adm-next-page" disabled>Next →</button>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -1078,6 +1111,77 @@
         </div>
       </form>
     </div>
+  </div>
+
+  <!-- ═══ Admission Detail Modal ═══ -->
+  <div class="modal-overlay" id="modal-admission-detail" style="display:none;">
+    <div class="modal-container" style="max-width:900px;">
+      <div class="modal-header">
+        <h3 class="modal-title" id="adm-detail-title">Application Details</h3>
+        <button type="button" class="modal-close" onclick="document.getElementById('modal-admission-detail').style.display='none'">&times;</button>
+      </div>
+
+      <!-- Tabs -->
+      <div class="adm-detail-tabs" style="display:flex;gap:0;border-bottom:2px solid var(--border,#e2e8f0);margin-bottom:1.25rem;">
+        <button class="adm-tab-btn active" data-adm-tab="overview" style="padding:0.6rem 1.25rem;border:none;background:none;cursor:pointer;font-weight:600;font-size:0.9rem;color:var(--muted,#94a3b8);border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .2s;">Overview</button>
+        <button class="adm-tab-btn" data-adm-tab="documents" style="padding:0.6rem 1.25rem;border:none;background:none;cursor:pointer;font-weight:600;font-size:0.9rem;color:var(--muted,#94a3b8);border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .2s;">Documents</button>
+        <button class="adm-tab-btn" data-adm-tab="actions" style="padding:0.6rem 1.25rem;border:none;background:none;cursor:pointer;font-weight:600;font-size:0.9rem;color:var(--muted,#94a3b8);border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .2s;">Actions</button>
+      </div>
+
+      <!-- Overview Tab -->
+      <div class="adm-tab-panel active" data-adm-panel="overview">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem 1.5rem;">
+          <div><span class="small" style="color:var(--muted);">Application #</span><p id="adm-d-appnum" style="margin:0.15rem 0 0;font-weight:600;"></p></div>
+          <div><span class="small" style="color:var(--muted);">Status</span><p id="adm-d-status" style="margin:0.15rem 0 0;font-weight:600;"></p></div>
+          <div><span class="small" style="color:var(--muted);">Full Name</span><p id="adm-d-name" style="margin:0.15rem 0 0;"></p></div>
+          <div><span class="small" style="color:var(--muted);">Email</span><p id="adm-d-email" style="margin:0.15rem 0 0;"></p></div>
+          <div><span class="small" style="color:var(--muted);">Phone</span><p id="adm-d-phone" style="margin:0.15rem 0 0;"></p></div>
+          <div><span class="small" style="color:var(--muted);">Date of Birth</span><p id="adm-d-dob" style="margin:0.15rem 0 0;"></p></div>
+          <div><span class="small" style="color:var(--muted);">Gender</span><p id="adm-d-gender" style="margin:0.15rem 0 0;"></p></div>
+          <div><span class="small" style="color:var(--muted);">Category</span><p id="adm-d-category" style="margin:0.15rem 0 0;"></p></div>
+          <div style="grid-column:1/-1;"><span class="small" style="color:var(--muted);">Address</span><p id="adm-d-address" style="margin:0.15rem 0 0;"></p></div>
+          <div><span class="small" style="color:var(--muted);">Course Applied</span><p id="adm-d-course" style="margin:0.15rem 0 0;font-weight:600;"></p></div>
+          <div><span class="small" style="color:var(--muted);">HSC Board</span><p id="adm-d-board" style="margin:0.15rem 0 0;"></p></div>
+          <div><span class="small" style="color:var(--muted);">12th Marks</span><p id="adm-d-marks" style="margin:0.15rem 0 0;"></p></div>
+          <div><span class="small" style="color:var(--muted);">SSC Marks</span><p id="adm-d-ssc" style="margin:0.15rem 0 0;"></p></div>
+          <div><span class="small" style="color:var(--muted);">Passing Year</span><p id="adm-d-year" style="margin:0.15rem 0 0;"></p></div>
+          <div><span class="small" style="color:var(--muted);">Previous College</span><p id="adm-d-prevcollege" style="margin:0.15rem 0 0;"></p></div>
+          <div><span class="small" style="color:var(--muted);">Parent Contact</span><p id="adm-d-parent" style="margin:0.15rem 0 0;"></p></div>
+          <div><span class="small" style="color:var(--muted);">Docs Verified</span><p id="adm-d-verified" style="margin:0.15rem 0 0;"></p></div>
+        </div>
+      </div>
+
+      <!-- Documents Tab -->
+      <div class="adm-tab-panel" data-adm-panel="documents" style="display:none;">
+        <div id="adm-documents-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;"></div>
+        <p class="small" id="adm-no-docs" style="display:none;color:var(--muted);">No documents uploaded.</p>
+      </div>
+
+      <!-- Actions Tab -->
+      <div class="adm-tab-panel" data-adm-panel="actions" style="display:none;">
+        <input type="hidden" id="adm-detail-id" />
+        <div style="display:flex;flex-direction:column;gap:1rem;">
+          <div style="display:flex;align-items:center;gap:1rem;padding:1rem;border-radius:0.5rem;background:var(--surface,#f8fafc);">
+            <span style="font-weight:600;min-width:130px;">Verification:</span>
+            <span id="adm-d-verify-label" style="font-weight:600;"></span>
+            <button class="btn small" id="adm-d-toggle-verify" style="margin-left:auto;">Toggle Verify</button>
+          </div>
+          <div style="display:flex;gap:0.75rem;flex-wrap:wrap;">
+            <button class="btn" id="adm-d-approve" style="color:#000;">Approve + Create Account</button>
+            <button class="btn danger" id="adm-d-reject" style="color:#fff;">Reject</button>
+            <button class="btn secondary" id="adm-d-delete" style="margin-left:auto;color:var(--danger,#ef4444);">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+              Delete
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Fullscreen Image Viewer -->
+  <div id="adm-fullscreen-viewer" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.9);cursor:zoom-out;display:none;align-items:center;justify-content:center;" onclick="this.style.display='none'">
+    <img id="adm-fullscreen-img" style="max-width:95vw;max-height:95vh;object-fit:contain;border-radius:0.5rem;" />
   </div>
 
   <!-- Faculty Edit Modal -->

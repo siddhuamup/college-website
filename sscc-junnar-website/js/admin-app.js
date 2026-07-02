@@ -162,13 +162,15 @@
 
   async function buildSearchIndex() {
     try {
-      const [students, teachers, courses, departments] = await Promise.all([
+      const [students, teachers, admissions, courses, departments] = await Promise.all([
         SSC_API.get('/admin/students').catch(() => []),
         SSC_API.get('/admin/teachers').catch(() => []),
+        SSC_API.get('/admin/admissions').catch(() => []),
         SSC_API.get('/admin/courses').catch(() => []),
         SSC_API.get('/admin/departments').catch(() => []),
       ]);
-      searchIndex = { students, teachers, admissions: [], notices: [], courses, departments };
+      const admRaw = Array.isArray(admissions) ? admissions : (admissions?.data || []);
+      searchIndex = { students, teachers, admissions: admRaw, notices: [], courses, departments };
       searchLoaded = true;
       loadNotifications();
     } catch { /* silent */ }
@@ -191,7 +193,8 @@
       const list = [];
 
       // 1. Pending Admissions
-      admissions.forEach(a => {
+      const admList = Array.isArray(admissions) ? admissions : (admissions?.data || []);
+      admList.forEach(a => {
         if (String(a.status || '').toLowerCase() === 'pending') {
           list.push({
             id: 'adm-' + (a._id || a.id),
@@ -417,8 +420,8 @@
         .slice(0, 4).forEach(t => results.push({ group: 'Faculty', panel: 'teachers', id: t._id || t.id, label: t.name, sub: t.email }));
 
       // Search admissions
-      searchIndex.admissions.filter(a => (a.fullName || a.name || '').toLowerCase().includes(lq) || (a.coursePref || '').toLowerCase().includes(lq))
-        .slice(0, 3).forEach(a => results.push({ group: 'Admissions', panel: 'admissions', label: a.fullName || a.name || 'Application', sub: a.coursePref || a.status || '' }));
+      searchIndex.admissions.filter(a => (a.fullName || a.name || '').toLowerCase().includes(lq) || (a.courseApplied || '').toLowerCase().includes(lq))
+        .slice(0, 3).forEach(a => results.push({ group: 'Admissions', panel: 'admissions', label: a.fullName || a.name || 'Application', sub: a.courseApplied || a.status || '' }));
 
       // Search notices
       searchIndex.notices.filter(n => (n.title || '').toLowerCase().includes(lq) || (n.body || '').toLowerCase().includes(lq))
@@ -720,7 +723,8 @@
     const el = document.getElementById('admissions-trend-content');
     if (!el) return;
     try {
-      const admissions = await SSC_API.get('/admin/admissions');
+      const admRaw = await SSC_API.get('/admin/admissions');
+      const admissions = Array.isArray(admRaw) ? admRaw : (admRaw?.data || []);
       const total = admissions.length;
       const pending = admissions.filter(a => String(a.status || '').toLowerCase() === 'pending').length;
       const approved = admissions.filter(a => String(a.status || '').toLowerCase() === 'approved').length;
@@ -820,8 +824,9 @@
     const el = document.getElementById('recent-admissions-content');
     if (!el) return;
     try {
-      const admissions = await SSC_API.get('/admin/admissions');
-      const recent = admissions.slice(0, 5);
+      const admRaw = await SSC_API.get('/admin/admissions');
+      const admList = Array.isArray(admRaw) ? admRaw : (admRaw?.data || []);
+      const recent = admList.slice(0, 5);
       if (recent.length === 0) {
         el.innerHTML = '<p class="small">No admission applications yet</p>';
         return;
@@ -832,7 +837,7 @@
         const statusColor = status === 'approved' ? 'var(--accent)' : status === 'rejected' ? 'var(--danger)' : 'var(--warning)';
         html += `<tr>
           <td>${esc(a.fullName || a.name || '—')}</td>
-          <td>${esc(a.coursePref || '—')}</td>
+          <td>${esc(a.courseApplied || '—')}</td>
           <td><span style="color:${statusColor};font-weight:600;text-transform:capitalize;">${status}</span></td>
         </tr>`;
       });
@@ -921,6 +926,7 @@
           await SSC_API.delete('/admin/students/' + b.getAttribute('data-del-student'));
           msg('Student deleted successfully');
           await loadStudents();
+          await loadStats();
           await buildSearchIndex();
         } catch (err) {
           showModalAlert(err.message || 'Delete failed', 'Error');
@@ -1337,6 +1343,7 @@
       f.reset();
       msg('Student created');
       await loadStudents();
+      await loadStats();
       await buildSearchIndex();
     } catch (err) {
       showModalAlert(err.message || 'Creation failed', 'Error');
@@ -1626,6 +1633,7 @@
           await SSC_API.delete('/admin/teachers/' + b.getAttribute('data-del-teacher'));
           msg('Teacher removed');
           await loadTeachers();
+          await loadStats();
           await buildSearchIndex();
         } catch (err) {
           showModalAlert(err.message || 'Delete failed', 'Error');
@@ -1669,6 +1677,7 @@
       f.reset();
       msg('Teacher created successfully');
       await loadTeachers();
+      await loadStats();
       await buildSearchIndex();
     } catch (err) {
       showModalAlert(err.message || 'Creation failed', 'Error');
@@ -1799,80 +1808,143 @@
     });
   }
 
-  // ── Admissions Management ──────────────────────────────
+  // ── Admissions Management (Paginated + Filtered) ─────────
+  let admCurrentPage = 1;
+  let admTotalPages = 1;
+  let admCachedRows = [];
+
+  function getAdmFilters() {
+    return {
+      q: (document.getElementById('adm-search')?.value || '').trim(),
+      status: document.getElementById('adm-filter-status')?.value || 'all',
+      course: document.getElementById('adm-filter-course')?.value || '',
+    };
+  }
+
+  // Debounced search
+  let admSearchTimer = null;
+  const admSearchEl = document.getElementById('adm-search');
+  if (admSearchEl) {
+    admSearchEl.addEventListener('input', () => {
+      clearTimeout(admSearchTimer);
+      admSearchTimer = setTimeout(() => { admCurrentPage = 1; loadAdmissions(); }, 350);
+    });
+  }
+  const admStatusEl = document.getElementById('adm-filter-status');
+  if (admStatusEl) admStatusEl.addEventListener('change', () => { admCurrentPage = 1; loadAdmissions(); });
+  const admCourseEl = document.getElementById('adm-filter-course');
+  if (admCourseEl) admCourseEl.addEventListener('change', () => { admCurrentPage = 1; loadAdmissions(); });
+
+  // Pagination buttons
+  const admPrevBtn = document.getElementById('adm-prev-page');
+  const admNextBtn = document.getElementById('adm-next-page');
+  if (admPrevBtn) admPrevBtn.addEventListener('click', () => { if (admCurrentPage > 1) { admCurrentPage--; loadAdmissions(); } });
+  if (admNextBtn) admNextBtn.addEventListener('click', () => { if (admCurrentPage < admTotalPages) { admCurrentPage++; loadAdmissions(); } });
+
+  // Hydrate course filter dropdown
+  async function hydrateAdmCourseFilter() {
+    try {
+      const courses = await SSC_API.get('/admin/courses');
+      const sel = document.getElementById('adm-filter-course');
+      if (!sel) return;
+      courses.forEach(c => {
+        const o = document.createElement('option');
+        o.value = c.name;
+        o.textContent = c.name;
+        sel.appendChild(o);
+      });
+    } catch { /* silent */ }
+  }
+  hydrateAdmCourseFilter();
+
   async function loadAdmissions() {
-    showTableShimmer('#tbl-admissions tbody', 5);
-    const rows = await SSC_API.get('/admin/admissions');
+    showTableShimmer('#tbl-admissions tbody', 6);
+    const filters = getAdmFilters();
+    const params = new URLSearchParams({
+      page: String(admCurrentPage),
+      limit: '25',
+    });
+    if (filters.q) params.set('q', filters.q);
+    if (filters.status && filters.status !== 'all') params.set('status', filters.status);
+    if (filters.course) params.set('course', filters.course);
+
+    const result = await SSC_API.get('/admin/admissions?' + params.toString());
+    const rows = result.data || result;
+    const pagination = result.pagination || { page: 1, total: rows.length, totalPages: 1 };
+    admCachedRows = rows;
+    admCurrentPage = pagination.page;
+    admTotalPages = pagination.totalPages;
+
+    // Update pagination UI
+    const pageInfo = document.getElementById('adm-page-info');
+    if (pageInfo) {
+      const start = (pagination.page - 1) * (pagination.limit || 25) + 1;
+      const end = Math.min(start + rows.length - 1, pagination.total);
+      pageInfo.textContent = pagination.total > 0 ? `Showing ${start}–${end} of ${pagination.total}` : 'No applications found';
+    }
+    if (admPrevBtn) admPrevBtn.disabled = pagination.page <= 1;
+    if (admNextBtn) admNextBtn.disabled = pagination.page >= pagination.totalPages;
+
     const tb = document.querySelector('#tbl-admissions tbody');
     tb.innerHTML = '';
     rows.forEach((a) => {
+      const statusColor = {
+        approved: 'var(--accent,#22c55e)',
+        rejected: 'var(--danger,#ef4444)',
+        pending: 'var(--warning,#f59e0b)',
+      }[String(a.status).toLowerCase()] || 'var(--muted)';
+      const verifiedBadge = a.documentsVerified
+        ? '<span style="color:var(--accent,#22c55e);font-weight:600;">✓ Yes</span>'
+        : '<span style="color:var(--muted,#94a3b8);">✗ No</span>';
+
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td data-label="App No">${esc(a.applicationNumber)}</td>
-        <td data-label="Full Name">${esc(a.fullName)}</td>
+        <td data-label="Name">${esc(a.fullName)}</td>
         <td data-label="Course">${esc(a.courseApplied)}</td>
         <td data-label="12th Marks">${a.marks12}/${a.maxMarks12}</td>
-        <td data-label="Status">${esc(a.status)}</td>
+        <td data-label="Verified">${verifiedBadge}</td>
+        <td data-label="Status"><span style="color:${statusColor};font-weight:600;text-transform:capitalize;">${esc(a.status)}</span></td>
         <td data-label="Actions">
-          <button class="btn small" data-verify="${a._id}">Toggle verify</button>
-          <button class="btn small" data-approve="${a._id}">Approve+account</button>
-          <button class="btn small danger" data-reject="${a._id}">Reject</button>
+          <button class="btn small" data-view-adm="${a._id}" title="View Details">View</button>
+          <button class="btn small secondary" data-approve-adm="${a._id}" title="Approve">Approve</button>
+          <button class="btn small danger" data-del-adm="${a._id}" title="Delete" style="color:var(--danger,#ef4444);">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+          </button>
         </td>`;
       tb.appendChild(tr);
     });
 
-    tb.querySelectorAll('[data-verify]').forEach((b) =>
-      b.addEventListener('click', async () => {
-        const id = b.getAttribute('data-verify');
-        const cur = rows.find((x) => x._id === id);
-        try {
-          await SSC_API.patch('/admin/admissions/' + id + '/verify', {
-            documentsVerified: !cur.documentsVerified,
-          });
-          await loadAdmissions();
-        } catch (err) {
-          if (window.showToast) window.showToast(err.message || 'Verification failed', 'error');
-          else alert(err.message || 'Verification failed');
-        }
-      })
+    // Wire View buttons
+    tb.querySelectorAll('[data-view-adm]').forEach(b =>
+      b.addEventListener('click', () => openAdmissionDetail(b.getAttribute('data-view-adm')))
     );
 
-    tb.querySelectorAll('[data-approve]').forEach((b) =>
+    // Wire inline Approve buttons (opens the existing decision modal)
+    tb.querySelectorAll('[data-approve-adm]').forEach(b =>
       b.addEventListener('click', async () => {
-        const id = b.getAttribute('data-approve');
+        const id = b.getAttribute('data-approve-adm');
         const cur = rows.find(x => x._id === id);
         if (!cur) return;
-        
-        // Generate details dynamically
+
         const yearSuffix = new Date().getFullYear().toString().slice(-2);
         const courseAbbr = (cur.courseApplied || 'GEN').toUpperCase().replace(/[^A-Z0-9]/g, '') || 'GEN';
         const prefix = `SSC${yearSuffix}${courseAbbr}`;
-        
         let matchCount = 0;
         searchIndex.students.forEach(student => {
           const sp = student.studentProfile || {};
-          if (sp.studentId && String(sp.studentId).startsWith(prefix)) {
-            matchCount++;
-          }
+          if (sp.studentId && String(sp.studentId).startsWith(prefix)) matchCount++;
         });
-        
         const seqNum = String(matchCount + 1).padStart(3, '0');
         const generatedStudentId = `${prefix}${seqNum}`;
         const collegeEmail = `${generatedStudentId.toLowerCase()}@ssccjunnar.edu`;
-        
         const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$';
         let pwd = '';
-        const lowercase = 'abcdefghijklmnopqrstuvwxyz';
-        const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-        const numbers = '0123456789';
-        const specials = '!@#$';
-        pwd += lowercase[Math.floor(Math.random() * lowercase.length)];
-        pwd += uppercase[Math.floor(Math.random() * uppercase.length)];
-        pwd += numbers[Math.floor(Math.random() * numbers.length)];
-        pwd += specials[Math.floor(Math.random() * specials.length)];
-        for (let i = 0; i < 6; i++) {
-          pwd += chars[Math.floor(Math.random() * chars.length)];
-        }
+        pwd += 'abcdefghijklmnopqrstuvwxyz'[Math.floor(Math.random() * 26)];
+        pwd += 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'[Math.floor(Math.random() * 26)];
+        pwd += '0123456789'[Math.floor(Math.random() * 10)];
+        pwd += '!@#$'[Math.floor(Math.random() * 4)];
+        for (let i = 0; i < 6; i++) pwd += chars[Math.floor(Math.random() * chars.length)];
         const tempPassword = pwd.split('').sort(() => 0.5 - Math.random()).join('');
 
         document.getElementById('decision-app-id').value = cur._id || cur.id;
@@ -1882,23 +1954,270 @@
         document.getElementById('decision-college-email').value = collegeEmail;
         document.getElementById('decision-temp-password').value = tempPassword;
         document.getElementById('decision-class-name').value = `FY-${courseAbbr}-A`;
-
         document.getElementById('modal-admission-decision').style.display = 'flex';
       })
     );
 
-    tb.querySelectorAll('[data-reject]').forEach((b) =>
-      b.addEventListener('click', () => {
-        const id = b.getAttribute('data-reject');
-        const cur = rows.find(x => x._id === id);
-        if (!cur) return;
-        document.getElementById('reject-app-id').value = cur._id || cur.id;
-        document.getElementById('reject-student-name').value = cur.fullName || '';
-        document.getElementById('reject-notes').value = '';
-        document.getElementById('modal-admission-reject').style.display = 'flex';
+    // Wire inline Delete buttons (soft delete)
+    tb.querySelectorAll('[data-del-adm]').forEach(b =>
+      b.addEventListener('click', async () => {
+        const id = b.getAttribute('data-del-adm');
+        if (!confirm('Are you sure you want to delete this application? This action can be reversed by an admin.')) return;
+        try {
+          await SSC_API.delete('/admin/admissions/' + id);
+          msg('Application deleted');
+          await loadAdmissions();
+          await loadStats();
+        } catch (err) {
+          showModalAlert(err.message || 'Delete failed', 'Error');
+        }
       })
     );
-    makeTableSortableAndFilterable('tbl-admissions');
+  }
+
+  // ── Admission Detail Modal ──────────────────────────────
+  // Tab switching
+  document.querySelectorAll('.adm-tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const target = btn.getAttribute('data-adm-tab');
+      document.querySelectorAll('.adm-tab-btn').forEach(b => {
+        b.classList.toggle('active', b.getAttribute('data-adm-tab') === target);
+        b.style.color = b.classList.contains('active') ? 'var(--accent,#6366f1)' : 'var(--muted,#94a3b8)';
+        b.style.borderBottomColor = b.classList.contains('active') ? 'var(--accent,#6366f1)' : 'transparent';
+      });
+      document.querySelectorAll('.adm-tab-panel').forEach(p => {
+        p.style.display = p.getAttribute('data-adm-panel') === target ? 'block' : 'none';
+      });
+    });
+  });
+
+  async function openAdmissionDetail(id) {
+    try {
+      const d = await SSC_API.get('/admin/admissions/' + id);
+
+      // Title
+      document.getElementById('adm-detail-title').textContent = `Application ${d.applicationNumber || ''}`;
+      document.getElementById('adm-detail-id').value = d._id || d.id;
+
+      // Overview tab
+      document.getElementById('adm-d-appnum').textContent = d.applicationNumber || '—';
+      const statusColor = { approved: '#22c55e', rejected: '#ef4444', pending: '#f59e0b' }[String(d.status).toLowerCase()] || '#94a3b8';
+      document.getElementById('adm-d-status').innerHTML = `<span style="color:${statusColor};text-transform:capitalize;">${esc(d.status || 'pending')}</span>`;
+      document.getElementById('adm-d-name').textContent = d.fullName || '—';
+      document.getElementById('adm-d-email').textContent = d.email || '—';
+      document.getElementById('adm-d-phone').textContent = d.phone || '—';
+      document.getElementById('adm-d-dob').textContent = d.dob || '—';
+      document.getElementById('adm-d-gender').textContent = d.gender || '—';
+      document.getElementById('adm-d-category').textContent = d.category || '—';
+      document.getElementById('adm-d-address').textContent = d.address || '—';
+      document.getElementById('adm-d-course').textContent = d.courseApplied || '—';
+      document.getElementById('adm-d-board').textContent = d.board12 || '—';
+      document.getElementById('adm-d-marks').textContent = `${d.marks12 ?? '—'} / ${d.maxMarks12 ?? 600}`;
+      document.getElementById('adm-d-ssc').textContent = d.sscMarks ?? '—';
+      document.getElementById('adm-d-year').textContent = d.passingYear ?? '—';
+      document.getElementById('adm-d-prevcollege').textContent = d.previousCollege || '—';
+      document.getElementById('adm-d-parent').textContent = d.parentContact || '—';
+      const verifiedEl = document.getElementById('adm-d-verified');
+      verifiedEl.innerHTML = d.documentsVerified
+        ? '<span style="color:#22c55e;font-weight:600;">✓ Verified</span>'
+        : '<span style="color:#f59e0b;">✗ Not Verified</span>';
+
+      // Documents tab
+      const grid = document.getElementById('adm-documents-grid');
+      const noDocs = document.getElementById('adm-no-docs');
+      grid.innerHTML = '';
+      const docs = d.documentFiles || [];
+      if (docs.length === 0) {
+        noDocs.style.display = 'block';
+      } else {
+        noDocs.style.display = 'none';
+        const fieldLabels = { photo: 'Photo', signature: 'Signature', marksheet: 'Marksheet', leavingCertificate: 'Leaving Certificate' };
+        docs.forEach(doc => {
+          const card = document.createElement('div');
+          card.style.cssText = 'border:1px solid var(--border,#e2e8f0);border-radius:0.75rem;padding:0.75rem;text-align:center;';
+          const label = fieldLabels[doc.field] || doc.originalName || 'Document';
+          const isImage = (doc.mimeType || '').startsWith('image/');
+          const isPdf = (doc.mimeType || '') === 'application/pdf';
+          let preview = '';
+          if (isImage && doc.url) {
+            preview = `<img src="${doc.url}" alt="${esc(label)}" style="max-width:100%;max-height:180px;object-fit:contain;border-radius:0.5rem;cursor:pointer;margin-bottom:0.5rem;" onclick="document.getElementById('adm-fullscreen-img').src=this.src;document.getElementById('adm-fullscreen-viewer').style.display='flex';" />`;
+          } else if (isPdf && doc.url) {
+            preview = `<div style="height:180px;display:flex;align-items:center;justify-content:center;background:var(--surface,#f8fafc);border-radius:0.5rem;margin-bottom:0.5rem;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--muted,#94a3b8)" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            </div>`;
+          } else {
+            preview = `<div style="height:180px;display:flex;align-items:center;justify-content:center;background:var(--surface,#f8fafc);border-radius:0.5rem;margin-bottom:0.5rem;color:var(--muted);">No Preview</div>`;
+          }
+          card.innerHTML = `
+            ${preview}
+            <p style="margin:0;font-weight:600;font-size:0.85rem;">${esc(label)}</p>
+            ${doc.url ? `<a href="${doc.url}" target="_blank" class="small" style="color:var(--accent,#6366f1);">Open in new tab ↗</a>` : ''}
+          `;
+          grid.appendChild(card);
+        });
+      }
+
+      // Actions tab — verification label
+      const verifyLabel = document.getElementById('adm-d-verify-label');
+      verifyLabel.textContent = d.documentsVerified ? '✓ Verified' : '✗ Not Verified';
+      verifyLabel.style.color = d.documentsVerified ? '#22c55e' : '#f59e0b';
+
+      // Reset to overview tab
+      document.querySelectorAll('.adm-tab-btn').forEach(b => {
+        const isOverview = b.getAttribute('data-adm-tab') === 'overview';
+        b.classList.toggle('active', isOverview);
+        b.style.color = isOverview ? 'var(--accent,#6366f1)' : 'var(--muted,#94a3b8)';
+        b.style.borderBottomColor = isOverview ? 'var(--accent,#6366f1)' : 'transparent';
+      });
+      document.querySelectorAll('.adm-tab-panel').forEach(p => {
+        p.style.display = p.getAttribute('data-adm-panel') === 'overview' ? 'block' : 'none';
+      });
+
+      document.getElementById('modal-admission-detail').style.display = 'flex';
+    } catch (err) {
+      showModalAlert(err.message || 'Failed to load application details', 'Error');
+    }
+  }
+
+  // Wire detail modal action buttons (once, at init)
+  const admDToggleVerify = document.getElementById('adm-d-toggle-verify');
+  if (admDToggleVerify) {
+    admDToggleVerify.addEventListener('click', async () => {
+      const id = document.getElementById('adm-detail-id').value;
+      const cur = admCachedRows.find(x => (x._id || x.id) === id);
+      try {
+        await SSC_API.patch('/admin/admissions/' + id + '/verify', {
+          documentsVerified: !(cur?.documentsVerified),
+        });
+        msg('Verification status toggled');
+        await loadAdmissions();
+        await loadStats();
+        // Re-open the detail to refresh it
+        await openAdmissionDetail(id);
+      } catch (err) {
+        showModalAlert(err.message || 'Verification toggle failed', 'Error');
+      }
+    });
+  }
+
+  const admDApprove = document.getElementById('adm-d-approve');
+  if (admDApprove) {
+    admDApprove.addEventListener('click', () => {
+      const id = document.getElementById('adm-detail-id').value;
+      const cur = admCachedRows.find(x => (x._id || x.id) === id);
+      if (!cur) return;
+      document.getElementById('modal-admission-detail').style.display = 'none';
+      // Trigger the approve flow from the table (reuse existing approval modal)
+      const yearSuffix = new Date().getFullYear().toString().slice(-2);
+      const courseAbbr = (cur.courseApplied || 'GEN').toUpperCase().replace(/[^A-Z0-9]/g, '') || 'GEN';
+      const prefix = `SSC${yearSuffix}${courseAbbr}`;
+      let matchCount = 0;
+      searchIndex.students.forEach(student => {
+        const sp = student.studentProfile || {};
+        if (sp.studentId && String(sp.studentId).startsWith(prefix)) matchCount++;
+      });
+      const seqNum = String(matchCount + 1).padStart(3, '0');
+      const generatedStudentId = `${prefix}${seqNum}`;
+      const collegeEmail = `${generatedStudentId.toLowerCase()}@ssccjunnar.edu`;
+      const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$';
+      let pwd = '';
+      pwd += 'abcdefghijklmnopqrstuvwxyz'[Math.floor(Math.random() * 26)];
+      pwd += 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'[Math.floor(Math.random() * 26)];
+      pwd += '0123456789'[Math.floor(Math.random() * 10)];
+      pwd += '!@#$'[Math.floor(Math.random() * 4)];
+      for (let i = 0; i < 6; i++) pwd += chars[Math.floor(Math.random() * chars.length)];
+      const tempPassword = pwd.split('').sort(() => 0.5 - Math.random()).join('');
+
+      document.getElementById('decision-app-id').value = id;
+      document.getElementById('decision-student-name').value = cur.fullName || '';
+      document.getElementById('decision-student-course').value = cur.courseApplied || '';
+      document.getElementById('decision-student-id').value = generatedStudentId;
+      document.getElementById('decision-college-email').value = collegeEmail;
+      document.getElementById('decision-temp-password').value = tempPassword;
+      document.getElementById('decision-class-name').value = `FY-${courseAbbr}-A`;
+      document.getElementById('modal-admission-decision').style.display = 'flex';
+    });
+  }
+
+  const admDReject = document.getElementById('adm-d-reject');
+  if (admDReject) {
+    admDReject.addEventListener('click', () => {
+      const id = document.getElementById('adm-detail-id').value;
+      const cur = admCachedRows.find(x => (x._id || x.id) === id);
+      if (!cur) return;
+      document.getElementById('modal-admission-detail').style.display = 'none';
+      document.getElementById('reject-app-id').value = id;
+      document.getElementById('reject-student-name').value = cur.fullName || '';
+      document.getElementById('reject-notes').value = '';
+      document.getElementById('modal-admission-reject').style.display = 'flex';
+    });
+  }
+
+  const admDDelete = document.getElementById('adm-d-delete');
+  if (admDDelete) {
+    admDDelete.addEventListener('click', async () => {
+      const id = document.getElementById('adm-detail-id').value;
+      if (!confirm('Are you sure you want to delete this application?')) return;
+      try {
+        await SSC_API.delete('/admin/admissions/' + id);
+        document.getElementById('modal-admission-detail').style.display = 'none';
+        msg('Application deleted');
+        await loadAdmissions();
+        await loadStats();
+      } catch (err) {
+        showModalAlert(err.message || 'Delete failed', 'Error');
+      }
+    });
+  }
+
+  // ── CSV Export ──────────────────────────────────────────
+  const btnExport = document.getElementById('btn-adm-export');
+  if (btnExport) {
+    btnExport.addEventListener('click', async () => {
+      try {
+        btnExport.disabled = true;
+        btnExport.textContent = 'Exporting...';
+        // Fetch all (up to 1000) with current filters but no pagination limit
+        const filters = getAdmFilters();
+        const params = new URLSearchParams({ page: '1', limit: '1000' });
+        if (filters.q) params.set('q', filters.q);
+        if (filters.status && filters.status !== 'all') params.set('status', filters.status);
+        if (filters.course) params.set('course', filters.course);
+        const result = await SSC_API.get('/admin/admissions?' + params.toString());
+        const all = result.data || result;
+
+        const headers = ['Application#', 'Name', 'Email', 'Phone', 'Course', '12th Marks', 'Max Marks', 'SSC Marks', 'Board', 'Category', 'Status', 'Verified', 'Applied Date'];
+        const csvRows = [headers.join(',')];
+        all.forEach(a => {
+          csvRows.push([
+            a.applicationNumber,
+            `"${(a.fullName || '').replace(/"/g, '""')}"`,
+            a.email,
+            a.phone,
+            `"${(a.courseApplied || '').replace(/"/g, '""')}"`,
+            a.marks12,
+            a.maxMarks12,
+            a.sscMarks,
+            `"${(a.board12 || '').replace(/"/g, '""')}"`,
+            a.category,
+            a.status,
+            a.documentsVerified ? 'Yes' : 'No',
+            a.createdAt ? new Date(a.createdAt).toLocaleDateString('en-IN') : '',
+          ].join(','));
+        });
+        const blob = new Blob([csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `admissions_export_${new Date().toISOString().slice(0, 10)}.csv`;
+        link.click();
+        URL.revokeObjectURL(link.href);
+      } catch (err) {
+        showModalAlert(err.message || 'Export failed', 'Error');
+      } finally {
+        btnExport.disabled = false;
+        btnExport.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Export`;
+      }
+    });
   }
 
   // ── Notices Management ─────────────────────────────────

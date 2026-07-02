@@ -106,7 +106,9 @@
           <div class="form-grid two">
             <div>
               <label class="field-label" for="courseApplied">Course Applying For</label>
-              <input class="input" id="courseApplied" name="courseApplied" placeholder="e.g. B.C.A., B.Sc." required/>
+              <select class="input" id="courseApplied" name="courseApplied" required>
+                <option value="" disabled selected>Select a Course</option>
+              </select>
             </div>
             <div>
               <label class="field-label" for="board12">HSC Board</label>
@@ -368,10 +370,10 @@
       fd.append('previousCollege', document.getElementById('previousCollege').value.trim());
       fd.append('category', document.getElementById('category').value);
       
-      fd.append('documents', document.getElementById('photo').files[0]);
-      fd.append('documents', document.getElementById('signature').files[0]);
-      fd.append('documents', document.getElementById('marksheet').files[0]);
-      fd.append('documents', document.getElementById('leavingCertificate').files[0]);
+      fd.append('photo', document.getElementById('photo').files[0]);
+      fd.append('signature', document.getElementById('signature').files[0]);
+      fd.append('marksheet', document.getElementById('marksheet').files[0]);
+      fd.append('leavingCertificate', document.getElementById('leavingCertificate').files[0]);
 
       try {
         const res = await fetch('/api/public/admissions', { method: 'POST', body: fd });
@@ -410,6 +412,24 @@
         msg.className = 'small mt-3 alert error';
       }
     });
+
+    async function loadCoursesDropdown() {
+      try {
+        const res = await fetch('/api/public/courses');
+        const courses = await res.json();
+        const select = document.getElementById('courseApplied');
+        courses.forEach(c => {
+          const opt = document.createElement('option');
+          opt.value = c.name;
+          opt.textContent = `${c.name} (${c.level} - ${c.duration || 'N/A'})`;
+          select.appendChild(opt);
+        });
+      } catch (err) {
+        console.error('Failed to load courses:', err);
+      }
+    }
+
+    loadCoursesDropdown();
   </script>
 </body>
 </html>

@@ -128,7 +128,12 @@ export function publicRouter() {
     res.status(201).json({ ok: true, id: fb.id, _id: fb.id });
   });
 
-  r.post('/admissions', publicFormLimiter, uploadAdmissionDocs.array('documents', 10), async (req, res) => {
+  r.post('/admissions', publicFormLimiter, uploadAdmissionDocs.fields([
+    { name: 'photo', maxCount: 1 },
+    { name: 'signature', maxCount: 1 },
+    { name: 'marksheet', maxCount: 1 },
+    { name: 'leavingCertificate', maxCount: 1 }
+  ]), async (req, res) => {
     const body = req.body || {};
     const fullName = body.fullName?.trim();
     const email = body.email?.trim()?.toLowerCase();
@@ -158,18 +163,35 @@ export function publicRouter() {
       return res.status(400).json({ error: 'Enter a valid phone number (10-digit mobile or standard landline).' });
     }
 
+    // Compute academic year (June–May cycle: applications after June belong to next year)
+    const now = new Date();
+    const academicYear = now.getMonth() >= 5 ? now.getFullYear() : now.getFullYear() - 1;
+
+    // Duplicate prevention: same email + courseApplied + academicYear
+    const existing = await prisma.admissionApplication.findFirst({
+      where: { email, courseApplied, academicYear, isDeleted: false },
+    });
+    if (existing) {
+      return res.status(409).json({
+        error: `You have already applied for ${courseApplied} in the ${academicYear}-${academicYear + 1} academic year.`,
+      });
+    }
+
     const applicationNumber = await nextApplicationNumber();
     const documentFiles = [];
-    if (req.files && Array.isArray(req.files)) {
+    if (req.files) {
       const fieldNames = ['photo', 'signature', 'marksheet', 'leavingCertificate'];
-      req.files.forEach((f, idx) => {
-        const fieldName = fieldNames[idx] || `document_${idx}`;
-        documentFiles.push({
-          field: fieldName,
-          originalName: f.originalname,
-          storedName: f.filename,
-          mimeType: f.mimetype,
-        });
+      fieldNames.forEach((fieldName) => {
+        const files = req.files[fieldName];
+        if (files && files.length > 0) {
+          const f = files[0];
+          documentFiles.push({
+            field: fieldName,
+            originalName: f.originalname,
+            storedName: f.filename,
+            mimeType: f.mimetype,
+          });
+        }
       });
     }
 
@@ -191,6 +213,7 @@ export function publicRouter() {
         previousCollege,
         passingYear,
         category,
+        academicYear,
         documentFiles,
       },
     });
