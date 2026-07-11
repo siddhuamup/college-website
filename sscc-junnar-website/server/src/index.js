@@ -61,7 +61,18 @@ const app = express();
 
 // Helmet — secure HTTP headers (X-Frame-Options, CSP, etc.)
 app.use(helmet({
-  contentSecurityPolicy: false, // Allow inline scripts for vanilla JS frontend
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      imgSrc: ["'self'", "data:", "/uploads"],
+      connectSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      upgradeInsecureRequests: [],
+    },
+  },
   crossOriginEmbedderPolicy: false,
 }));
 
@@ -71,6 +82,33 @@ app.use(cors({
   origin: CORS_ORIGIN.split(',').map(s => s.trim()),
   credentials: true,
 }));
+
+// Global Origin/Referer check to protect mutating methods from CSRF
+app.use((req, res, next) => {
+  const mutatingMethods = ['POST', 'PATCH', 'DELETE', 'PUT'];
+  if (mutatingMethods.includes(req.method)) {
+    const origin = req.headers.origin || '';
+    const referer = req.headers.referer || '';
+    const expected = process.env.CORS_ORIGIN || `http://localhost:${PORT}`;
+    const allowedOrigins = expected.split(',').map(s => s.trim().toLowerCase());
+    
+    let isAllowed = false;
+    if (origin) {
+      isAllowed = allowedOrigins.some(ao => origin.toLowerCase().startsWith(ao));
+    } else if (referer) {
+      isAllowed = allowedOrigins.some(ao => referer.toLowerCase().startsWith(ao));
+    } else {
+      // Programmatic requests (not from browser sandbox) are safe from browser-based CSRF
+      isAllowed = true;
+    }
+    
+    if (!isAllowed) {
+      console.warn(`[CSRF-BLOCKED] Request from origin "${origin}" or referer "${referer}" blocked.`);
+      return res.status(403).json({ error: 'CSRF validation failed. Request origin not allowed.' });
+    }
+  }
+  next();
+});
 
 app.use(express.json({ limit: '2mb' }));
 

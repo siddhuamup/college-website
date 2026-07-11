@@ -5,7 +5,7 @@ import { prisma, withMongoId } from '../db/client.js';
 import { createAuthMiddleware, requireRole } from '../middleware/auth.js';
 import { hashPassword } from '../utils/auth.js';
 import { sendEmail } from '../utils/email.js';
-import { uploadNoticePdf, uploadGalleryImage, uploadAvatarImage, uploadsPath } from '../multer/configure.js';
+import { uploadNoticePdf, uploadGalleryImage, uploadAvatarImage, uploadsPath, verifyMagicBytes } from '../multer/configure.js';
 import { Role } from '@prisma/client';
 import { nextStudentId, nextRollNumber } from '../lib/studentIdGenerator.js';
 
@@ -21,18 +21,57 @@ function noticePdfUrl(n) {
   return stored ? `/uploads/notices/${stored}` : null;
 }
 
-function logAdminAction(userId, action, target, details = {}) {
+async function logAdminAction(reqOrUserId, action, target, details = {}, tx = null) {
+  let userId = 'SYSTEM';
+  let userRole = '';
+  let ipAddress = 'unknown';
+  let userAgent = 'unknown';
+
+  if (reqOrUserId && typeof reqOrUserId === 'object' && 'headers' in reqOrUserId) {
+    const req = reqOrUserId;
+    userId = req.user?.id || 'SYSTEM';
+    userRole = req.user?.role || '';
+    ipAddress = req.ip || req.connection?.remoteAddress || 'unknown';
+    userAgent = req.headers['user-agent'] || 'unknown';
+  } else {
+    userId = reqOrUserId || 'SYSTEM';
+  }
+
+  const detailsStr = typeof details === 'string' ? details : JSON.stringify(details);
   const logDir = path.join(process.cwd(), 'logs');
   if (!fs.existsSync(logDir)) {
-    fs.mkdirSync(logDir, { recursive: true });
+    try {
+      fs.mkdirSync(logDir, { recursive: true });
+    } catch {}
   }
   const logPath = path.join(logDir, 'audit.log');
   const timestamp = new Date().toISOString();
-  const logMsg = `[${timestamp}] User: ${userId || 'SYSTEM'} | Action: ${action} | Target: ${target} | Details: ${JSON.stringify(details)}\n`;
-  try {
-    fs.appendFileSync(logPath, logMsg);
-  } catch (err) {
-    console.error('Failed to write audit log:', err);
+  const logMsg = `[${timestamp}] User: ${userId} (Role: ${userRole}) | IP: ${ipAddress} | UA: ${userAgent} | Action: ${action} | Target: ${target} | Details: ${detailsStr}\n`;
+  
+  // Asynchronous non-blocking file append
+  fs.promises.appendFile(logPath, logMsg).catch((err) => {
+    console.error('Failed to write audit log file:', err);
+  });
+
+  const prismaClient = tx || prisma;
+  const promise = prismaClient.auditLog.create({
+    data: {
+      userId,
+      userRole,
+      action,
+      target,
+      details: detailsStr,
+      ipAddress,
+      userAgent,
+    }
+  });
+
+  if (tx) {
+    return promise;
+  } else {
+    promise.catch((err) => {
+      console.error('Failed to write audit log to database:', err);
+    });
   }
 }
 
@@ -43,19 +82,48 @@ export function adminRouter({ jwtSecret }) {
 
   r.get('/dashboard/stats', async (_req, res) => {
     const [students, teachers, totalAdmissions, pendingAdmissions, noticesCount, feedbackCount] = await Promise.all([
-      prisma.user.count({ where: { role: Role.student, isActive: true } }),
-      prisma.user.count({ where: { role: Role.teacher, isActive: true } }),
+      prisma.user.count({ where: { role: Role.student, isActive: true, isDeleted: false } }),
+      prisma.user.count({ where: { role: Role.teacher, isActive: true, isDeleted: false } }),
       prisma.admissionApplication.count({ where: { isDeleted: false } }),
       prisma.admissionApplication.count({ where: { status: 'pending', isDeleted: false } }),
-      prisma.notice.count({ where: { isPublished: true } }),
+      prisma.notice.count({ where: { isPublished: true, isDeleted: false } }),
       prisma.feedback.count(),
     ]);
     res.json({ students, teachers, totalAdmissions, pendingAdmissions, noticesCount, feedbackCount });
   });
 
-  r.get('/students', async (_req, res) => {
+  r.get('/students', async (req, res) => {
+    const page = parseInt(req.query.page);
+    const limit = parseInt(req.query.limit);
+    const q = req.query.q ? String(req.query.q).trim() : '';
+
+    const where = { role: Role.student, isDeleted: false };
+    if (q) {
+      where.OR = [
+        { name: { contains: q } },
+        { email: { contains: q } },
+      ];
+    }
+
+    if (!isNaN(page) && !isNaN(limit)) {
+      const skip = (page - 1) * limit;
+      const [list, total] = await Promise.all([
+        prisma.user.findMany({
+          where,
+          orderBy: { name: 'asc' },
+          skip,
+          take: limit,
+        }),
+        prisma.user.count({ where }),
+      ]);
+      return res.json({
+        data: list.map(stripHash),
+        pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+      });
+    }
+
     const list = await prisma.user.findMany({
-      where: { role: Role.student },
+      where,
       orderBy: { name: 'asc' },
     });
     res.json(list.map(stripHash));
@@ -130,10 +198,29 @@ export function adminRouter({ jwtSecret }) {
   });
 
   r.delete('/students/:id', async (req, res) => {
-    const r0 = await prisma.user.deleteMany({ where: { id: req.params.id, role: Role.student } });
-    if (!r0.count) return res.status(404).json({ error: 'Not found' });
-    logAdminAction(req.user.id, 'DELETE_STUDENT', req.params.id);
-    res.json({ ok: true });
+    try {
+      const student = await prisma.user.findFirst({
+        where: { id: req.params.id, role: Role.student, isDeleted: false }
+      });
+      if (!student) return res.status(404).json({ error: 'Not found' });
+
+      await prisma.$transaction(async (tx) => {
+        await tx.user.update({
+          where: { id: student.id },
+          data: {
+            isDeleted: true,
+            isActive: false,
+            deletedAt: new Date(),
+            deletedBy: req.user.id
+          }
+        });
+        await logAdminAction(req, 'DELETE_STUDENT', student.id, { email: student.email, name: student.name, softDelete: true }, tx);
+      });
+
+      res.json({ ok: true });
+    } catch (err) {
+      res.status(500).json({ error: 'Failed to delete student: ' + err.message });
+    }
   });
 
   r.get('/students/:id/history', async (req, res) => {
@@ -225,9 +312,38 @@ export function adminRouter({ jwtSecret }) {
     res.json({ ok: true, message: 'New credentials generated and sent' });
   });
 
-  r.get('/teachers', async (_req, res) => {
+  r.get('/teachers', async (req, res) => {
+    const page = parseInt(req.query.page);
+    const limit = parseInt(req.query.limit);
+    const q = req.query.q ? String(req.query.q).trim() : '';
+
+    const where = { role: Role.teacher, isDeleted: false };
+    if (q) {
+      where.OR = [
+        { name: { contains: q } },
+        { email: { contains: q } },
+      ];
+    }
+
+    if (!isNaN(page) && !isNaN(limit)) {
+      const skip = (page - 1) * limit;
+      const [list, total] = await Promise.all([
+        prisma.user.findMany({
+          where,
+          orderBy: { name: 'asc' },
+          skip,
+          take: limit,
+        }),
+        prisma.user.count({ where }),
+      ]);
+      return res.json({
+        data: list.map(stripHash),
+        pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+      });
+    }
+
     const list = await prisma.user.findMany({
-      where: { role: Role.teacher },
+      where,
       orderBy: { name: 'asc' },
     });
     res.json(list.map(stripHash));
@@ -273,7 +389,7 @@ export function adminRouter({ jwtSecret }) {
     next();
   }
 
-  r.post('/teachers', optionalTeacherAvatar, async (req, res) => {
+  r.post('/teachers', optionalTeacherAvatar, verifyMagicBytes, async (req, res) => {
     let { email, password, name, phone, employeeId, department, designation, qualifications, assignments, experience, specialization, bio } = req.body || {};
     if (!email || !password || !name) return res.status(400).json({ error: 'email, password, name required' });
     if (typeof assignments === 'string') {
@@ -310,7 +426,7 @@ export function adminRouter({ jwtSecret }) {
     res.status(201).json({ user: stripHash(user) });
   });
 
-  r.patch('/teachers/:id', optionalTeacherAvatar, async (req, res) => {
+  r.patch('/teachers/:id', optionalTeacherAvatar, verifyMagicBytes, async (req, res) => {
     const u = await prisma.user.findFirst({ where: { id: req.params.id, role: Role.teacher } });
     if (!u) return res.status(404).json({ error: 'Not found' });
     let { name, phone, isActive, teacherProfile, password, bio, email, removeAvatar } = req.body || {};
@@ -339,14 +455,18 @@ export function adminRouter({ jwtSecret }) {
       if (u.avatarUrl) {
         const oldName = path.basename(u.avatarUrl);
         const oldPath = path.join(uploadsPath(), 'avatars', oldName);
-        if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+        fs.promises.unlink(oldPath).catch((err) => {
+          if (err.code !== 'ENOENT') console.error('Failed to remove old avatar:', err);
+        });
       }
       data.avatarUrl = '';
     } else if (req.file) {
       if (u.avatarUrl) {
         const oldName = path.basename(u.avatarUrl);
         const oldPath = path.join(uploadsPath(), 'avatars', oldName);
-        if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+        fs.promises.unlink(oldPath).catch((err) => {
+          if (err.code !== 'ENOENT') console.error('Failed to remove old avatar:', err);
+        });
       }
       data.avatarUrl = `/uploads/avatars/${req.file.filename}`;
     }
@@ -363,10 +483,29 @@ export function adminRouter({ jwtSecret }) {
   });
 
   r.delete('/teachers/:id', async (req, res) => {
-    const r0 = await prisma.user.deleteMany({ where: { id: req.params.id, role: Role.teacher } });
-    if (!r0.count) return res.status(404).json({ error: 'Not found' });
-    logAdminAction(req.user.id, 'DELETE_TEACHER', req.params.id);
-    res.json({ ok: true });
+    try {
+      const teacher = await prisma.user.findFirst({
+        where: { id: req.params.id, role: Role.teacher, isDeleted: false }
+      });
+      if (!teacher) return res.status(404).json({ error: 'Not found' });
+
+      await prisma.$transaction(async (tx) => {
+        await tx.user.update({
+          where: { id: teacher.id },
+          data: {
+            isDeleted: true,
+            isActive: false,
+            deletedAt: new Date(),
+            deletedBy: req.user.id
+          }
+        });
+        await logAdminAction(req, 'DELETE_TEACHER', teacher.id, { email: teacher.email, name: teacher.name, softDelete: true }, tx);
+      });
+
+      res.json({ ok: true });
+    } catch (err) {
+      res.status(500).json({ error: 'Failed to delete teacher: ' + err.message });
+    }
   });
 
   r.get('/admissions', async (req, res) => {
@@ -422,22 +561,72 @@ export function adminRouter({ jwtSecret }) {
   });
 
   // Soft-delete admission application
+  // RETENTION POLICY: Uploaded files are retained on disk for a 30-day audit period
+  // to allow restoration of soft-deleted records. After 30 days, files are eligible
+  // for permanent background deletion. Approved applications are undeletable.
   r.delete('/admissions/:id', async (req, res) => {
-    const doc = await prisma.admissionApplication.findUnique({ where: { id: req.params.id } });
-    if (!doc || doc.isDeleted) return res.status(404).json({ error: 'Not found' });
-    if (doc.status === 'approved' && doc.createdStudentUserId) {
-      return res.status(400).json({ error: 'Cannot delete an approved application with a linked student account. Revoke the account first.' });
+    try {
+      const doc = await prisma.admissionApplication.findUnique({ where: { id: req.params.id } });
+      if (!doc || doc.isDeleted) return res.status(404).json({ error: 'Not found' });
+      if (doc.status === 'approved') {
+        return res.status(400).json({ error: 'Cannot delete an approved application.' });
+      }
+
+      await prisma.$transaction(async (tx) => {
+        await tx.admissionApplication.update({
+          where: { id: doc.id },
+          data: {
+            isDeleted: true,
+            deletedAt: new Date(),
+            deletedBy: req.user.id,
+          },
+        });
+        await logAdminAction(req, 'SOFT_DELETE_ADMISSION', doc.id, { email: doc.email }, tx);
+      });
+
+      res.json({ ok: true });
+    } catch (err) {
+      res.status(500).json({ error: 'Failed to delete admission application: ' + err.message });
     }
-    await prisma.admissionApplication.update({
-      where: { id: doc.id },
-      data: {
-        isDeleted: true,
-        deletedAt: new Date(),
-        deletedBy: req.user.id,
-      },
-    });
-    logAdminAction(req.user.id, 'SOFT_DELETE_ADMISSION', doc.id);
-    res.json({ ok: true });
+  });
+
+  // Restore a soft-deleted application
+  r.post('/admissions/:id/restore', async (req, res) => {
+    try {
+      const doc = await prisma.admissionApplication.findUnique({ where: { id: req.params.id } });
+      if (!doc || !doc.isDeleted) return res.status(404).json({ error: 'Not found' });
+
+      // Validate that restoring does not violate composite unique constraint (email + courseApplied + academicYear)
+      const duplicate = await prisma.admissionApplication.findFirst({
+        where: {
+          email: doc.email,
+          courseApplied: doc.courseApplied,
+          academicYear: doc.academicYear,
+          isDeleted: false,
+        },
+      });
+      if (duplicate) {
+        return res.status(409).json({
+          error: `Cannot restore. An active application for ${doc.email} under course ${doc.courseApplied} for academic year ${doc.academicYear} already exists.`,
+        });
+      }
+
+      await prisma.$transaction(async (tx) => {
+        await tx.admissionApplication.update({
+          where: { id: doc.id },
+          data: {
+            isDeleted: false,
+            deletedAt: null,
+            deletedBy: '',
+          },
+        });
+        await logAdminAction(req, 'RESTORE_ADMISSION', doc.id, { email: doc.email }, tx);
+      });
+
+      res.json({ ok: true });
+    } catch (err) {
+      res.status(500).json({ error: 'Failed to restore admission application: ' + err.message });
+    }
   });
 
   r.patch('/admissions/:id/verify', async (req, res) => {
@@ -613,11 +802,14 @@ export function adminRouter({ jwtSecret }) {
   });
 
   r.get('/notices', async (_req, res) => {
-    const items = await prisma.notice.findMany({ orderBy: { createdAt: 'desc' } });
+    const items = await prisma.notice.findMany({
+      where: { isDeleted: false },
+      orderBy: { createdAt: 'desc' }
+    });
     res.json(items.map((n) => withMongoId({ ...n, pdfUrl: noticePdfUrl(n) })));
   });
 
-  r.post('/notices', uploadNoticePdf.single('pdf'), async (req, res) => {
+  r.post('/notices', uploadNoticePdf.single('pdf'), verifyMagicBytes, async (req, res) => {
     const { title, body, isPublished, priority, audience, publishDate, expiryDate } = req.body || {};
     if (!title) return res.status(400).json({ error: 'title required' });
     const pdfFile = req.file
@@ -647,7 +839,7 @@ export function adminRouter({ jwtSecret }) {
     next();
   }
 
-  r.patch('/notices/:id', optionalNoticePdf, async (req, res) => {
+  r.patch('/notices/:id', optionalNoticePdf, verifyMagicBytes, async (req, res) => {
     const n = await prisma.notice.findUnique({ where: { id: req.params.id } });
     if (!n) return res.status(404).json({ error: 'Not found' });
     const data = {};
@@ -675,26 +867,18 @@ export function adminRouter({ jwtSecret }) {
         const oldName = old && typeof old === 'object' && old !== null && 'storedName' in old ? old.storedName : null;
         if (oldName) {
           const oldPath = path.join(uploadsPath(), 'notices', oldName);
-          if (fs.existsSync(oldPath)) {
-            try {
-              fs.unlinkSync(oldPath);
-            } catch (err) {
-              console.error('Failed to unlink old notice PDF:', err);
-            }
-          }
+          fs.promises.unlink(oldPath).catch((err) => {
+            if (err.code !== 'ENOENT') console.error('Failed to unlink old notice PDF:', err);
+          });
         }
       }
     } catch (dbErr) {
       // Rollback: if a new file was uploaded, clean it up from disk to avoid orphan files
       if (req.file) {
         const newPath = path.join(uploadsPath(), 'notices', req.file.filename);
-        if (fs.existsSync(newPath)) {
-          try {
-            fs.unlinkSync(newPath);
-          } catch (err) {
-            console.error('Failed to clean up newly uploaded notice PDF on error:', err);
-          }
-        }
+        fs.promises.unlink(newPath).catch((err) => {
+          if (err.code !== 'ENOENT') console.error('Failed to clean up newly uploaded notice PDF on error:', err);
+        });
       }
       return res.status(500).json({ error: 'Failed to update notice: ' + dbErr.message });
     }
@@ -703,17 +887,29 @@ export function adminRouter({ jwtSecret }) {
   });
 
   r.delete('/notices/:id', async (req, res) => {
-    const n = await prisma.notice.findUnique({ where: { id: req.params.id } });
-    if (!n) return res.status(404).json({ error: 'Not found' });
-    const p = n.pdfFile;
-    const stored = p && typeof p === 'object' && p !== null && 'storedName' in p ? p.storedName : null;
-    if (stored) {
-      const fp = path.join(uploadsPath(), 'notices', stored);
-      if (fs.existsSync(fp)) fs.unlinkSync(fp);
+    try {
+      const n = await prisma.notice.findFirst({
+        where: { id: req.params.id, isDeleted: false }
+      });
+      if (!n) return res.status(404).json({ error: 'Not found' });
+
+      await prisma.$transaction(async (tx) => {
+        await tx.notice.update({
+          where: { id: n.id },
+          data: {
+            isDeleted: true,
+            isPublished: false,
+            deletedAt: new Date(),
+            deletedBy: req.user.id
+          }
+        });
+        await logAdminAction(req, 'DELETE_NOTICE', n.id, { title: n.title, softDelete: true }, tx);
+      });
+
+      res.json({ ok: true });
+    } catch (err) {
+      res.status(500).json({ error: 'Failed to delete notice: ' + err.message });
     }
-    await prisma.notice.delete({ where: { id: n.id } });
-    logAdminAction(req.user.id, 'DELETE_NOTICE', n.id, { title: n.title });
-    res.json({ ok: true });
   });
 
   r.get('/departments', async (_req, res) => {
@@ -803,6 +999,7 @@ export function adminRouter({ jwtSecret }) {
 
   r.get('/courses', async (_req, res) => {
     const courses = await prisma.course.findMany({
+      where: { isDeleted: false },
       include: { department: true },
       orderBy: [{ level: 'asc' }, { name: 'asc' }],
     });
@@ -881,11 +1078,26 @@ export function adminRouter({ jwtSecret }) {
 
   r.delete('/courses/:id', async (req, res) => {
     try {
-      await prisma.course.delete({ where: { id: req.params.id } });
-      logAdminAction(req.user.id, 'DELETE_COURSE', req.params.id);
+      const course = await prisma.course.findFirst({
+        where: { id: req.params.id, isDeleted: false }
+      });
+      if (!course) return res.status(404).json({ error: 'Not found' });
+
+      await prisma.$transaction(async (tx) => {
+        await tx.course.update({
+          where: { id: course.id },
+          data: {
+            isDeleted: true,
+            deletedAt: new Date(),
+            deletedBy: req.user.id
+          }
+        });
+        await logAdminAction(req, 'DELETE_COURSE', course.id, { name: course.name, softDelete: true }, tx);
+      });
+
       res.json({ ok: true });
-    } catch {
-      res.status(404).json({ error: 'Not found' });
+    } catch (err) {
+      res.status(500).json({ error: 'Failed to delete course: ' + err.message });
     }
   });
 
@@ -903,7 +1115,7 @@ export function adminRouter({ jwtSecret }) {
     );
   });
 
-  r.post('/gallery', uploadGalleryImage.single('image'), async (req, res) => {
+  r.post('/gallery', uploadGalleryImage.single('image'), verifyMagicBytes, async (req, res) => {
     if (!req.file) return res.status(400).json({ error: 'image required' });
     const g = await prisma.galleryItem.create({
       data: {
@@ -927,7 +1139,9 @@ export function adminRouter({ jwtSecret }) {
     const stored = img && typeof img === 'object' && img !== null && 'storedName' in img ? img.storedName : null;
     if (stored) {
       const p = path.join(uploadsPath(), 'gallery', stored);
-      if (fs.existsSync(p)) fs.unlinkSync(p);
+      fs.promises.unlink(p).catch((err) => {
+        if (err.code !== 'ENOENT') console.error('Failed to delete gallery image:', err);
+      });
     }
     await prisma.galleryItem.delete({ where: { id: g.id } });
     res.json({ ok: true });
@@ -992,7 +1206,9 @@ export function adminRouter({ jwtSecret }) {
     const stored = f && typeof f === 'object' && f !== null && 'storedName' in f ? f.storedName : null;
     if (stored) {
       const p = path.join(uploadsPath(), 'materials', stored);
-      if (fs.existsSync(p)) fs.unlinkSync(p);
+      fs.promises.unlink(p).catch((err) => {
+        if (err.code !== 'ENOENT') console.error('Failed to delete study material:', err);
+      });
     }
     await prisma.studyMaterial.delete({ where: { id: m.id } });
     res.json({ ok: true });
@@ -1012,7 +1228,18 @@ export function adminRouter({ jwtSecret }) {
       select: { id: true, name: true, email: true, studentProfile: true },
     });
 
-    const logs = await prisma.attendance.findMany();
+    const studentMap = new Map();
+    students.forEach(s => {
+      const sp = s.studentProfile || {};
+      studentMap.set(s.id, {
+        id: s.id,
+        name: s.name,
+        email: s.email,
+        rollNumber: sp.rollNumber || '',
+        className: sp.className || 'Unassigned',
+        studentIdStr: sp.studentId || s.id,
+      });
+    });
 
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
@@ -1033,122 +1260,103 @@ export function adminRouter({ jwtSecret }) {
       },
     });
 
-    // Compute student logs breakdown
-    const lowAttendanceList = [];
-    const riskList = [];
-    const fullReportList = [];
-
-    students.forEach((student) => {
-      const studentLogs = logs.filter(l => l.studentId === student.id);
-      const total = studentLogs.length;
-      const present = studentLogs.filter(l => l.status === 'present').length;
-      const absent = total - present;
-      const pct = total ? Math.round((present / total) * 100) : 100;
-
-      const sp = student.studentProfile || {};
-      const studentIdStr = sp.studentId || student.id;
-      const rollNumber = sp.rollNumber || '';
-      const className = sp.className || 'Unassigned';
-
-      if (total > 0) {
-        if (pct < threshold) {
-          lowAttendanceList.push({
-            id: student.id,
-            name: student.name,
-            email: student.email,
-            rollNumber,
-            className,
-            percentage: pct,
-            attended: present,
-            totalClasses: total,
-          });
-        } else if (pct < threshold + 5) {
-          riskList.push({
-            id: student.id,
-            name: student.name,
-            email: student.email,
-            rollNumber,
-            className,
-            percentage: pct,
-            attended: present,
-            totalClasses: total,
-          });
-        }
-      }
-
-      // Group by subject for full report
-      const subjectsGroup = {};
-      studentLogs.forEach(log => {
-        const sub = log.subject || 'Other';
-        if (!subjectsGroup[sub]) {
-          subjectsGroup[sub] = { present: 0, absent: 0, total: 0 };
-        }
-        subjectsGroup[sub].total += 1;
-        if (log.status === 'present') {
-          subjectsGroup[sub].present += 1;
-        } else {
-          subjectsGroup[sub].absent += 1;
-        }
-      });
-
-      Object.entries(subjectsGroup).forEach(([subject, counts]) => {
-        const subPct = counts.total ? Math.round((counts.present / counts.total) * 100) : 100;
-        fullReportList.push({
-          studentId: studentIdStr,
-          rollNumber,
-          name: student.name,
-          className,
-          subject,
-          percentage: subPct,
-          present: counts.present,
-          absent: counts.absent,
-          total: counts.total
-        });
-      });
+    // 1. Student-wise stats database group query
+    const rawStudentStats = await prisma.attendance.groupBy({
+      by: ['studentId', 'status'],
+      _count: { id: true },
     });
 
-    // Compute class-wise breakdown & trends (This Month vs Last Month)
-    const now = new Date();
-    const startOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const studentTotals = {};
+    rawStudentStats.forEach(row => {
+      const sId = row.studentId;
+      if (!studentTotals[sId]) {
+        studentTotals[sId] = { present: 0, total: 0 };
+      }
+      const count = row._count.id;
+      studentTotals[sId].total += count;
+      if (row.status === 'present') {
+        studentTotals[sId].present += count;
+      }
+    });
 
+    const lowAttendanceList = [];
+    const riskList = [];
+
+    students.forEach(student => {
+      const stats = studentTotals[student.id];
+      if (stats && stats.total > 0) {
+        const pct = Math.round((stats.present / stats.total) * 100);
+        const sp = studentMap.get(student.id);
+        const studentObj = {
+          id: student.id,
+          name: student.name,
+          email: student.email,
+          rollNumber: sp.rollNumber,
+          className: sp.className,
+          percentage: pct,
+          attended: stats.present,
+          totalClasses: stats.total,
+        };
+        if (pct < threshold) {
+          lowAttendanceList.push(studentObj);
+        } else if (pct < threshold + 5) {
+          riskList.push(studentObj);
+        }
+      }
+    });
+
+    // 2. Student-subject stats grouping for fullReportList
+    const rawStudentSubjectStats = await prisma.attendance.groupBy({
+      by: ['studentId', 'subject', 'status'],
+      _count: { id: true },
+    });
+
+    const studentSubMap = {};
+    rawStudentSubjectStats.forEach(row => {
+      const key = `${row.studentId}-${row.subject}`;
+      if (!studentSubMap[key]) {
+        studentSubMap[key] = { present: 0, total: 0 };
+      }
+      const count = row._count.id;
+      studentSubMap[key].total += count;
+      if (row.status === 'present') {
+        studentSubMap[key].present += count;
+      }
+    });
+
+    const fullReportList = [];
+    Object.entries(studentSubMap).forEach(([key, stats]) => {
+      const [studentId, subject] = key.split('-');
+      const student = studentMap.get(studentId);
+      if (student) {
+        const pct = Math.round((stats.present / stats.total) * 100);
+        fullReportList.push({
+          studentId: student.studentIdStr,
+          rollNumber: student.rollNumber,
+          name: student.name,
+          className: student.className,
+          subject,
+          percentage: pct,
+          present: stats.present,
+          absent: stats.total - stats.present,
+          total: stats.total,
+        });
+      }
+    });
+
+    // 3. Class stats summary
     const classStats = {};
-    const classTrendStats = {};
-
-    logs.forEach((log) => {
-      const student = students.find((s) => s.id === log.studentId);
+    rawStudentStats.forEach(row => {
+      const student = studentMap.get(row.studentId);
       if (!student) return;
-      const cls = student.studentProfile?.className || 'Unassigned';
-      
-      // General summary
+      const cls = student.className;
       if (!classStats[cls]) {
         classStats[cls] = { present: 0, total: 0 };
       }
-      classStats[cls].total += 1;
-      if (log.status === 'present') {
-        classStats[cls].present += 1;
-      }
-
-      // Trend summary
-      const logDate = new Date(log.date);
-      let period = null;
-      if (logDate >= startOfThisMonth) {
-        period = 'thisMonth';
-      } else if (logDate >= startOfLastMonth && logDate < startOfThisMonth) {
-        period = 'lastMonth';
-      }
-
-      if (period) {
-        if (!classTrendStats[cls]) {
-          classTrendStats[cls] = {
-            thisMonth: { present: 0, total: 0 },
-            lastMonth: { present: 0, total: 0 }
-          };
-        }
-        classTrendStats[cls][period].total += 1;
-        if (log.status === 'present') {
-          classTrendStats[cls][period].present += 1;
-        }
+      const count = row._count.id;
+      classStats[cls].total += count;
+      if (row.status === 'present') {
+        classStats[cls].present += count;
       }
     });
 
@@ -1157,6 +1365,60 @@ export function adminRouter({ jwtSecret }) {
       percentage: stat.total ? Math.round((stat.present / stat.total) * 100) : 0,
       totalLogs: stat.total,
     })).sort((a, b) => a.className.localeCompare(b.className));
+
+    // Trends time definitions
+    const now = new Date();
+    const startOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+
+    // Class Trends database query
+    const rawThisMonthClassStats = await prisma.attendance.groupBy({
+      by: ['studentId', 'status'],
+      where: { date: { gte: startOfThisMonth } },
+      _count: { id: true },
+    });
+
+    const rawLastMonthClassStats = await prisma.attendance.groupBy({
+      by: ['studentId', 'status'],
+      where: { date: { gte: startOfLastMonth, lt: startOfThisMonth } },
+      _count: { id: true },
+    });
+
+    const classTrendStats = {};
+
+    rawThisMonthClassStats.forEach(row => {
+      const student = studentMap.get(row.studentId);
+      if (!student) return;
+      const cls = student.className;
+      if (!classTrendStats[cls]) {
+        classTrendStats[cls] = {
+          thisMonth: { present: 0, total: 0 },
+          lastMonth: { present: 0, total: 0 }
+        };
+      }
+      const count = row._count.id;
+      classTrendStats[cls].thisMonth.total += count;
+      if (row.status === 'present') {
+        classTrendStats[cls].thisMonth.present += count;
+      }
+    });
+
+    rawLastMonthClassStats.forEach(row => {
+      const student = studentMap.get(row.studentId);
+      if (!student) return;
+      const cls = student.className;
+      if (!classTrendStats[cls]) {
+        classTrendStats[cls] = {
+          thisMonth: { present: 0, total: 0 },
+          lastMonth: { present: 0, total: 0 }
+        };
+      }
+      const count = row._count.id;
+      classTrendStats[cls].lastMonth.total += count;
+      if (row.status === 'present') {
+        classTrendStats[cls].lastMonth.present += count;
+      }
+    });
 
     const classTrends = Object.entries(classTrendStats).map(([className, stats]) => {
       const thisPct = stats.thisMonth.total ? Math.round((stats.thisMonth.present / stats.thisMonth.total) * 100) : null;
@@ -1170,40 +1432,22 @@ export function adminRouter({ jwtSecret }) {
       return { className, thisMonthPct: thisPct, lastMonthPct: lastPct, change, direction };
     }).sort((a, b) => a.className.localeCompare(b.className));
 
-    // Compute subject-wise breakdown & trends
-    const subjectStats = {};
-    const subjectTrendStats = {};
+    // 4. Subject stats database query
+    const rawSubjectStats = await prisma.attendance.groupBy({
+      by: ['subject', 'status'],
+      _count: { id: true },
+    });
 
-    logs.forEach((log) => {
-      const subj = log.subject || 'Other';
+    const subjectStats = {};
+    rawSubjectStats.forEach(row => {
+      const subj = row.subject || 'Other';
       if (!subjectStats[subj]) {
         subjectStats[subj] = { present: 0, total: 0 };
       }
-      subjectStats[subj].total += 1;
-      if (log.status === 'present') {
-        subjectStats[subj].present += 1;
-      }
-
-      // Trend summary
-      const logDate = new Date(log.date);
-      let period = null;
-      if (logDate >= startOfThisMonth) {
-        period = 'thisMonth';
-      } else if (logDate >= startOfLastMonth && logDate < startOfThisMonth) {
-        period = 'lastMonth';
-      }
-
-      if (period) {
-        if (!subjectTrendStats[subj]) {
-          subjectTrendStats[subj] = {
-            thisMonth: { present: 0, total: 0 },
-            lastMonth: { present: 0, total: 0 }
-          };
-        }
-        subjectTrendStats[subj][period].total += 1;
-        if (log.status === 'present') {
-          subjectTrendStats[subj][period].present += 1;
-        }
+      const count = row._count.id;
+      subjectStats[subj].total += count;
+      if (row.status === 'present') {
+        subjectStats[subj].present += count;
       }
     });
 
@@ -1212,6 +1456,51 @@ export function adminRouter({ jwtSecret }) {
       percentage: stat.total ? Math.round((stat.present / stat.total) * 100) : 0,
       totalLogs: stat.total,
     })).sort((a, b) => a.subject.localeCompare(b.subject));
+
+    // Subject Trends database query
+    const rawThisMonthSubStats = await prisma.attendance.groupBy({
+      by: ['subject', 'status'],
+      where: { date: { gte: startOfThisMonth } },
+      _count: { id: true },
+    });
+
+    const rawLastMonthSubStats = await prisma.attendance.groupBy({
+      by: ['subject', 'status'],
+      where: { date: { gte: startOfLastMonth, lt: startOfThisMonth } },
+      _count: { id: true },
+    });
+
+    const subjectTrendStats = {};
+
+    rawThisMonthSubStats.forEach(row => {
+      const subj = row.subject || 'Other';
+      if (!subjectTrendStats[subj]) {
+        subjectTrendStats[subj] = {
+          thisMonth: { present: 0, total: 0 },
+          lastMonth: { present: 0, total: 0 }
+        };
+      }
+      const count = row._count.id;
+      subjectTrendStats[subj].thisMonth.total += count;
+      if (row.status === 'present') {
+        subjectTrendStats[subj].thisMonth.present += count;
+      }
+    });
+
+    rawLastMonthSubStats.forEach(row => {
+      const subj = row.subject || 'Other';
+      if (!subjectTrendStats[subj]) {
+        subjectTrendStats[subj] = {
+          thisMonth: { present: 0, total: 0 },
+          lastMonth: { present: 0, total: 0 }
+        };
+      }
+      const count = row._count.id;
+      subjectTrendStats[subj].lastMonth.total += count;
+      if (row.status === 'present') {
+        subjectTrendStats[subj].lastMonth.present += count;
+      }
+    });
 
     const subjectTrends = Object.entries(subjectTrendStats).map(([subject, stats]) => {
       const thisPct = stats.thisMonth.total ? Math.round((stats.thisMonth.present / stats.thisMonth.total) * 100) : null;
@@ -1225,19 +1514,27 @@ export function adminRouter({ jwtSecret }) {
       return { subject, thisMonthPct: thisPct, lastMonthPct: lastPct, change, direction };
     }).sort((a, b) => a.subject.localeCompare(b.subject));
 
-    const totalLogsCount = logs.length;
-    const totalPresentCount = logs.filter(l => l.status === 'present').length;
+    // Global counts
+    const totalLogsCount = await prisma.attendance.count();
+    const totalPresentCount = await prisma.attendance.count({ where: { status: 'present' } });
     const globalPercentage = totalLogsCount ? Math.round((totalPresentCount / totalLogsCount) * 100) : 100;
 
-    // Compute monthly breakdown (last 6 months)
+    // Last 6 months breakdown (date & status selection only)
+    const startOfSixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+    const recentLogs = await prisma.attendance.findMany({
+      where: { date: { gte: startOfSixMonthsAgo } },
+      select: { date: true, status: true },
+    });
+
     const monthlyStats = {};
-    logs.forEach((log) => {
+    recentLogs.forEach((log) => {
       const d = new Date(log.date);
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
       if (!monthlyStats[key]) monthlyStats[key] = { present: 0, absent: 0 };
       if (log.status === 'present') monthlyStats[key].present += 1;
       else monthlyStats[key].absent += 1;
     });
+
     const monthlySummary = Object.entries(monthlyStats)
       .sort(([a], [b]) => a.localeCompare(b))
       .slice(-6)
@@ -1336,6 +1633,232 @@ export function adminRouter({ jwtSecret }) {
       });
     }
     res.json(readList);
+  });
+
+  // ── Recycle Bin & Restore Center ─────────────────────────────────────
+
+  r.get('/recycle-bin', async (req, res) => {
+    try {
+      const [students, teachers, notices, courses] = await Promise.all([
+        prisma.user.findMany({
+          where: { role: Role.student, isDeleted: true },
+          orderBy: { deletedAt: 'desc' }
+        }),
+        prisma.user.findMany({
+          where: { role: Role.teacher, isDeleted: true },
+          orderBy: { deletedAt: 'desc' }
+        }),
+        prisma.notice.findMany({
+          where: { isDeleted: true },
+          orderBy: { deletedAt: 'desc' }
+        }),
+        prisma.course.findMany({
+          where: { isDeleted: true },
+          orderBy: { deletedAt: 'desc' }
+        })
+      ]);
+
+      const deletedByUserIds = [...new Set([
+        ...students.map(s => s.deletedBy),
+        ...teachers.map(t => t.deletedBy),
+        ...notices.map(n => n.deletedBy),
+        ...courses.map(c => c.deletedBy)
+      ].filter(id => id && typeof id === 'string' && id.trim() !== ''))];
+
+      const usersList = await prisma.user.findMany({
+        where: { id: { in: deletedByUserIds } },
+        select: { id: true, name: true }
+      });
+
+      const userMap = {};
+      usersList.forEach(u => {
+        userMap[u.id] = u.name;
+      });
+
+      const enrich = (item) => {
+        const dByName = userMap[item.deletedBy] || item.deletedBy || 'System/Admin';
+        return {
+          ...item,
+          deletedByName: dByName
+        };
+      };
+
+      res.json({
+        students: students.map(stripHash).map(enrich),
+        teachers: teachers.map(stripHash).map(enrich),
+        notices: notices.map(enrich),
+        courses: courses.map(enrich)
+      });
+    } catch (err) {
+      res.status(500).json({ error: 'Failed to fetch recycle bin: ' + err.message });
+    }
+  });
+
+  r.post('/students/:id/restore', async (req, res) => {
+    try {
+      const student = await prisma.user.findFirst({
+        where: { id: req.params.id, role: Role.student, isDeleted: true }
+      });
+      if (!student) return res.status(404).json({ error: 'Soft-deleted student not found' });
+
+      // Check unique email conflict
+      const conflict = await prisma.user.findFirst({
+        where: { email: student.email, isDeleted: false }
+      });
+      if (conflict) {
+        return res.status(409).json({ error: 'Cannot restore student. Email is already in use by an active account.' });
+      }
+
+      await prisma.$transaction(async (tx) => {
+        await tx.user.update({
+          where: { id: student.id },
+          data: {
+            isDeleted: false,
+            isActive: true,
+            deletedAt: null,
+            deletedBy: ''
+          }
+        });
+        await logAdminAction(req, 'RESTORE_STUDENT', student.id, { email: student.email }, tx);
+      });
+
+      res.json({ ok: true });
+    } catch (err) {
+      res.status(500).json({ error: 'Failed to restore student: ' + err.message });
+    }
+  });
+
+  r.post('/teachers/:id/restore', async (req, res) => {
+    try {
+      const teacher = await prisma.user.findFirst({
+        where: { id: req.params.id, role: Role.teacher, isDeleted: true }
+      });
+      if (!teacher) return res.status(404).json({ error: 'Soft-deleted teacher not found' });
+
+      // Check unique email conflict
+      const conflict = await prisma.user.findFirst({
+        where: { email: teacher.email, isDeleted: false }
+      });
+      if (conflict) {
+        return res.status(409).json({ error: 'Cannot restore teacher. Email is already in use by an active account.' });
+      }
+
+      await prisma.$transaction(async (tx) => {
+        await tx.user.update({
+          where: { id: teacher.id },
+          data: {
+            isDeleted: false,
+            isActive: true,
+            deletedAt: null,
+            deletedBy: ''
+          }
+        });
+        await logAdminAction(req, 'RESTORE_TEACHER', teacher.id, { email: teacher.email }, tx);
+      });
+
+      res.json({ ok: true });
+    } catch (err) {
+      res.status(500).json({ error: 'Failed to restore teacher: ' + err.message });
+    }
+  });
+
+  r.post('/notices/:id/restore', async (req, res) => {
+    try {
+      const notice = await prisma.notice.findFirst({
+        where: { id: req.params.id, isDeleted: true }
+      });
+      if (!notice) return res.status(404).json({ error: 'Soft-deleted notice not found' });
+
+      await prisma.$transaction(async (tx) => {
+        await tx.notice.update({
+          where: { id: notice.id },
+          data: {
+            isDeleted: false,
+            isPublished: true,
+            deletedAt: null,
+            deletedBy: ''
+          }
+        });
+        await logAdminAction(req, 'RESTORE_NOTICE', notice.id, { title: notice.title }, tx);
+      });
+
+      res.json({ ok: true });
+    } catch (err) {
+      res.status(500).json({ error: 'Failed to restore notice: ' + err.message });
+    }
+  });
+
+  r.post('/courses/:id/restore', async (req, res) => {
+    try {
+      const course = await prisma.course.findFirst({
+        where: { id: req.params.id, isDeleted: true }
+      });
+      if (!course) return res.status(404).json({ error: 'Soft-deleted course not found' });
+
+      await prisma.$transaction(async (tx) => {
+        await tx.course.update({
+          where: { id: course.id },
+          data: {
+            isDeleted: false,
+            deletedAt: null,
+            deletedBy: ''
+          }
+        });
+        await logAdminAction(req, 'RESTORE_COURSE', course.id, { name: course.name }, tx);
+      });
+
+      res.json({ ok: true });
+    } catch (err) {
+      res.status(500).json({ error: 'Failed to restore course: ' + err.message });
+    }
+  });
+
+  // ── Audit Log Viewer ────────────────────────────────────────────────
+
+  r.get('/audit-logs', async (req, res) => {
+    try {
+      const page = Math.max(1, parseInt(req.query.page) || 1);
+      const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 50));
+      const skip = (page - 1) * limit;
+      
+      const { action, userId } = req.query;
+      
+      const where = {};
+      if (action) where.action = { contains: String(action).trim() };
+      if (userId) where.userId = String(userId).trim();
+
+      const [list, total] = await Promise.all([
+        prisma.auditLog.findMany({
+          where,
+          orderBy: { timestamp: 'desc' },
+          skip,
+          take: limit
+        }),
+        prisma.auditLog.count({ where })
+      ]);
+
+      const uids = [...new Set(list.map(l => l.userId).filter(Boolean))];
+      const usersList = await prisma.user.findMany({
+        where: { id: { in: uids } },
+        select: { id: true, name: true }
+      });
+      const userMap = {};
+      usersList.forEach(u => {
+        userMap[u.id] = u.name;
+      });
+
+      const enrichedList = list.map(l => ({
+        ...l,
+        userName: userMap[l.userId] || 'SYSTEM'
+      }));
+
+      res.json({
+        data: enrichedList.map(withMongoId),
+        pagination: { page, limit, total, totalPages: Math.ceil(total / limit) }
+      });
+    } catch (err) {
+      res.status(500).json({ error: 'Failed to fetch audit logs: ' + err.message });
+    }
   });
 
   return r;

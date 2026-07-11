@@ -3,11 +3,12 @@ import fs from 'fs';
 import path from 'path';
 import { prisma, withMongoId } from '../db/client.js';
 import { createAuthMiddleware, requireRole } from '../middleware/auth.js';
-import { uploadStudyMaterial, uploadAvatarImage, uploadsPath } from '../multer/configure.js';
+import { uploadStudyMaterial, uploadAvatarImage, uploadsPath, verifyMagicBytes } from '../multer/configure.js';
 import { Role } from '@prisma/client';
 import { verifyPassword, signToken } from '../utils/auth.js';
 import { filterNotices } from '../utils/notices.js';
 import { noticeDto as buildNoticeDto } from '../utils/noticeDto.js';
+import { loginLimiter } from '../middleware/rateLimit.js';
 
 function noticeDto(n) {
   return withMongoId(buildNoticeDto(n));
@@ -20,14 +21,14 @@ export function teacherRouter({ jwtSecret, jwtExpiresIn }) {
   const r = Router();
   const auth = createAuthMiddleware(jwtSecret);
 
-  r.post('/login', async (req, res) => {
+  r.post('/login', loginLimiter, async (req, res) => {
     const { email, password } = req.body || {};
     if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
 
     const user = await prisma.user.findUnique({
       where: { email: String(email).toLowerCase().trim() },
     });
-    if (!user || !user.isActive || user.role !== Role.teacher) {
+    if (!user || !user.isActive || user.isDeleted || user.role !== Role.teacher) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
     const ok = await verifyPassword(String(password), user.passwordHash);
@@ -198,7 +199,7 @@ export function teacherRouter({ jwtSecret, jwtExpiresIn }) {
     res.json(list.map(withMongoId));
   });
 
-  r.post('/materials', uploadStudyMaterial.single('file'), async (req, res) => {
+  r.post('/materials', uploadStudyMaterial.single('file'), verifyMagicBytes, async (req, res) => {
     const { title, subject, className } = req.body || {};
     if (!title || !subject || !className || !req.file) {
       return res.status(400).json({ error: 'title, subject, className, file required' });
@@ -256,7 +257,9 @@ export function teacherRouter({ jwtSecret, jwtExpiresIn }) {
     const stored = f && typeof f === 'object' && f !== null && 'storedName' in f ? f.storedName : null;
     if (stored) {
       const p = path.join(uploadsPath(), 'materials', stored);
-      if (fs.existsSync(p)) fs.unlinkSync(p);
+      fs.promises.unlink(p).catch((err) => {
+        if (err.code !== 'ENOENT') console.error('Failed to unlink study material:', err);
+      });
     }
     await prisma.studyMaterial.delete({ where: { id: m.id } });
     res.json({ ok: true });
@@ -264,13 +267,14 @@ export function teacherRouter({ jwtSecret, jwtExpiresIn }) {
 
   r.get('/notices', async (req, res) => {
     const items = await prisma.notice.findMany({
+      where: { isDeleted: false },
       orderBy: { createdAt: 'desc' },
       take: 100,
     });
     res.json(filterNotices(items, { surface: 'portal', role: 'teacher', userId: req.user.id }).map(noticeDto));
   });
 
-  r.patch('/profile', uploadAvatarImage.single('avatar'), async (req, res) => {
+  r.patch('/profile', uploadAvatarImage.single('avatar'), verifyMagicBytes, async (req, res) => {
     const { name, phone, bio, qualifications } = req.body || {};
     const teacher = await prisma.user.findUnique({ where: { id: req.user.id } });
     

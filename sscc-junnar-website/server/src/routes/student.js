@@ -6,6 +6,7 @@ import { Role } from '@prisma/client';
 import { uploadAvatarImage } from '../multer/configure.js';
 import { filterNotices } from '../utils/notices.js';
 import { noticeDto as buildNoticeDto } from '../utils/noticeDto.js';
+import { loginLimiter } from '../middleware/rateLimit.js';
 
 function noticeDto(n) {
   return withMongoId(buildNoticeDto(n));
@@ -36,7 +37,7 @@ export function studentRouter({ jwtSecret, jwtExpiresIn }) {
   const r = Router();
   const auth = createAuthMiddleware(jwtSecret);
 
-  r.post('/login', async (req, res) => {
+  r.post('/login', loginLimiter, async (req, res) => {
     const { email, password } = req.body || {};
     if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
 
@@ -130,6 +131,7 @@ export function studentRouter({ jwtSecret, jwtExpiresIn }) {
   r.get('/notices', async (req, res) => {
     const user = await prisma.user.findUnique({ where: { id: req.user.id } });
     const items = await prisma.notice.findMany({
+      where: { isDeleted: false },
       orderBy: { createdAt: 'desc' },
       take: 100,
     });

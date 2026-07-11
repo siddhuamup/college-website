@@ -2,6 +2,7 @@ import puppeteer from 'puppeteer';
 import { PrismaClient } from '@prisma/client';
 import fs from 'fs';
 import path from 'path';
+import { getAcademicYear } from '../src/utils/academicYear.js';
 
 const prisma = new PrismaClient();
 const API_URL = 'http://localhost:3000/api';
@@ -103,14 +104,15 @@ async function runTests() {
   await new Promise(r => setTimeout(r, 2000));
   const afterDelImg = await takeScreenshot('student_del_after');
   const afterDelDb = await prisma.user.findUnique({ where: { id: dummyStudent.id } });
+  const isDeletedSuccess = (afterDelDb === null || afterDelDb.isDeleted === true);
   
   mdReport += `* **API endpoint used**: DELETE /api/admin/students/:id\n`;
   mdReport += `* **Before state**: Student exists (ID: ${dummyStudent.id})\n`;
   mdReport += `* **Action performed**: Deleted student\n`;
-  mdReport += `* **After state**: ${afterDelDb === null ? 'Successfully Deleted' : 'Failed'} (Status: ${delRes.status})\n`;
+  mdReport += `* **After state**: ${isDeletedSuccess ? 'Successfully Deleted (Soft-Delete)' : 'Failed'} (Status: ${delRes.status})\n`;
   mdReport += `* **Screenshot evidence**:\n  After Delete: ${afterDelImg}\n`;
   mdReport += `* **Browser console status**: ${browserConsole.length ? browserConsole.join(', ') : 'Clean'}\n`;
-  mdReport += `* **Database verification**: ${afterDelDb === null ? 'Record removed from DB.' : 'Record still in DB!'}\n\n`;
+  mdReport += `* **Database verification**: ${isDeletedSuccess ? 'Record marked as deleted in DB.' : 'Record still active in DB!'}\n\n`;
 
   // ----------------------------------------------------
   // Continue with other entities (Faculty, Notice, Material, Exam)
@@ -139,6 +141,7 @@ async function runTests() {
   
   const noticeDelRes = await apiCall(token, 'DELETE', `/admin/notices/${dummyNotice.id}`);
   const noticeDelDb = await prisma.notice.findUnique({ where: { id: dummyNotice.id } });
+  const isNoticeDeletedSuccess = (noticeDelDb === null || noticeDelDb.isDeleted === true);
   
   await page.evaluate(() => { window.location.reload(); });
   await new Promise(r => setTimeout(r, 2000));
@@ -149,10 +152,10 @@ async function runTests() {
   mdReport += `* **API endpoint used**: PUT / DELETE /api/admin/notices/:id\n`;
   mdReport += `* **Before state**: Title "${dummyNotice.title}"\n`;
   mdReport += `* **Action performed**: Edited title to "Test Notice EDITED", then Deleted.\n`;
-  mdReport += `* **After state**: DB Title was "${noticeEditDb.title}". After delete: ${noticeDelDb === null ? 'Deleted' : 'Failed'}\n`;
+  mdReport += `* **After state**: DB Title was "${noticeEditDb.title}". After delete: ${isNoticeDeletedSuccess ? 'Deleted (Soft-Delete)' : 'Failed'}\n`;
   mdReport += `* **Screenshot evidence**:\n  Before: ${noticeBeforeImg}\n  After Edit: ${noticeAfterEditImg}\n  After Delete: ${noticeAfterDelImg}\n`;
   mdReport += `* **Browser console status**: ${browserConsole.length ? browserConsole.join(', ') : 'Clean'}\n`;
-  mdReport += `* **Database verification**: Record updated and then removed.\n\n`;
+  mdReport += `* **Database verification**: ${isNoticeDeletedSuccess ? 'Record marked as deleted in DB.' : 'Record still active in DB!'}\n\n`;
 
   // ----------------------------------------------------
   // Admission Approve / Reject
@@ -167,7 +170,8 @@ async function runTests() {
       address: 'Test Address',
       courseApplied: 'BCS',
       marks12: 450.0,
-      status: 'pending'
+      status: 'pending',
+      academicYear: getAcademicYear()
     }
   });
 

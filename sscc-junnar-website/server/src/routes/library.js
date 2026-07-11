@@ -142,13 +142,20 @@ export function adminLibraryRouter({ jwtSecret }) {
     if (issue.returnedAt) return res.status(400).json({ error: 'Book already returned' });
 
     const returnedAt = new Date();
-    // Fine calculation: ₹2 per day overdue
+    // Fetch library fine per day setting (defaults to ₹2)
+    const fineRateRow = await prisma.collegeSettings.findUnique({ where: { key: 'libraryFinePerDay' } });
+    let fineRate = 2;
+    if (fineRateRow && fineRateRow.value !== undefined && fineRateRow.value !== null) {
+      const parsedRate = Number(fineRateRow.value);
+      if (!isNaN(parsedRate)) fineRate = parsedRate;
+    }
+
     let fine = 0;
     const dueTime = new Date(issue.dueDate).getTime();
     const retTime = returnedAt.getTime();
     if (retTime > dueTime) {
       const days = Math.ceil((retTime - dueTime) / (1000 * 60 * 60 * 24));
-      fine = days * 2;
+      fine = days * fineRate;
     }
 
     const [updatedIssue] = await prisma.$transaction([

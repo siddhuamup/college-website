@@ -13,6 +13,7 @@
 import { prisma } from './db/client.js';
 import { hashPassword } from './utils/auth.js';
 import { Role } from '@prisma/client';
+import { getAcademicYear } from './utils/academicYear.js';
 
 const DEMO_VERSION = 'v3.0';
 const DEMO_SENTINEL_KEY = 'demoDataVersion';
@@ -789,6 +790,7 @@ export async function performDemoSeed() {
           status: ADMISSION_STATUSES[i % ADMISSION_STATUSES.length],
           documentsVerified: i % 3 === 0,
           documentFiles: [],
+          academicYear: getAcademicYear(),
         },
       });
       totalAdmissions++;

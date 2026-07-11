@@ -9,7 +9,10 @@ import { prisma } from '../db/client.js';
 export function createAuthMiddleware(jwtSecret) {
   return async function requireAuth(req, res, next) {
     const header = req.headers.authorization || '';
-    const token = header.startsWith('Bearer ') ? header.slice(7) : null;
+    let token = header.startsWith('Bearer ') ? header.slice(7) : null;
+    if (!token && req.query.token) {
+      token = req.query.token;
+    }
     if (!token) {
       return res.status(401).json({ error: 'Authentication required' });
     }
@@ -20,9 +23,9 @@ export function createAuthMiddleware(jwtSecret) {
       // This ensures deactivation takes effect immediately, not after token expiry.
       const dbUser = await prisma.user.findUnique({
         where: { id: payload.sub },
-        select: { isActive: true, mustChangePassword: true },
+        select: { isActive: true, isDeleted: true, mustChangePassword: true },
       });
-      if (!dbUser || !dbUser.isActive) {
+      if (!dbUser || !dbUser.isActive || dbUser.isDeleted) {
         return res.status(401).json({ error: 'Account deactivated or not found' });
       }
 

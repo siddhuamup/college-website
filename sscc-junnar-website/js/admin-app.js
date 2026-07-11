@@ -648,6 +648,8 @@
       if (id === 'exams') await loadExamsPanel();
       if (id === 'leaves') await loadLeavesPanel();
       if (id === 'settings') await loadSettings();
+      if (id === 'recycle-bin') await loadRecycleBinPanel();
+      if (id === 'audit-logs') await loadAuditLogsPanel(1);
     } catch (e) {
       msg(e.message || 'Load failed', true);
     }
@@ -1569,16 +1571,78 @@
   }
 
   // ── Faculty Modals & Bindings ─────────────────────────────
-  function addAssignmentRow(subject = '', className = '') {
-    const list = document.getElementById('edit-teacher-assignments-list');
+  let cachedClasses = null;
+  let cachedSubjects = null;
+
+  async function ensureClassesAndSubjects() {
+    if (!cachedClasses) {
+      try {
+        cachedClasses = await SSC_API.get('/admin/timetable/classes');
+      } catch (err) {
+        console.error('Failed to load classes list:', err);
+        cachedClasses = [];
+      }
+    }
+    if (!cachedSubjects) {
+      try {
+        const depts = await SSC_API.get('/admin/departments');
+        const subjectsSet = new Set();
+        depts.forEach(d => {
+          let list = [];
+          if (typeof d.subjects === 'string') {
+            try { list = JSON.parse(d.subjects); } catch {}
+          } else if (Array.isArray(d.subjects)) {
+            list = d.subjects;
+          }
+          list.forEach(s => {
+            if (s && typeof s === 'string' && s.trim()) {
+              subjectsSet.add(s.trim());
+            }
+          });
+        });
+        cachedSubjects = Array.from(subjectsSet).sort();
+      } catch (err) {
+        console.error('Failed to load subjects list:', err);
+        cachedSubjects = [];
+      }
+    }
+  }
+
+  async function addAssignmentRow(subject = '', className = '', listId = 'edit-teacher-assignments-list') {
+    const list = document.getElementById(listId);
+    if (!list) return;
+
+    await ensureClassesAndSubjects();
+
     const row = document.createElement('div');
     row.className = 'assignment-edit-row';
     row.style.display = 'flex';
     row.style.gap = '0.5rem';
     row.style.alignItems = 'center';
+
+    let subjectOptions = `<option value="" disabled ${!subject ? 'selected' : ''}>Select Subject</option>`;
+    cachedSubjects.forEach(s => {
+      subjectOptions += `<option value="${esc(s)}" ${s === subject ? 'selected' : ''}>${esc(s)}</option>`;
+    });
+    if (subject && !cachedSubjects.includes(subject)) {
+      subjectOptions += `<option value="${esc(subject)}" selected>${esc(subject)}</option>`;
+    }
+
+    let classOptions = `<option value="" disabled ${!className ? 'selected' : ''}>Select Class</option>`;
+    cachedClasses.forEach(c => {
+      classOptions += `<option value="${esc(c)}" ${c === className ? 'selected' : ''}>${esc(c)}</option>`;
+    });
+    if (className && !cachedClasses.includes(className)) {
+      classOptions += `<option value="${esc(className)}" selected>${esc(className)}</option>`;
+    }
+
     row.innerHTML = `
-      <input class="input small assignment-subject" placeholder="Subject" value="${esc(subject)}" style="flex: 1;" required/>
-      <input class="input small assignment-class" placeholder="Class" value="${esc(className)}" style="flex: 1;" required/>
+      <select class="input small assignment-subject" style="flex: 1;" required>
+        ${subjectOptions}
+      </select>
+      <select class="input small assignment-class" style="flex: 1;" required>
+        ${classOptions}
+      </select>
       <button type="button" class="btn small danger remove-asgn-btn" style="padding: 0.4rem 0.6rem; margin: 0;">&times;</button>
     `;
     row.querySelector('.remove-asgn-btn').addEventListener('click', () => row.remove());
@@ -1587,7 +1651,12 @@
 
   const addAsgnBtn = document.getElementById('edit-teacher-add-assignment-btn');
   if (addAsgnBtn) {
-    addAsgnBtn.addEventListener('click', () => addAssignmentRow('', ''));
+    addAsgnBtn.addEventListener('click', () => addAssignmentRow('', '', 'edit-teacher-assignments-list'));
+  }
+
+  const addTeacherAsgnBtn = document.getElementById('add-teacher-add-assignment-btn');
+  if (addTeacherAsgnBtn) {
+    addTeacherAsgnBtn.addEventListener('click', () => addAssignmentRow('', '', 'add-teacher-assignments-list'));
   }
 
   async function loadTeachers() {
@@ -1647,13 +1716,14 @@
   document.getElementById('form-teacher').addEventListener('submit', async (e) => {
     e.preventDefault();
     const f = e.target;
-    let assignments = [];
-    try {
-      assignments = f.assignments.value.trim() ? JSON.parse(f.assignments.value) : [];
-    } catch {
-      msg('Assignments must be valid JSON array', true);
-      return;
-    }
+    const assignments = [];
+    document.querySelectorAll('#add-teacher-assignments-list .assignment-edit-row').forEach(row => {
+      const sub = row.querySelector('.assignment-subject').value.trim();
+      const cls = row.querySelector('.assignment-class').value.trim();
+      if (sub && cls) {
+        assignments.push({ subject: sub, className: cls });
+      }
+    });
     
     const fd = new FormData();
     fd.append('email', f.email.value.trim());
@@ -1675,6 +1745,8 @@
     try {
       await SSC_API.upload('/admin/teachers', fd, 'POST');
       f.reset();
+      const addList = document.getElementById('add-teacher-assignments-list');
+      if (addList) addList.innerHTML = '';
       msg('Teacher created successfully');
       await loadTeachers();
       await loadStats();
@@ -1702,7 +1774,7 @@
       const password = document.getElementById('edit-teacher-password').value;
 
       const assignments = [];
-      document.querySelectorAll('.assignment-edit-row').forEach(row => {
+      document.querySelectorAll('#edit-teacher-assignments-list .assignment-edit-row').forEach(row => {
         const sub = row.querySelector('.assignment-subject').value.trim();
         const cls = row.querySelector('.assignment-class').value.trim();
         if (sub && cls) {
@@ -3508,9 +3580,51 @@
           opt.textContent = c;
           classSel.appendChild(opt);
         });
+
+        const subjectSel = document.getElementById('exam-subject');
+        if (subjectSel) {
+          subjectSel.innerHTML = '<option value="">-- Choose Subject --</option>';
+        }
         
         document.getElementById('exam-form-card').style.display = 'block';
       });
+
+      const classSel = document.getElementById('exam-class');
+      if (classSel) {
+        classSel.addEventListener('change', async (e) => {
+          const className = e.target.value;
+          const subjectSel = document.getElementById('exam-subject');
+          if (!subjectSel) return;
+          subjectSel.innerHTML = '<option value="">-- Choose Subject --</option>';
+          if (!className) return;
+
+          try {
+            const tt = await SSC_API.get(`/admin/timetable/${className}`);
+            const subjectsSet = new Set();
+            if (tt && Array.isArray(tt.slots)) {
+              tt.slots.forEach(slot => {
+                if (slot.subject && typeof slot.subject === 'string' && slot.subject.trim()) {
+                  subjectsSet.add(slot.subject.trim());
+                }
+              });
+            }
+
+            if (subjectsSet.size === 0) {
+              subjectSel.innerHTML = '<option value="">No subjects in timetable. Add timetable first.</option>';
+            } else {
+              subjectsSet.forEach(s => {
+                const opt = document.createElement('option');
+                opt.value = s;
+                opt.textContent = s;
+                subjectSel.appendChild(opt);
+              });
+            }
+          } catch (err) {
+            console.error('Failed to load timetable subjects:', err);
+            subjectSel.innerHTML = '<option value="">No subjects in timetable. Add timetable first.</option>';
+          }
+        });
+      }
 
       document.getElementById('exam-cancel-btn').addEventListener('click', () => {
         document.getElementById('exam-form-card').style.display = 'none';
@@ -3583,7 +3697,6 @@
           document.getElementById('exam-id').value = ex.id;
           document.getElementById('exam-title').value = ex.title;
           document.getElementById('exam-type').value = ex.examType;
-          document.getElementById('exam-subject').value = ex.subject;
           document.getElementById('exam-date').value = ex.examDate ? ex.examDate.split('T')[0] : '';
           document.getElementById('exam-time').value = ex.startTime;
           document.getElementById('exam-duration').value = ex.duration;
@@ -3600,6 +3713,47 @@
             if (c === ex.className) opt.selected = true;
             classSel.appendChild(opt);
           });
+
+          // Fetch subjects for this class and select current subject
+          const subjectSel = document.getElementById('exam-subject');
+          if (subjectSel) {
+            subjectSel.innerHTML = '<option value="">-- Choose Subject --</option>';
+            try {
+              const tt = await SSC_API.get(`/admin/timetable/${ex.className}`);
+              const subjectsSet = new Set();
+              if (tt && Array.isArray(tt.slots)) {
+                tt.slots.forEach(slot => {
+                  if (slot.subject && typeof slot.subject === 'string' && slot.subject.trim()) {
+                    subjectsSet.add(slot.subject.trim());
+                  }
+                });
+              }
+              if (ex.subject) subjectsSet.add(ex.subject); // fallback: keep original value in select options
+              
+              if (subjectsSet.size === 0) {
+                subjectSel.innerHTML = '<option value="">No subjects in timetable. Add timetable first.</option>';
+              } else {
+                subjectsSet.forEach(s => {
+                  const opt = document.createElement('option');
+                  opt.value = s;
+                  opt.textContent = s;
+                  if (s === ex.subject) opt.selected = true;
+                  subjectSel.appendChild(opt);
+                });
+              }
+            } catch (err) {
+              console.error(err);
+              if (ex.subject) {
+                const opt = document.createElement('option');
+                opt.value = ex.subject;
+                opt.textContent = ex.subject;
+                opt.selected = true;
+                subjectSel.appendChild(opt);
+              } else {
+                subjectSel.innerHTML = '<option value="">No subjects in timetable. Add timetable first.</option>';
+              }
+            }
+          }
           
           document.getElementById('exam-form-card').style.display = 'block';
         }

@@ -113,6 +113,14 @@
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
           Settings
         </button>
+        <button type="button" data-panel="recycle-bin">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+          Recycle Bin
+        </button>
+        <button type="button" data-panel="audit-logs">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+          Audit Logs
+        </button>
       </nav>
 
       <!-- Sidebar Bottom Utility -->
@@ -276,9 +284,39 @@
             <div><label class="field-label">Name</label><input class="input" name="name" required/></div>
             <div><label class="field-label">Phone</label><input class="input" name="phone"/></div>
             <div><label class="field-label">Roll</label><input class="input" name="rollNumber"/></div>
-            <div><label class="field-label">Class</label><input class="input" name="className" placeholder="FY-BA-A"/></div>
-            <div><label class="field-label">Course</label><input class="input" name="courseName"/></div>
-            <div><label class="field-label">Year</label><input class="input" name="year"/></div>
+            <div>
+              <label class="field-label">Class</label>
+              <select class="input" name="className" id="add-student-class" required>
+                <option value="" disabled selected>Select Class</option>
+                <option value="FYBCS">FYBCS</option>
+                <option value="SYBCS">SYBCS</option>
+                <option value="TYBCS">TYBCS</option>
+                <option value="FYBSC">FYBSC</option>
+                <option value="SYBSC">SYBSC</option>
+                <option value="TYBSC">TYBSC</option>
+                <option value="FYBA">FYBA</option>
+                <option value="SYBA">SYBA</option>
+                <option value="TYBA">TYBA</option>
+                <option value="FYBCOM">FYBCOM</option>
+                <option value="SYBCOM">SYBCOM</option>
+                <option value="TYBCOM">TYBCOM</option>
+              </select>
+            </div>
+            <div>
+              <label class="field-label">Course</label>
+              <select class="input" name="courseName" id="add-student-course" required>
+                <option value="" disabled selected>Select Course</option>
+              </select>
+            </div>
+            <div>
+              <label class="field-label">Year</label>
+              <select class="input" name="year" id="add-student-year" required>
+                <option value="" disabled selected>Select Year</option>
+                <option value="1">1st Year</option>
+                <option value="2">2nd Year</option>
+                <option value="3">3rd Year</option>
+              </select>
+            </div>
             <div><button class="btn" type="submit">Create</button></div>
           </form>
         </div>
@@ -297,7 +335,12 @@
             <div><label class="field-label">Password</label><input class="input" name="password" type="password" required autocomplete="new-password"/></div>
             <div><label class="field-label">Name</label><input class="input" name="name" required/></div>
             <div><label class="field-label">Employee ID</label><input class="input" name="employeeId"/></div>
-            <div><label class="field-label">Department</label><input class="input" name="department"/></div>
+            <div>
+              <label class="field-label">Department</label>
+              <select class="input" name="department" id="add-teacher-dept" required>
+                <option value="" disabled selected>Select Department</option>
+              </select>
+            </div>
             <div><label class="field-label">Designation</label><input class="input" name="designation" placeholder="e.g. Assistant Professor"/></div>
             <div><label class="field-label">Qualifications</label><input class="input" name="qualifications" placeholder="e.g. M.Sc, Ph.D"/></div>
             <div><label class="field-label">Experience</label><input class="input" name="experience" placeholder="e.g. 5 Years"/></div>
@@ -315,7 +358,11 @@
               </div>
             </div>
             <div style="grid-column: 1 / -1;"><label class="field-label">Bio / Statement</label><textarea class="input" name="bio" rows="2" placeholder="Brief professional biography..."></textarea></div>
-            <div style="grid-column: 1 / -1;"><label class="field-label">Subject / class (JSON array)</label><input class="input" name="assignments" placeholder='[{"subject":"English","className":"FY-BA-A"}]'/></div>
+            <div style="grid-column: 1 / -1;">
+              <label class="field-label" style="margin-bottom: 0.5rem;">Subject &amp; Class Assignments</label>
+              <div id="add-teacher-assignments-list" style="display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 0.75rem;"></div>
+              <button type="button" class="btn small secondary" id="add-teacher-add-assignment-btn">+ Add Assignment</button>
+             </div>
             <div style="grid-column: 1 / -1;"><button class="btn" type="submit">Create</button></div>
           </form>
         </div>
@@ -919,7 +966,7 @@
                 </select>
               </div>
               <div><label class="field-label">Class</label><select class="select input" id="exam-class" required></select></div>
-              <div><label class="field-label">Subject</label><input class="input" id="exam-subject" required/></div>
+              <div><label class="field-label">Subject</label><select class="select input" id="exam-subject" required><option value="">-- Choose Subject --</option></select></div>
               <div><label class="field-label">Exam Date</label><input class="input" id="exam-date" type="date" required/></div>
               <div><label class="field-label">Start Time</label><input class="input" id="exam-time" placeholder="e.g. 10:00 AM"/></div>
               <div><label class="field-label">Duration</label><input class="input" id="exam-duration" placeholder="e.g. 2 Hours"/></div>
@@ -973,6 +1020,148 @@
               </thead>
               <tbody></tbody>
             </table>
+          </div>
+        </div>
+      </section>
+
+
+      <!-- ══ RECYCLE BIN PANEL ═══════════════════════════════════════════ -->
+      <section class="dash-panel" data-panel="recycle-bin">
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+            <div>
+              <h3>Restore Center & Recycle Bin Center</h3>
+              <p class="small text-muted">Restore soft-deleted students, teachers, notices, or courses.</p>
+            </div>
+            <button type="button" class="btn btn-secondary small" onclick="loadRecycleBinPanel()">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+              Refresh
+            </button>
+          </div>
+
+          <div class="tab-nav mt-3" style="display: flex; gap: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;">
+            <button type="button" class="btn btn-tab active" data-recycle-tab="students" onclick="switchRecycleTab('students')">Students</button>
+            <button type="button" class="btn btn-tab" data-recycle-tab="teachers" onclick="switchRecycleTab('teachers')">Teachers</button>
+            <button type="button" class="btn btn-tab" data-recycle-tab="notices" onclick="switchRecycleTab('notices')">Notices</button>
+            <button type="button" class="btn btn-tab" data-recycle-tab="courses" onclick="switchRecycleTab('courses')">Courses</button>
+          </div>
+
+          <!-- Students Subpanel -->
+          <div class="recycle-subpanel active" id="recycle-students-sub">
+            <div class="table-wrap mt-3">
+              <table class="table small" id="tbl-recycle-students">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Deleted At</th>
+                    <th>Deleted By</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Teachers Subpanel -->
+          <div class="recycle-subpanel" id="recycle-teachers-sub" style="display:none;">
+            <div class="table-wrap mt-3">
+              <table class="table small" id="tbl-recycle-teachers">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Deleted At</th>
+                    <th>Deleted By</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Notices Subpanel -->
+          <div class="recycle-subpanel" id="recycle-notices-sub" style="display:none;">
+            <div class="table-wrap mt-3">
+              <table class="table small" id="tbl-recycle-notices">
+                <thead>
+                  <tr>
+                    <th>Title</th>
+                    <th>Audience</th>
+                    <th>Deleted At</th>
+                    <th>Deleted By</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Courses Subpanel -->
+          <div class="recycle-subpanel" id="recycle-courses-sub" style="display:none;">
+            <div class="table-wrap mt-3">
+              <table class="table small" id="tbl-recycle-courses">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Level</th>
+                    <th>Deleted At</th>
+                    <th>Deleted By</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══ AUDIT LOGS PANEL ════════════════════════════════════════════ -->
+      <section class="dash-panel" data-panel="audit-logs">
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+            <div>
+              <h3>System Audit Logs</h3>
+              <p class="small text-muted">Chronological immutable logs of administrative events.</p>
+            </div>
+            <!-- Filters -->
+            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+              <input class="input small" id="audit-filter-action" placeholder="Filter Action" style="max-width: 150px; padding: 5px; height: 32px;"/>
+              <input class="input small" id="audit-filter-userId" placeholder="Filter User ID" style="max-width: 150px; padding: 5px; height: 32px;"/>
+              <button type="button" class="btn btn-primary small" onclick="loadAuditLogsPanel(1)">Search</button>
+              <button type="button" class="btn btn-secondary small" onclick="clearAuditFilters()">Reset</button>
+            </div>
+          </div>
+
+          <div class="table-wrap mt-3">
+            <table class="table small" id="tbl-audit-logs">
+              <thead>
+                <tr>
+                  <th>Timestamp</th>
+                  <th>User</th>
+                  <th>Role</th>
+                  <th>Action</th>
+                  <th>Target ID</th>
+                  <th>IP Address</th>
+                  <th>User Agent</th>
+                  <th>Details</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+
+          <!-- Pagination -->
+          <div class="pagination mt-3" id="audit-pagination" style="display: flex; justify-content: space-between; align-items: center;">
+            <span class="small text-muted" id="audit-pagination-text">Showing page 1 of 1</span>
+            <div style="display: flex; gap: 5px;">
+              <button type="button" class="btn btn-secondary small" id="btn-audit-prev" onclick="changeAuditPage(-1)">Prev</button>
+              <button type="button" class="btn btn-secondary small" id="btn-audit-next" onclick="changeAuditPage(1)">Next</button>
+            </div>
           </div>
         </div>
       </section>

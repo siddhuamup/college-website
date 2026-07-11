@@ -1,12 +1,11 @@
 import { Router } from 'express';
+import crypto from 'crypto';
 import { prisma, withMongoId } from '../db/client.js';
 import { hashPassword, verifyPassword, signToken, verifyToken } from '../utils/auth.js';
 import { Role } from '@prisma/client';
 import { loginLimiter, adminAccessLimiter } from '../middleware/rateLimit.js';
 import { createAuthMiddleware } from '../middleware/auth.js';
 import { sendEmail } from '../utils/email.js';
-
-const resetTokens = new Map(); // token -> { userId, expiresAt }
 
 
 export function authRouter({ jwtSecret, jwtExpiresIn }) {
@@ -76,7 +75,7 @@ export function authRouter({ jwtSecret, jwtExpiresIn }) {
       `;
       user = rawUsers[0] || null;
     }
-    if (!user || !user.isActive) {
+    if (!user || !user.isActive || user.isDeleted) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
     const ok = await verifyPassword(password, user.passwordHash);
@@ -177,11 +176,27 @@ export function authRouter({ jwtSecret, jwtExpiresIn }) {
       return res.json({ message: 'If the email exists, a reset link has been sent.' });
     }
     
+    // Clean up expired tokens for this user first
+    await prisma.passwordResetToken.deleteMany({
+      where: {
+        OR: [
+          { userId: user.id },
+          { expiresAt: { lt: new Date() } }
+        ]
+      }
+    });
+
     // Generate a random secure token
-    const token = Math.random().toString(36).slice(2, 15) + Math.random().toString(36).slice(2, 15);
-    const expiresAt = Date.now() + 15 * 60 * 1000; // 15 minutes
+    const token = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
     
-    resetTokens.set(token, { userId: user.id, expiresAt });
+    await prisma.passwordResetToken.create({
+      data: {
+        token,
+        userId: user.id,
+        expiresAt,
+      }
+    });
     
     // Send email with reset url
     const resetUrl = `${req.protocol}://${req.get('host')}/reset-password.html?token=${token}`;
@@ -213,13 +228,18 @@ export function authRouter({ jwtSecret, jwtExpiresIn }) {
     if (newPassword.length < 8) {
       return res.status(400).json({ error: 'Password must be at least 8 characters' });
     }
-    const record = resetTokens.get(token);
-    if (!record || record.expiresAt < Date.now()) {
-      resetTokens.delete(token);
+    const record = await prisma.passwordResetToken.findUnique({
+      where: { token },
+      include: { user: true }
+    });
+    if (!record || record.expiresAt < new Date()) {
+      if (record) {
+        await prisma.passwordResetToken.delete({ where: { id: record.id } }).catch(() => {});
+      }
       return res.status(400).json({ error: 'Invalid or expired reset token' });
     }
     
-    const user = await prisma.user.findUnique({ where: { id: record.userId } });
+    const user = record.user;
     if (!user) return res.status(404).json({ error: 'User not found' });
     
     // Update password hash and turn off forced password change
@@ -231,7 +251,7 @@ export function authRouter({ jwtSecret, jwtExpiresIn }) {
       },
     });
     
-    resetTokens.delete(token);
+    await prisma.passwordResetToken.delete({ where: { id: record.id } }).catch(() => {});
     res.json({ ok: true, message: 'Password has been reset successfully.' });
   });
 

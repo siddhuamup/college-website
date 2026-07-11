@@ -105,15 +105,17 @@ export function teacherExamRouter({ jwtSecret }) {
     const exam = await prisma.exam.findUnique({ where: { id: req.params.id } });
     if (!exam) return res.status(404).json({ error: 'Exam not found' });
 
-    // Fetch all active students in the class
-    const students = await prisma.user.findMany({
-      where: { role: Role.student, isActive: true },
-      select: { id: true, name: true, email: true, studentProfile: true }
-    });
-    const classStudents = students.filter(s => {
-      const sp = s.studentProfile;
-      return sp && typeof sp === 'object' && sp.className === exam.className;
-    });
+    // Fetch all active, non-deleted students in the class using SQLite JSON extraction
+    const rawClassStudents = await prisma.$queryRaw`
+      SELECT id, name, email, studentProfile, isActive
+      FROM User
+      WHERE role = 'student' AND isActive = 1 AND isDeleted = 0 AND
+            json_extract(studentProfile, '$.className') = ${exam.className}
+    `;
+    const classStudents = rawClassStudents.map(s => ({
+      ...s,
+      studentProfile: typeof s.studentProfile === 'string' ? JSON.parse(s.studentProfile) : s.studentProfile
+    }));
 
     // Fetch all marks entered for this subject and exam title (which represents examName)
     const marks = await prisma.mark.findMany({

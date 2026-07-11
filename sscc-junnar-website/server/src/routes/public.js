@@ -1,11 +1,12 @@
 import { Router } from 'express';
 import { prisma, withMongoId } from '../db/client.js';
-import { uploadAdmissionDocs } from '../multer/configure.js';
+import { uploadAdmissionDocs, verifyMagicBytes } from '../multer/configure.js';
 import { nextApplicationNumber } from '../lib/admissionNumber.js';
 import { Role } from '@prisma/client';
 import { filterNotices } from '../utils/notices.js';
 import { noticeDto as buildNoticeDto } from '../utils/noticeDto.js';
 import { publicFormLimiter } from '../middleware/rateLimit.js';
+import { getAcademicYear } from '../utils/academicYear.js';
 
 function normalizePhoneIN(phone) {
   let p = String(phone || '').replace(/[\s-]/g, '');
@@ -26,6 +27,7 @@ export function publicRouter() {
 
   r.get('/notices', async (_req, res) => {
     const items = await prisma.notice.findMany({
+      where: { isDeleted: false },
       orderBy: { createdAt: 'desc' },
       take: 100,
     });
@@ -52,6 +54,7 @@ export function publicRouter() {
 
   r.get('/courses', async (_req, res) => {
     const courses = await prisma.course.findMany({
+      where: { isDeleted: false },
       include: { department: { select: { id: true, name: true, stream: true } } },
       orderBy: [{ level: 'asc' }, { name: 'asc' }],
     });
@@ -133,7 +136,7 @@ export function publicRouter() {
     { name: 'signature', maxCount: 1 },
     { name: 'marksheet', maxCount: 1 },
     { name: 'leavingCertificate', maxCount: 1 }
-  ]), async (req, res) => {
+  ]), verifyMagicBytes, async (req, res) => {
     const body = req.body || {};
     const fullName = body.fullName?.trim();
     const email = body.email?.trim()?.toLowerCase();
@@ -163,11 +166,10 @@ export function publicRouter() {
       return res.status(400).json({ error: 'Enter a valid phone number (10-digit mobile or standard landline).' });
     }
 
-    // Compute academic year (June–May cycle: applications after June belong to next year)
-    const now = new Date();
-    const academicYear = now.getMonth() >= 5 ? now.getFullYear() : now.getFullYear() - 1;
+    // Compute academic year using centralized helper
+    const academicYear = getAcademicYear(new Date());
 
-    // Duplicate prevention: same email + courseApplied + academicYear
+    // Friendly duplicate pre-check for good UX
     const existing = await prisma.admissionApplication.findFirst({
       where: { email, courseApplied, academicYear, isDeleted: false },
     });
@@ -195,28 +197,39 @@ export function publicRouter() {
       });
     }
 
-    const appDoc = await prisma.admissionApplication.create({
-      data: {
-        applicationNumber,
-        fullName,
-        email,
-        phone,
-        address,
-        courseApplied,
-        board12,
-        marks12,
-        maxMarks12,
-        dob,
-        gender,
-        parentContact,
-        sscMarks,
-        previousCollege,
-        passingYear,
-        category,
-        academicYear,
-        documentFiles,
-      },
-    });
+    let appDoc;
+    try {
+      appDoc = await prisma.admissionApplication.create({
+        data: {
+          applicationNumber,
+          fullName,
+          email,
+          phone,
+          address,
+          courseApplied,
+          board12,
+          marks12,
+          maxMarks12,
+          dob,
+          gender,
+          parentContact,
+          sscMarks,
+          previousCollege,
+          passingYear,
+          category,
+          academicYear,
+          documentFiles,
+        },
+      });
+    } catch (err) {
+      // Catch database unique constraint violation (P2002) to ensure concurrency safety
+      if (err.code === 'P2002') {
+        return res.status(409).json({
+          error: `An application already exists for ${email} applying for ${courseApplied} in the ${academicYear}-${academicYear + 1} academic year.`,
+        });
+      }
+      throw err;
+    }
 
     res.status(201).json({
       ok: true,
