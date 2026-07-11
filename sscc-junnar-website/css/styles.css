@@ -1994,3 +1994,97 @@ button.step-pill { background: transparent; color: var(--text-secondary); }
     margin: 15mm;
   }
 }
+
+/* Audit v6 Custom Badges */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 4px;
+  text-transform: capitalize;
+}
+.badge.pending {
+  background-color: rgba(245, 158, 11, 0.1);
+  color: var(--warning, #f59e0b) !important;
+  border: 1px solid rgba(245, 158, 11, 0.2);
+}
+.badge.approved {
+  background-color: rgba(34, 197, 94, 0.1);
+  color: var(--accent, #22c55e) !important;
+  border: 1px solid rgba(34, 197, 94, 0.2);
+}
+.badge.rejected {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: var(--danger, #ef4444) !important;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+/* File Selected Indicator styles */
+.file-selected-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  padding: 0.4rem 0.75rem;
+  border-radius: 6px;
+  background-color: var(--surface, #f8fafc);
+  border: 1px solid var(--border-color, #e2e8f0);
+  font-size: 0.85rem;
+}
+.file-selected-indicator.has-file {
+  border-color: var(--accent, #22c55e);
+  background-color: rgba(34, 197, 94, 0.05);
+}
+.file-selected-indicator .file-name {
+  font-weight: 500;
+  color: var(--text-main);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.file-selected-indicator .file-size {
+  color: var(--text-secondary, #94a3b8);
+  font-size: 0.75rem;
+}
+
+/* Status quick-filter tabs styling */
+.status-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid var(--border-color, #e2e8f0);
+  padding-bottom: 0.5rem;
+}
+.status-tab-btn {
+  background: none;
+  border: none;
+  padding: 0.5rem 1rem;
+  font-weight: 500;
+  font-size: 0.875rem;
+  color: var(--text-secondary, #94a3b8);
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+.status-tab-btn:hover {
+  background-color: var(--surface, #f8fafc);
+  color: var(--text-main);
+}
+.status-tab-btn.active {
+  background-color: var(--primary, #6366f1);
+  color: #fff !important;
+}
+
+/* Tracker output styled card */
+.tracker-result-card {
+  padding: 1.5rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-color, #e2e8f0);
+  background-color: var(--bg-card, #ffffff);
+  margin-top: 1rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
