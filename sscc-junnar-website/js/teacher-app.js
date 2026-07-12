@@ -242,6 +242,19 @@
       setupBulkMarks();
       setupMobileMenu();
       setupTeacherIdCard(user);
+      
+      const quickEditCredsBtn = document.getElementById('btn-quick-edit-creds');
+      if (quickEditCredsBtn) {
+        quickEditCredsBtn.addEventListener('click', () => {
+          panel('edit-profile');
+          load('edit-profile');
+          setTimeout(() => {
+            const secTab = document.querySelector('[data-subtab="security"]');
+            if (secTab) secTab.click();
+          }, 150);
+        });
+      }
+
       setupStudentDrawer();
       setupProfileSubTabs();
 

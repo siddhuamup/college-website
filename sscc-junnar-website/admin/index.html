@@ -374,6 +374,25 @@
 
       <section class="dash-panel" data-panel="admissions">
         <div class="card">
+          <!-- Admissions Stats Bar -->
+          <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+            <div style="padding:0.75rem 1rem; border: 1px solid var(--border-color, #e2e8f0); text-align: center; border-radius: 8px; background: var(--bg-card, #ffffff);">
+              <div style="font-size:0.75rem; color:var(--text-secondary); font-weight:600; text-transform:uppercase;">Total</div>
+              <div id="adm-stat-total" style="font-size:1.5rem; font-weight:700; color:var(--primary);">0</div>
+            </div>
+            <div style="padding:0.75rem 1rem; border: 1px solid var(--border-color, #e2e8f0); text-align: center; border-radius: 8px; background: var(--bg-card, #ffffff);">
+              <div style="font-size:0.75rem; color:var(--text-secondary); font-weight:600; text-transform:uppercase;">Pending</div>
+              <div id="adm-stat-pending" style="font-size:1.5rem; font-weight:700; color:var(--warning, #f59e0b);">0</div>
+            </div>
+            <div style="padding:0.75rem 1rem; border: 1px solid var(--border-color, #e2e8f0); text-align: center; border-radius: 8px; background: var(--bg-card, #ffffff);">
+              <div style="font-size:0.75rem; color:var(--text-secondary); font-weight:600; text-transform:uppercase;">Approved</div>
+              <div id="adm-stat-approved" style="font-size:1.5rem; font-weight:700; color:var(--accent, #22c55e);">0</div>
+            </div>
+            <div style="padding:0.75rem 1rem; border: 1px solid var(--border-color, #e2e8f0); text-align: center; border-radius: 8px; background: var(--bg-card, #ffffff);">
+              <div style="font-size:0.75rem; color:var(--text-secondary); font-weight:600; text-transform:uppercase;">Rejected</div>
+              <div id="adm-stat-rejected" style="font-size:1.5rem; font-weight:700; color:var(--danger, #ef4444);">0</div>
+            </div>
+          </div>
           <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.75rem;margin-bottom:1rem;">
             <h3 style="margin:0;">Applications</h3>
             <div style="display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center;">
@@ -394,10 +413,10 @@
             </div>
           </div>
           <div class="status-tabs" id="adm-status-tabs">
-            <button type="button" class="status-tab-btn active" data-status="all">All</button>
-            <button type="button" class="status-tab-btn" data-status="pending">Pending</button>
-            <button type="button" class="status-tab-btn" data-status="approved">Approved</button>
-            <button type="button" class="status-tab-btn" data-status="rejected">Rejected</button>
+            <button type="button" class="status-tab-btn active" data-status="all">All (<span id="cnt-all">0</span>)</button>
+            <button type="button" class="status-tab-btn" data-status="pending">Pending (<span id="cnt-pending">0</span>)</button>
+            <button type="button" class="status-tab-btn" data-status="approved">Approved (<span id="cnt-approved">0</span>)</button>
+            <button type="button" class="status-tab-btn" data-status="rejected">Rejected (<span id="cnt-rejected">0</span>)</button>
           </div>
           <div class="table-wrap">
             <table class="table small" id="tbl-admissions">
@@ -1244,18 +1263,45 @@
 
   <!-- Admission Decision Modal -->
   <div class="modal-overlay" id="modal-admission-decision" style="display:none;">
-    <div class="modal-container">
+    <div class="modal-container" style="max-width:780px; max-height:90vh; overflow-y:auto;">
       <div class="modal-header">
-        <h3 class="modal-title">Approve Admission & Create Account</h3>
+        <h3 class="modal-title">Review & Approve Application</h3>
         <button type="button" class="modal-close" onclick="document.getElementById('modal-admission-decision').style.display='none'">&times;</button>
       </div>
+      
+      <!-- Applicant Summary Bar -->
+      <div id="adm-applicant-bar" style="display:flex;gap:1rem;align-items:center;background:var(--surface,#f8fafc);padding:1rem;border-radius:8px;margin-bottom:1rem;border:1px solid var(--border-color,#e2e8f0);">
+        <div id="adm-photo-preview" style="width:70px;height:70px;border-radius:50%;background:var(--muted,#e2e8f0);overflow:hidden;flex-shrink:0;border:2px solid var(--primary,#6366f1);display:grid;place-items:center;">
+          <img id="adm-photo-img" src="" style="width:100%;height:100%;object-fit:cover;display:none;"/>
+          <span id="adm-photo-placeholder" style="font-size:0.7rem;color:var(--text-secondary);">No Photo</span>
+        </div>
+        <div>
+          <div style="font-weight:700;font-size:1.1rem;color:var(--text-main);" id="adm-modal-name">—</div>
+          <div class="small" id="adm-modal-course" style="color:var(--text-secondary);">—</div>
+          <div class="small" id="adm-modal-marks" style="font-weight:600;color:var(--primary);">HSC: — | SSC: —</div>
+        </div>
+        <span class="badge" id="adm-modal-status" style="margin-left:auto;">pending</span>
+      </div>
+
+      <!-- Documents Section -->
+      <div style="margin-bottom:1.5rem; border:1px solid var(--border-color,#e2e8f0); padding:1rem; border-radius:8px; background:var(--bg-card,#ffffff);">
+        <h4 style="margin:0 0 0.75rem 0;color:var(--text-main);">Uploaded Documents Check</h4>
+        <div id="adm-docs-grid" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(120px, 1fr));gap:0.75rem;">
+          <!-- Populated by JS -->
+        </div>
+        <label style="display:flex;align-items:center;gap:0.5rem;margin-top:1rem;cursor:pointer;font-weight:600;color:var(--text-main);">
+          <input type="checkbox" id="adm-docs-verified-check"/> 
+          <span class="small">I have reviewed and verified all documents</span>
+        </label>
+      </div>
+
       <form id="form-admission-decision" class="form-grid">
         <input type="hidden" id="decision-app-id"/>
-        <div>
+        <div style="display:none;">
           <label class="field-label">Applicant Name</label>
           <input class="input" id="decision-student-name" readonly/>
         </div>
-        <div>
+        <div style="display:none;">
           <label class="field-label">Course Applied</label>
           <input class="input" id="decision-student-course" readonly/>
         </div>
@@ -1276,7 +1322,7 @@
           <input class="input" id="decision-class-name" placeholder="e.g. FY-BCA-A" required/>
         </div>
         <div style="margin-top: 1rem; display: flex; gap: 0.75rem; grid-column: span 2;">
-          <button class="btn" type="submit" style="color:#000;">Approve & Create Account</button>
+          <button class="btn" id="btn-decision-submit" type="submit" style="color:#000;" disabled>Approve & Create Account</button>
           <button class="btn secondary" type="button" onclick="document.getElementById('modal-admission-decision').style.display='none'">Cancel</button>
         </div>
       </form>

@@ -81,15 +81,17 @@ export function adminRouter({ jwtSecret }) {
   r.use(auth, requireRole('admin'));
 
   r.get('/dashboard/stats', async (_req, res) => {
-    const [students, teachers, totalAdmissions, pendingAdmissions, noticesCount, feedbackCount] = await Promise.all([
+    const [students, teachers, totalAdmissions, pendingAdmissions, approvedAdmissions, rejectedAdmissions, noticesCount, feedbackCount] = await Promise.all([
       prisma.user.count({ where: { role: Role.student, isActive: true, isDeleted: false } }),
       prisma.user.count({ where: { role: Role.teacher, isActive: true, isDeleted: false } }),
       prisma.admissionApplication.count({ where: { isDeleted: false } }),
       prisma.admissionApplication.count({ where: { status: 'pending', isDeleted: false } }),
+      prisma.admissionApplication.count({ where: { status: 'approved', isDeleted: false } }),
+      prisma.admissionApplication.count({ where: { status: 'rejected', isDeleted: false } }),
       prisma.notice.count({ where: { isPublished: true, isDeleted: false } }),
       prisma.feedback.count(),
     ]);
-    res.json({ students, teachers, totalAdmissions, pendingAdmissions, noticesCount, feedbackCount });
+    res.json({ students, teachers, totalAdmissions, pendingAdmissions, approvedAdmissions, rejectedAdmissions, noticesCount, feedbackCount });
   });
 
   r.get('/students', async (req, res) => {

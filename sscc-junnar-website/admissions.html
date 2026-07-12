@@ -109,6 +109,7 @@
               <select class="input" id="courseApplied" name="courseApplied" required>
                 <option value="" disabled selected>Select a Course</option>
               </select>
+              <div id="course-seats-info" style="margin-top:0.25rem; font-size: 0.8rem; font-weight: 500; color: var(--accent, #6366f1);"></div>
             </div>
             <div>
               <label class="field-label" for="board12">HSC Board</label>
@@ -286,6 +287,49 @@
       }
     });
 
+    // Auto-save form draft functionality
+    function saveDraft() {
+      const data = {};
+      document.querySelectorAll('#adm-form input:not([type="file"]), #adm-form select, #adm-form textarea').forEach(input => {
+        if (input.id && input.value) {
+          data[input.id] = input.value;
+        }
+      });
+      localStorage.setItem('adm_draft', JSON.stringify(data));
+    }
+
+    function restoreDraft() {
+      try {
+        const draftStr = localStorage.getItem('adm_draft');
+        if (!draftStr) return;
+        const draft = JSON.parse(draftStr);
+        let restoredCount = 0;
+        Object.entries(draft).forEach(([id, val]) => {
+          const el = document.getElementById(id);
+          if (el) {
+            el.value = val;
+            restoredCount++;
+          }
+        });
+        if (restoredCount > 0) {
+          const msg = document.getElementById('adm-msg');
+          if (msg) {
+            msg.textContent = 'Draft restored from previous session.';
+            msg.className = 'small mt-3 alert info';
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to restore draft:', err);
+      }
+    }
+
+    document.querySelectorAll('#adm-form input:not([type="file"]), #adm-form select, #adm-form textarea').forEach(input => {
+      input.addEventListener('input', saveDraft);
+      input.addEventListener('change', saveDraft);
+    });
+
+    restoreDraft();
+
     document.querySelectorAll('[data-next]').forEach((btn) => {
       btn.addEventListener('click', () => {
         const nextStep = Number(btn.getAttribute('data-next'));
@@ -372,21 +416,88 @@
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Not found');
         
+        const status = String(data.status).toLowerCase();
+        const docVerified = Boolean(data.documentsVerified);
+
+        // 3. Verified node status:
+        let verifyBg = '#f59e0b'; // orange
+        let verifyFg = '#fff';
+        let verifyText = '⏳';
+        let lineFillWidth = 33.3; // Default up to Received
+        let lineFillColor = '#22c55e';
+
+        if (docVerified || status === 'approved' || status === 'rejected') {
+          verifyBg = '#22c55e'; // green
+          verifyText = '✓';
+          lineFillWidth = 66.6;
+        }
+
+        // 4. Decision node status:
+        let decisionBg = '#e2e8f0'; // grey
+        let decisionFg = '#64748b';
+        let decisionText = '○';
+
+        if (status === 'approved') {
+          decisionBg = '#22c55e'; // green
+          decisionFg = '#fff';
+          decisionText = '✓';
+          lineFillWidth = 100;
+        } else if (status === 'rejected') {
+          decisionBg = '#ef4444'; // red
+          decisionFg = '#fff';
+          decisionText = '✗';
+          lineFillWidth = 100;
+          lineFillColor = '#ef4444';
+        }
+
         const statusColorClass = {
           approved: 'approved',
           rejected: 'rejected',
           pending: 'pending'
-        }[String(data.status).toLowerCase()] || '';
+        }[status] || '';
 
         const verifiedText = data.documentsVerified ? '✓ Verified' : '✗ Not Verified';
         const verifiedColor = data.documentsVerified ? 'var(--accent, #22c55e)' : 'var(--warning, #f59e0b)';
 
         out.innerHTML = `
-          <div class="tracker-result-card">
+          <div class="tracker-result-card" style="text-align: left;">
             <h4 style="margin: 0 0 1rem 0; color: var(--primary); font-size: 1.1rem; border-bottom: 1px solid var(--border-color, #e2e8f0); padding-bottom: 0.5rem;">
-              Application Status
+              Application Tracker
             </h4>
-            <div style="display: grid; grid-template-columns: 1fr; gap: 0.75rem; font-size: 0.9rem; text-align: left;">
+            
+            <!-- Graphic Timeline -->
+            <div style="margin: 1.5rem auto; max-width: 400px; display: flex; align-items: center; justify-content: space-between; position: relative;">
+              <!-- Line background -->
+              <div style="position: absolute; top: 13px; left: 15px; right: 15px; height: 3px; background: #e2e8f0; z-index: 1;"></div>
+              <!-- Completed line overlay -->
+              <div style="position: absolute; top: 13px; left: 15px; width: calc(${lineFillWidth}% - 30px); height: 3px; background: ${lineFillColor}; z-index: 2; transition: all 0.3s ease;"></div>
+              
+              <!-- Node 1: Submitted -->
+              <div style="display: flex; flex-direction: column; align-items: center; z-index: 3; position: relative; width: 60px;">
+                <div style="width: 26px; height: 26px; border-radius: 50%; background: #22c55e; color: #fff; display: grid; place-items: center; font-size: 0.8rem; font-weight: bold; border: 3px solid #fff; box-shadow: 0 0 0 1px #22c55e;">✓</div>
+                <span style="font-size: 0.72rem; font-weight: 600; margin-top: 0.25rem; color: var(--text-main);">Sub'd</span>
+              </div>
+              
+              <!-- Node 2: Received -->
+              <div style="display: flex; flex-direction: column; align-items: center; z-index: 3; position: relative; width: 60px;">
+                <div style="width: 26px; height: 26px; border-radius: 50%; background: #22c55e; color: #fff; display: grid; place-items: center; font-size: 0.8rem; font-weight: bold; border: 3px solid #fff; box-shadow: 0 0 0 1px #22c55e;">✓</div>
+                <span style="font-size: 0.72rem; font-weight: 600; margin-top: 0.25rem; color: var(--text-main);">Recv'd</span>
+              </div>
+              
+              <!-- Node 3: Verified -->
+              <div style="display: flex; flex-direction: column; align-items: center; z-index: 3; position: relative; width: 60px;">
+                <div style="width: 26px; height: 26px; border-radius: 50%; background: ${verifyBg}; color: ${verifyFg}; display: grid; place-items: center; font-size: 0.8rem; font-weight: bold; border: 3px solid #fff; box-shadow: 0 0 0 1px ${verifyBg};">${verifyText}</div>
+                <span style="font-size: 0.72rem; font-weight: 600; margin-top: 0.25rem; color: var(--text-main);">Vrfy</span>
+              </div>
+              
+              <!-- Node 4: Decision -->
+              <div style="display: flex; flex-direction: column; align-items: center; z-index: 3; position: relative; width: 60px;">
+                <div style="width: 26px; height: 26px; border-radius: 50%; background: ${decisionBg}; color: ${decisionFg}; display: grid; place-items: center; font-size: 0.8rem; font-weight: bold; border: 3px solid #fff; box-shadow: 0 0 0 1px ${decisionBg};">${decisionText}</div>
+                <span style="font-size: 0.72rem; font-weight: 600; margin-top: 0.25rem; color: var(--text-main);">Decision</span>
+              </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr; gap: 0.75rem; font-size: 0.9rem; margin-top: 1rem; border-top: 1px solid var(--border-color, #e2e8f0); padding-top: 1rem;">
               <div><strong>Application No:</strong> ${esc(data.applicationNumber)}</div>
               <div><strong>Applicant Name:</strong> ${esc(data.fullName)}</div>
               <div><strong>Course Applied:</strong> ${esc(data.courseApplied)}</div>
@@ -500,6 +611,7 @@
         msg.className = 'small mt-3 alert success';
         document.getElementById('track-app').value = data.applicationNumber;
         document.getElementById('track-email').value = document.getElementById('email').value.trim();
+        localStorage.removeItem('adm_draft');
       } catch (err) {
         msg.textContent = err.message || 'Submission failed. Is the server running?';
         msg.className = 'small mt-3 alert error';
@@ -516,6 +628,16 @@
           opt.value = c.name;
           opt.textContent = `${c.name} (${c.level} - ${c.duration || 'N/A'})`;
           select.appendChild(opt);
+        });
+        
+        select.addEventListener('change', () => {
+          const selected = courses.find(c => c.name === select.value);
+          const seatsInfo = document.getElementById('course-seats-info');
+          if (seatsInfo) {
+            seatsInfo.textContent = selected && selected.seatsApprox 
+              ? `Approx. ${selected.seatsApprox} seats available` 
+              : '';
+          }
         });
       } catch (err) {
         console.error('Failed to load courses:', err);

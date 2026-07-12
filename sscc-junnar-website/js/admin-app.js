@@ -2059,40 +2059,123 @@
   }
   hydrateAdmCourseFilter();
 
-  function openApproveModal(id) {
+  async function fetchAuthDocument(url) {
+    if (!url) return '';
+    try {
+      const token = SSC_API.token();
+      const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` }});
+      if (!res.ok) return '';
+      const blob = await res.blob();
+      return URL.createObjectURL(blob);
+    } catch (err) {
+      console.warn('Failed to fetch auth document:', err);
+      return '';
+    }
+  }
+
+  async function openApproveModal(id) {
     const cur = admCachedRows.find(x => (x._id || x.id) === id);
     if (!cur) return;
 
-    const yearSuffix = new Date().getFullYear().toString().slice(-2);
-    const courseAbbr = (cur.courseApplied || 'GEN').toUpperCase().replace(/[^A-Z0-9]/g, '') || 'GEN';
-    const prefix = `SSC${yearSuffix}${courseAbbr}`;
-    let matchCount = 0;
-    if (searchIndex && searchIndex.students) {
-      searchIndex.students.forEach(student => {
-        const sp = student.studentProfile || {};
-        if (sp.studentId && String(sp.studentId).startsWith(prefix)) matchCount++;
-      });
-    }
-    const seqNum = String(matchCount + 1).padStart(3, '0');
-    const generatedStudentId = `${prefix}${seqNum}`;
-    const collegeEmail = `${generatedStudentId.toLowerCase()}@ssccjunnar.edu`;
-    const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$';
-    let pwd = '';
-    pwd += 'abcdefghijklmnopqrstuvwxyz'[Math.floor(Math.random() * 26)];
-    pwd += 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'[Math.floor(Math.random() * 26)];
-    pwd += '0123456789'[Math.floor(Math.random() * 10)];
-    pwd += '!@#$'[Math.floor(Math.random() * 4)];
-    for (let i = 0; i < 6; i++) pwd += chars[Math.floor(Math.random() * chars.length)];
-    const tempPassword = pwd.split('').sort(() => 0.5 - Math.random()).join('');
+    try {
+      // Show loading or overlay
+      const d = await SSC_API.get('/admin/admissions/' + id);
 
-    document.getElementById('decision-app-id').value = cur._id || cur.id;
-    document.getElementById('decision-student-name').value = cur.fullName || '';
-    document.getElementById('decision-student-course').value = cur.courseApplied || '';
-    document.getElementById('decision-student-id').value = generatedStudentId;
-    document.getElementById('decision-college-email').value = collegeEmail;
-    document.getElementById('decision-temp-password').value = tempPassword;
-    document.getElementById('decision-class-name').value = `FY-${courseAbbr}-A`;
-    document.getElementById('modal-admission-decision').style.display = 'flex';
+      // Populate summary bar elements
+      document.getElementById('adm-modal-name').textContent = d.fullName || '—';
+      document.getElementById('adm-modal-course').textContent = d.courseApplied || '—';
+      document.getElementById('adm-modal-marks').textContent = `HSC: ${d.marks12 ?? '—'} / ${d.maxMarks12 ?? 600} | SSC: ${d.sscMarks ?? '—'}`;
+      
+      const statusClass = { approved: 'approved', rejected: 'rejected', pending: 'pending' }[String(d.status).toLowerCase()] || '';
+      const statusEl = document.getElementById('adm-modal-status');
+      if (statusEl) {
+        statusEl.className = `badge ${statusClass}`;
+        statusEl.textContent = d.status || 'pending';
+      }
+
+      // Fetch and show applicant photo
+      const photoDoc = (d.documentFiles || []).find(f => f.field === 'photo');
+      const imgEl = document.getElementById('adm-photo-img');
+      const placeholderEl = document.getElementById('adm-photo-placeholder');
+      if (photoDoc && photoDoc.url) {
+        const blobUrl = await fetchAuthDocument(photoDoc.url);
+        if (blobUrl) {
+          imgEl.src = blobUrl;
+          imgEl.style.display = 'block';
+          if (placeholderEl) placeholderEl.style.display = 'none';
+        } else {
+          imgEl.style.display = 'none';
+          if (placeholderEl) placeholderEl.style.display = 'block';
+        }
+      } else {
+        imgEl.style.display = 'none';
+        if (placeholderEl) placeholderEl.style.display = 'block';
+      }
+
+      // Populate documents check list
+      const docsGrid = document.getElementById('adm-docs-grid');
+      if (docsGrid) {
+        docsGrid.innerHTML = '';
+        const fieldLabels = { photo: 'Photo', signature: 'Signature', marksheet: 'Marksheet', leavingCertificate: 'Leaving Certificate' };
+        for (const doc of (d.documentFiles || [])) {
+          const docUrl = await fetchAuthDocument(doc.url);
+          const div = document.createElement('div');
+          div.style.cssText = 'border:1px solid var(--border-color,#e2e8f0);border-radius:6px;padding:0.5rem;text-align:center;font-size:0.8rem;background:var(--surface,#f8fafc);';
+          const label = fieldLabels[doc.field] || doc.originalName || 'Document';
+          div.innerHTML = `
+            <div style="font-weight:600;margin-bottom:0.25rem;">${esc(label)}</div>
+            ${docUrl ? `<a href="${docUrl}" target="_blank" style="color:var(--primary,#6366f1);font-weight:500;">View File ↗</a>` : '<span style="color:var(--text-secondary);">No preview</span>'}
+          `;
+          docsGrid.appendChild(div);
+        }
+      }
+
+      // Verify documents checkbox reset
+      const verifiedCheck = document.getElementById('adm-docs-verified-check');
+      const submitBtn = document.getElementById('btn-decision-submit');
+      if (verifiedCheck && submitBtn) {
+        verifiedCheck.checked = false;
+        submitBtn.disabled = true;
+
+        const newCheck = verifiedCheck.cloneNode(true);
+        verifiedCheck.parentNode.replaceChild(newCheck, verifiedCheck);
+        newCheck.addEventListener('change', () => {
+          submitBtn.disabled = !newCheck.checked;
+        });
+      }
+
+      const yearSuffix = new Date().getFullYear().toString().slice(-2);
+      const courseAbbr = (cur.courseApplied || 'GEN').toUpperCase().replace(/[^A-Z0-9]/g, '') || 'GEN';
+      const prefix = `SSC${yearSuffix}${courseAbbr}`;
+      let matchCount = 0;
+      if (searchIndex && searchIndex.students) {
+        searchIndex.students.forEach(student => {
+          const sp = student.studentProfile || {};
+          if (sp.studentId && String(sp.studentId).startsWith(prefix)) matchCount++;
+        });
+      }
+      const seqNum = String(matchCount + 1).padStart(3, '0');
+      const generatedStudentId = `${prefix}${seqNum}`;
+      const collegeEmail = `${generatedStudentId.toLowerCase()}@ssccjunnar.edu`;
+      const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$';
+      let pwd = '';
+      pwd += 'abcdefghijklmnopqrstuvwxyz'[Math.floor(Math.random() * 26)];
+      pwd += 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'[Math.floor(Math.random() * 26)];
+      pwd += '0123456789'[Math.floor(Math.random() * 10)];
+      pwd += '!@#$'[Math.floor(Math.random() * 4)];
+      for (let i = 0; i < 6; i++) pwd += chars[Math.floor(Math.random() * chars.length)];
+      const tempPassword = pwd.split('').sort(() => 0.5 - Math.random()).join('');
+
+      document.getElementById('decision-app-id').value = cur._id || cur.id;
+      document.getElementById('decision-student-id').value = generatedStudentId;
+      document.getElementById('decision-college-email').value = collegeEmail;
+      document.getElementById('decision-temp-password').value = tempPassword;
+      document.getElementById('decision-class-name').value = `FY-${courseAbbr}-A`;
+      document.getElementById('modal-admission-decision').style.display = 'flex';
+
+    } catch (err) {
+      showModalAlert(err.message || 'Failed to load application details', 'Error');
+    }
   }
 
   async function loadAdmissions() {
@@ -2112,6 +2195,27 @@
     admCachedRows = rows;
     admCurrentPage = pagination.page;
     admTotalPages = pagination.totalPages;
+
+    // Fetch and populate stats bar counts
+    try {
+      const stats = await SSC_API.get('/admin/dashboard/stats');
+      const elementsToPopulate = {
+        'adm-stat-total': stats.totalAdmissions,
+        'adm-stat-pending': stats.pendingAdmissions,
+        'adm-stat-approved': stats.approvedAdmissions,
+        'adm-stat-rejected': stats.rejectedAdmissions,
+        'cnt-all': stats.totalAdmissions,
+        'cnt-pending': stats.pendingAdmissions,
+        'cnt-approved': stats.approvedAdmissions,
+        'cnt-rejected': stats.rejectedAdmissions
+      };
+      Object.entries(elementsToPopulate).forEach(([id, val]) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = val ?? 0;
+      });
+    } catch (statsErr) {
+      console.warn('Failed to load stats bar counts:', statsErr);
+    }
 
     // Update pagination UI
     const pageInfo = document.getElementById('adm-page-info');
@@ -2253,29 +2357,30 @@
       } else {
         noDocs.style.display = 'none';
         const fieldLabels = { photo: 'Photo', signature: 'Signature', marksheet: 'Marksheet', leavingCertificate: 'Leaving Certificate' };
-        docs.forEach(doc => {
+        for (const doc of docs) {
           const card = document.createElement('div');
-          card.style.cssText = 'border:1px solid var(--border,#e2e8f0);border-radius:0.75rem;padding:0.75rem;text-align:center;';
+          card.style.cssText = 'border:1px solid var(--border,#e2e8f0);border-radius:0.75rem;padding:0.75rem;text-align:center;background:var(--surface,#f8fafc);';
           const label = fieldLabels[doc.field] || doc.originalName || 'Document';
           const isImage = (doc.mimeType || '').startsWith('image/');
           const isPdf = (doc.mimeType || '') === 'application/pdf';
+          
           let preview = '';
-          if (isImage && doc.url) {
-            preview = `<img src="${doc.url}" alt="${esc(label)}" style="max-width:100%;max-height:180px;object-fit:contain;border-radius:0.5rem;cursor:pointer;margin-bottom:0.5rem;" onclick="document.getElementById('adm-fullscreen-img').src=this.src;document.getElementById('adm-fullscreen-viewer').style.display='flex';" />`;
-          } else if (isPdf && doc.url) {
-            preview = `<div style="height:180px;display:flex;align-items:center;justify-content:center;background:var(--surface,#f8fafc);border-radius:0.5rem;margin-bottom:0.5rem;">
-              <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--muted,#94a3b8)" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-            </div>`;
+          const docUrl = doc.url ? await fetchAuthDocument(doc.url) : '';
+          
+          if (isImage && docUrl) {
+            preview = `<img src="${docUrl}" alt="${esc(label)}" style="max-width:100%;max-height:180px;object-fit:contain;border-radius:0.5rem;cursor:pointer;margin-bottom:0.5rem;" onclick="document.getElementById('adm-fullscreen-img').src=this.src;document.getElementById('adm-fullscreen-viewer').style.display='flex';" />`;
+          } else if (isPdf && docUrl) {
+            preview = `<iframe src="${docUrl}" style="width:100%;height:180px;border:none;border-radius:0.5rem;margin-bottom:0.5rem;"></iframe>`;
           } else {
             preview = `<div style="height:180px;display:flex;align-items:center;justify-content:center;background:var(--surface,#f8fafc);border-radius:0.5rem;margin-bottom:0.5rem;color:var(--muted);">No Preview</div>`;
           }
           card.innerHTML = `
             ${preview}
-            <p style="margin:0;font-weight:600;font-size:0.85rem;">${esc(label)}</p>
-            ${doc.url ? `<a href="${doc.url}" target="_blank" class="small" style="color:var(--accent,#6366f1);">Open in new tab ↗</a>` : ''}
+            <p style="margin:0;font-weight:600;font-size:0.85rem;color:var(--text-main);">${esc(label)}</p>
+            ${docUrl ? `<a href="${docUrl}" target="_blank" class="small" style="color:var(--accent,#6366f1);font-weight:500;">Open in new tab ↗</a>` : ''}
           `;
           grid.appendChild(card);
-        });
+        }
       }
 
       // Actions tab — verification label

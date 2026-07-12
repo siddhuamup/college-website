@@ -156,11 +156,13 @@
               <p class="small student-welcome-meta" id="db-student-meta">Loading student profile...</p>
             </div>
           </div>
-          <div class="student-quick-actions">
-            <button class="btn small" id="qa-id-card" type="button">Digital ID Card</button>
+          <div class="student-quick-actions" style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <button class="btn small" id="qa-view-profile" type="button">👤 View Full Profile</button>
+            <button class="btn secondary small" id="qa-id-card" type="button">Digital ID Card</button>
             <button class="btn secondary small" id="qa-view-results" type="button">View Results</button>
             <button class="btn secondary small" id="qa-view-attendance" type="button">View Attendance</button>
             <button class="btn secondary small" id="qa-edit-profile" type="button">Edit Profile</button>
+            <button class="btn secondary small" id="btn-quick-edit-creds" type="button" style="color:var(--accent,#6366f1); font-weight:600;">🔑 Change Password</button>
           </div>
         </div>
 
@@ -555,6 +557,115 @@
             <div><label class="field-label">Rating (1–5)</label><input class="input" id="fb-rate" type="number" min="1" max="5" value="5"/></div>
             <div><button class="btn" type="submit">Submit</button></div>
           </form>
+        </div>
+      </section>
+
+      <!-- Premium View Profile Panel -->
+      <section class="dash-panel" data-panel="view-profile">
+        <div class="card" style="padding:0; overflow:hidden; border-radius:12px; border:1px solid var(--border-color,#e2e8f0); position:relative; background:var(--bg-card,#ffffff);">
+          <!-- Premium Cover Gradient -->
+          <div style="height:140px; background: linear-gradient(135deg, var(--primary, #6366f1) 0%, var(--accent, #a855f7) 100%);"></div>
+          
+          <!-- Profile Main Details Header -->
+          <div style="padding: 1.5rem; display: flex; gap: 1.5rem; align-items: flex-end; margin-top: -60px; flex-wrap: wrap;">
+            <div style="width:110px; height:110px; border-radius:50%; border:4px solid var(--bg-card,#ffffff); background:var(--muted,#e2e8f0); overflow:hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.15); flex-shrink:0; display:grid; place-items:center;">
+              <img id="vp-avatar-img" src="" alt="Avatar" style="width:100%; height:100%; object-fit:cover; display:none;"/>
+              <span id="vp-avatar-placeholder" style="font-size:2.5rem;">🎓</span>
+            </div>
+            <div style="flex-grow:1;">
+              <h2 id="vp-name" style="margin:0 0 0.25rem 0; font-size:1.6rem; color:var(--text-main);">—</h2>
+              <p id="vp-meta" style="margin:0 0 0.5rem 0; color:var(--text-secondary); font-weight:500;">—</p>
+              <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+                <span class="badge pending" id="vp-badge-id">ID: —</span>
+                <span class="badge approved" id="vp-badge-roll">Roll: —</span>
+              </div>
+            </div>
+            <button class="btn small" type="button" onclick="window.panel('edit-profile')" style="margin-left:auto;">
+              ✏️ Edit Profile
+            </button>
+          </div>
+
+          <!-- Profile Tabs Header -->
+          <div class="tabs-header" style="border-top:1px solid var(--border-color,#e2e8f0); display:flex; gap:1.5rem; padding:0 1.5rem; background:var(--surface,#f8fafc);">
+            <button type="button" class="tab-btn active vp-tab-btn" data-vp-tab="personal" style="padding:1rem 0; background:none; border:none; font-weight:600; font-size:0.9rem; color:var(--accent,#6366f1); border-bottom:3px solid var(--accent,#6366f1); cursor:pointer;">
+              Personal Details
+            </button>
+            <button type="button" class="tab-btn vp-tab-btn" data-vp-tab="academic" style="padding:1rem 0; background:none; border:none; font-weight:600; font-size:0.9rem; color:var(--muted,#94a3b8); border-bottom:3px solid transparent; cursor:pointer;">
+              Academic Profile
+            </button>
+          </div>
+
+          <!-- Tab Content Panel: Personal -->
+          <div class="vp-tab-panel" data-vp-panel="personal" style="padding: 1.5rem;">
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem;">
+              <div style="border: 1px solid var(--border-color,#e2e8f0); padding: 0.75rem 1rem; border-radius: 8px;">
+                <div style="font-size:0.75rem; color:var(--text-secondary); font-weight:600; text-transform:uppercase;">Full Name</div>
+                <div id="vp-p-name" style="font-weight:600; margin-top:0.25rem;">—</div>
+              </div>
+              <div style="border: 1px solid var(--border-color,#e2e8f0); padding: 0.75rem 1rem; border-radius: 8px;">
+                <div style="font-size:0.75rem; color:var(--text-secondary); font-weight:600; text-transform:uppercase;">College Email</div>
+                <div id="vp-p-email" style="font-weight:600; margin-top:0.25rem;">—</div>
+              </div>
+              <div style="border: 1px solid var(--border-color,#e2e8f0); padding: 0.75rem 1rem; border-radius: 8px;">
+                <div style="font-size:0.75rem; color:var(--text-secondary); font-weight:600; text-transform:uppercase;">Phone Number</div>
+                <div id="vp-p-phone" style="font-weight:600; margin-top:0.25rem;">—</div>
+              </div>
+              <div style="border: 1px solid var(--border-color,#e2e8f0); padding: 0.75rem 1rem; border-radius: 8px;">
+                <div style="font-size:0.75rem; color:var(--text-secondary); font-weight:600; text-transform:uppercase;">Date of Birth</div>
+                <div id="vp-p-dob" style="font-weight:600; margin-top:0.25rem;">—</div>
+              </div>
+              <div style="border: 1px solid var(--border-color,#e2e8f0); padding: 0.75rem 1rem; border-radius: 8px;">
+                <div style="font-size:0.75rem; color:var(--text-secondary); font-weight:600; text-transform:uppercase;">Gender</div>
+                <div id="vp-p-gender" style="font-weight:600; margin-top:0.25rem;">—</div>
+              </div>
+              <div style="border: 1px solid var(--border-color,#e2e8f0); padding: 0.75rem 1rem; border-radius: 8px;">
+                <div style="font-size:0.75rem; color:var(--text-secondary); font-weight:600; text-transform:uppercase;">Category</div>
+                <div id="vp-p-category" style="font-weight:600; margin-top:0.25rem;">—</div>
+              </div>
+              <div style="border: 1px solid var(--border-color,#e2e8f0); padding: 0.75rem 1rem; border-radius: 8px; grid-column: span 2;">
+                <div style="font-size:0.75rem; color:var(--text-secondary); font-weight:600; text-transform:uppercase;">Residential Address</div>
+                <div id="vp-p-address" style="font-weight:600; margin-top:0.25rem;">—</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab Content Panel: Academic -->
+          <div class="vp-tab-panel" data-vp-panel="academic" style="padding: 1.5rem; display:none;">
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem;">
+              <div style="border: 1px solid var(--border-color,#e2e8f0); padding: 0.75rem 1rem; border-radius: 8px;">
+                <div style="font-size:0.75rem; color:var(--text-secondary); font-weight:600; text-transform:uppercase;">Course / Stream</div>
+                <div id="vp-a-course" style="font-weight:600; margin-top:0.25rem;">—</div>
+              </div>
+              <div style="border: 1px solid var(--border-color,#e2e8f0); padding: 0.75rem 1rem; border-radius: 8px;">
+                <div style="font-size:0.75rem; color:var(--text-secondary); font-weight:600; text-transform:uppercase;">Class Name / Division</div>
+                <div id="vp-a-class" style="font-weight:600; margin-top:0.25rem;">—</div>
+              </div>
+              <div style="border: 1px solid var(--border-color,#e2e8f0); padding: 0.75rem 1rem; border-radius: 8px;">
+                <div style="font-size:0.75rem; color:var(--text-secondary); font-weight:600; text-transform:uppercase;">Student ID</div>
+                <div id="vp-a-studentid" style="font-weight:600; margin-top:0.25rem;">—</div>
+              </div>
+              <div style="border: 1px solid var(--border-color,#e2e8f0); padding: 0.75rem 1rem; border-radius: 8px;">
+                <div style="font-size:0.75rem; color:var(--text-secondary); font-weight:600; text-transform:uppercase;">Roll Number</div>
+                <div id="vp-a-roll" style="font-weight:600; margin-top:0.25rem;">—</div>
+              </div>
+              <div style="border: 1px solid var(--border-color,#e2e8f0); padding: 0.75rem 1rem; border-radius: 8px;">
+                <div style="font-size:0.75rem; color:var(--text-secondary); font-weight:600; text-transform:uppercase;">SSC (10th) Marks</div>
+                <div id="vp-a-ssc" style="font-weight:600; margin-top:0.25rem;">—</div>
+              </div>
+              <div style="border: 1px solid var(--border-color,#e2e8f0); padding: 0.75rem 1rem; border-radius: 8px;">
+                <div style="font-size:0.75rem; color:var(--text-secondary); font-weight:600; text-transform:uppercase;">HSC (12th) Marks</div>
+                <div id="vp-a-hsc" style="font-weight:600; margin-top:0.25rem;">—</div>
+              </div>
+              <div style="border: 1px solid var(--border-color,#e2e8f0); padding: 0.75rem 1rem; border-radius: 8px;">
+                <div style="font-size:0.75rem; color:var(--text-secondary); font-weight:600; text-transform:uppercase;">HSC Board</div>
+                <div id="vp-a-board" style="font-weight:600; margin-top:0.25rem;">—</div>
+              </div>
+              <div style="border: 1px solid var(--border-color,#e2e8f0); padding: 0.75rem 1rem; border-radius: 8px;">
+                <div style="font-size:0.75rem; color:var(--text-secondary); font-weight:600; text-transform:uppercase;">Admission Year</div>
+                <div id="vp-a-year" style="font-weight:600; margin-top:0.25rem;">—</div>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 

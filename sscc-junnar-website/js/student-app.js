@@ -424,6 +424,42 @@
       });
     }
 
+    const qaViewProfileBtn = el('qa-view-profile');
+    if (qaViewProfileBtn) {
+      qaViewProfileBtn.addEventListener('click', () => {
+        panel('view-profile');
+        load('view-profile');
+      });
+    }
+
+    const quickEditCredsBtn = el('btn-quick-edit-creds');
+    if (quickEditCredsBtn) {
+      quickEditCredsBtn.addEventListener('click', () => {
+        panel('edit-profile');
+        load('edit-profile');
+        setTimeout(() => {
+          const secTab = document.querySelector('[data-subtab="security"]');
+          if (secTab) secTab.click();
+        }, 150);
+      });
+    }
+
+    // Wire view-profile sub tabs
+    document.querySelectorAll('.vp-tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const target = btn.getAttribute('data-vp-tab');
+        document.querySelectorAll('.vp-tab-btn').forEach(b => {
+          const isActive = b.getAttribute('data-vp-tab') === target;
+          b.classList.toggle('active', isActive);
+          b.style.color = isActive ? 'var(--accent,#6366f1)' : 'var(--muted,#94a3b8)';
+          b.style.borderBottomColor = isActive ? 'var(--accent,#6366f1)' : 'transparent';
+        });
+        document.querySelectorAll('.vp-tab-panel').forEach(p => {
+          p.style.display = p.getAttribute('data-vp-panel') === target ? 'block' : 'none';
+        });
+      });
+    });
+
     document.querySelectorAll('.dash-nav button').forEach((btn) => {
       btn.addEventListener('click', () => {
         panel(btn.getAttribute('data-panel'));
@@ -553,8 +589,63 @@
       if (id === 'notices') await loadNotices();
       if (id === 'placement') await loadPlacementPanel();
       if (id === 'edit-profile') await loadEditProfile();
+      if (id === 'view-profile') await loadViewProfile();
     } catch (e) {
       showToast(e.data?.error || e.message || 'Error loading dashboard panel', 'error');
+    }
+  }
+
+  async function loadViewProfile() {
+    try {
+      const u = await SSC_API.get('/student/profile');
+      const sp = u.studentProfile || {};
+
+      // Name & Meta
+      setText('vp-name', u.name || 'Student');
+      const courseName = sp.courseName || sp.course || 'GEN';
+      const className = sp.className || 'N/A';
+      setText('vp-meta', `${courseName} · Class ${className}`);
+
+      // Badges
+      setText('vp-badge-id', `ID: ${sp.studentId || u.id || 'N/A'}`);
+      setText('vp-badge-roll', `Roll: ${sp.rollNumber || 'N/A'}`);
+
+      // Avatar
+      const img = el('vp-avatar-img');
+      const placeholder = el('vp-avatar-placeholder');
+      if (img && placeholder) {
+        if (u.avatarUrl) {
+          img.src = u.avatarUrl;
+          img.style.display = 'block';
+          placeholder.style.display = 'none';
+        } else {
+          img.style.display = 'none';
+          placeholder.style.display = 'grid';
+          placeholder.textContent = (u.name || 'S').charAt(0).toUpperCase();
+        }
+      }
+
+      // Personal Details Tab
+      setText('vp-p-name', u.name || '—');
+      setText('vp-p-email', sp.collegeEmail || u.email || '—');
+      setText('vp-p-phone', u.phone || '—');
+      setText('vp-p-dob', sp.dob || '—');
+      setText('vp-p-gender', sp.gender || '—');
+      setText('vp-p-category', sp.category || '—');
+      setText('vp-p-address', sp.address || '—');
+
+      // Academic Profile Tab
+      setText('vp-a-course', courseName);
+      setText('vp-a-class', className);
+      setText('vp-a-studentid', sp.studentId || '—');
+      setText('vp-a-roll', sp.rollNumber || '—');
+      setText('vp-a-ssc', sp.sscMarks ? `${sp.sscMarks} Obtained` : '—');
+      setText('vp-a-hsc', sp.marks12 ? `${sp.marks12} / ${sp.maxMarks12 || 600}` : '—');
+      setText('vp-a-board', sp.board12 || '—');
+      setText('vp-a-year', sp.admissionYear || '—');
+
+    } catch (err) {
+      showToast('Failed to load profile details: ' + err.message, 'error');
     }
   }
 
