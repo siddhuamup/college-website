@@ -67,7 +67,7 @@ export function authRouter({ jwtSecret, jwtExpiresIn }) {
       // O(1) performance using SQLite JSON extraction function (avoid loading entire database into memory)
       const rawUsers = await prisma.$queryRaw`
         SELECT * FROM User 
-        WHERE role = 'student' AND (
+        WHERE role = 'student' AND isDeleted = 0 AND (
           lower(json_extract(studentProfile, '$.studentId')) = ${searchId} OR 
           lower(json_extract(studentProfile, '$.personalEmail')) = ${searchId} OR 
           lower(json_extract(studentProfile, '$.collegeEmail')) = ${searchId}
@@ -227,6 +227,14 @@ export function authRouter({ jwtSecret, jwtExpiresIn }) {
     }
     if (newPassword.length < 8) {
       return res.status(400).json({ error: 'Password must be at least 8 characters' });
+    }
+    // Strength: must contain uppercase, lowercase, digit, special (same as change-password)
+    const hasUpper = /[A-Z]/.test(newPassword);
+    const hasLower = /[a-z]/.test(newPassword);
+    const hasDigit = /[0-9]/.test(newPassword);
+    const hasSpecial = /[!@#$%^&*()_+\-=\[\]{};':"|,.<>\/?]/.test(newPassword);
+    if (!hasUpper || !hasLower || !hasDigit || !hasSpecial) {
+      return res.status(400).json({ error: 'Password must contain uppercase, lowercase, digit, and special character' });
     }
     const record = await prisma.passwordResetToken.findUnique({
       where: { token },

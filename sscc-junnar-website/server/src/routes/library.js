@@ -98,38 +98,44 @@ export function adminLibraryRouter({ jwtSecret }) {
       return res.status(400).json({ error: 'studentId, bookId, and dueDate are required' });
     }
 
-    const book = await prisma.libraryBook.findUnique({ where: { id: bookId } });
-    if (!book) return res.status(404).json({ error: 'Book not found' });
-    if (book.availableQty <= 0) {
-      return res.status(400).json({ error: 'No copies available for issue' });
-    }
-
     const student = await prisma.user.findFirst({
       where: { id: studentId, role: Role.student }
     });
     if (!student) return res.status(404).json({ error: 'Student not found' });
 
-    // Issue book
-    const [issue] = await prisma.$transaction([
-      prisma.libraryIssue.create({
-        data: {
-          studentId,
-          bookId,
-          dueDate: new Date(dueDate),
-          status: 'issued'
-        },
-        include: {
-          book: true,
-          student: { select: { id: true, name: true, email: true } }
-        }
-      }),
-      prisma.libraryBook.update({
-        where: { id: bookId },
-        data: { availableQty: book.availableQty - 1 }
-      })
-    ]);
+    // Use interactive transaction to prevent race condition on availableQty
+    try {
+      const issue = await prisma.$transaction(async (tx) => {
+        const book = await tx.libraryBook.findUnique({ where: { id: bookId } });
+        if (!book) throw Object.assign(new Error('Book not found'), { status: 404 });
+        if (book.availableQty <= 0) throw Object.assign(new Error('No copies available for issue'), { status: 400 });
 
-    res.status(201).json(withMongoId(issue));
+        const newIssue = await tx.libraryIssue.create({
+          data: {
+            studentId,
+            bookId,
+            dueDate: new Date(dueDate),
+            status: 'issued'
+          },
+          include: {
+            book: true,
+            student: { select: { id: true, name: true, email: true } }
+          }
+        });
+
+        await tx.libraryBook.update({
+          where: { id: bookId },
+          data: { availableQty: { decrement: 1 } }
+        });
+
+        return newIssue;
+      });
+
+      res.status(201).json(withMongoId(issue));
+    } catch (err) {
+      const status = err.status || 500;
+      res.status(status).json({ error: err.message || 'Failed to issue book' });
+    }
   });
 
   // POST return book

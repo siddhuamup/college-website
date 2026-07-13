@@ -247,7 +247,7 @@ export function publicRouter() {
       return res.status(400).json({ error: 'email and applicationNumber required' });
     }
     const doc = await prisma.admissionApplication.findFirst({
-      where: { email, applicationNumber },
+      where: { email, applicationNumber, isDeleted: false },
     });
     if (!doc) return res.status(404).json({ error: 'Application not found' });
     res.json({
@@ -255,7 +255,6 @@ export function publicRouter() {
       status: doc.status,
       fullName: doc.fullName,
       courseApplied: doc.courseApplied,
-      verificationNotes: doc.verificationNotes,
       documentsVerified: doc.documentsVerified,
       updatedAt: doc.updatedAt,
     });

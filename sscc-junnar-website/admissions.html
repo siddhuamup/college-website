@@ -117,11 +117,11 @@
             </div>
             <div>
               <label class="field-label" for="sscMarks">SSC Marks Obtained (Out of 500/600)</label>
-              <input class="input" id="sscMarks" name="sscMarks" type="number" min="0" step="0.01" placeholder="SSC Marks" required/>
+              <input class="input" id="sscMarks" name="sscMarks" type="number" min="1" max="900" step="0.01" placeholder="SSC Marks" required/>
             </div>
             <div>
               <label class="field-label" for="marks12">HSC Marks Obtained</label>
-              <input class="input" id="marks12" name="marks12" type="number" min="0" step="0.01" placeholder="HSC Marks" required/>
+              <input class="input" id="marks12" name="marks12" type="number" min="1" max="900" step="0.01" placeholder="HSC Marks" required/>
             </div>
             <div>
               <label class="field-label" for="maxMarks12">HSC Max Marks</label>
@@ -328,7 +328,7 @@
       input.addEventListener('change', saveDraft);
     });
 
-    restoreDraft();
+    // restoreDraft() moved inside loadCoursesDropdown() to avoid race condition
 
     document.querySelectorAll('[data-next]').forEach((btn) => {
       btn.addEventListener('click', () => {
@@ -639,6 +639,9 @@
               : '';
           }
         });
+
+        // Restore draft AFTER options exist so courseApplied select value can be set
+        restoreDraft();
       } catch (err) {
         console.error('Failed to load courses:', err);
       }

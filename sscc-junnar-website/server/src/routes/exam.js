@@ -205,37 +205,42 @@ export function studentExamRouter({ jwtSecret }) {
     });
     if (!exams.length) return res.json([]);
 
+    // Batch query: get ALL of this student's marks for published exams
+    const examIds = exams.map(e => e.id);
+    const studentMarks = await prisma.mark.findMany({
+      where: {
+        studentId: req.user.id,
+        examName: { in: exams.map(e => e.title) },
+        subject: { in: exams.map(e => e.subject) }
+      }
+    });
+
+    // Batch query: get ALL marks for ranking across the student's class
+    const allClassMarks = await prisma.mark.findMany({
+      where: {
+        examName: { in: exams.map(e => e.title) },
+        subject: { in: exams.map(e => e.subject) },
+        student: { role: Role.student }
+      },
+      include: { student: { select: { studentProfile: true, id: true } } }
+    });
+
     const resultsList = [];
     for (const exam of exams) {
-      const mark = await prisma.mark.findFirst({
-        where: {
-          studentId: req.user.id,
-          subject: exam.subject,
-          examName: exam.title
-        }
-      });
-
-      if (!mark) continue; // Skip if no mark entered yet for this student
+      const mark = studentMarks.find(m => m.subject === exam.subject && m.examName === exam.title);
+      if (!mark) continue;
 
       const pct = (mark.marksObtained / exam.maxMarks) * 100;
       const grade = pct >= 90 ? 'A+' : pct >= 80 ? 'A' : pct >= 70 ? 'B+' : pct >= 60 ? 'B' : pct >= 50 ? 'C' : 'F';
       const passFail = pct >= 35 ? 'PASS' : 'FAIL';
 
-      // Find all marks for this subject + exam to calculate class rank
-      const allMarksInClass = await prisma.mark.findMany({
-        where: {
-          subject: exam.subject,
-          examName: exam.title,
-          student: { role: Role.student }
-        },
-        include: { student: true }
-      });
-
-      // Filter by the student's class
-      const classMarksFiltered = allMarksInClass.filter(m => {
-        const sp = m.student.studentProfile;
-        return sp && typeof sp === 'object' && sp.className === className;
-      });
+      // Compute rank from pre-fetched class marks
+      const classMarksFiltered = allClassMarks
+        .filter(m => m.subject === exam.subject && m.examName === exam.title)
+        .filter(m => {
+          const sp = m.student.studentProfile;
+          return sp && typeof sp === 'object' && sp.className === className;
+        });
 
       classMarksFiltered.sort((a, b) => b.marksObtained - a.marksObtained);
       const rankIndex = classMarksFiltered.findIndex(m => m.studentId === req.user.id);

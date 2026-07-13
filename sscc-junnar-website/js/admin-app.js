@@ -2668,7 +2668,23 @@
 
   async function loadCourses() {
     showTableShimmer('#tbl-courses tbody', 3);
-    const rows = await SSC_API.get('/admin/courses');
+    const [rows, departments] = await Promise.all([
+      SSC_API.get('/admin/courses'),
+      SSC_API.get('/admin/departments').catch(() => [])
+    ]);
+
+    // Hydrate department select dropdown
+    const select = document.getElementById('course-dept-select');
+    if (select) {
+      select.innerHTML = '<option value="">None / General</option>';
+      departments.forEach(d => {
+        const opt = document.createElement('option');
+        opt.value = d._id || d.id;
+        opt.textContent = `${d.name} (${d.stream})`;
+        select.appendChild(opt);
+      });
+    }
+
     const tb = document.querySelector('#tbl-courses tbody');
     tb.innerHTML = '';
     rows.forEach((c) => {
@@ -2694,6 +2710,8 @@
       level: f.level.value,
       duration: f.duration.value.trim(),
       eligibility: f.eligibility.value.trim(),
+      seatsApprox: Number(f.seatsApprox.value) || 0,
+      departmentId: f.departmentId.value || null,
       description: f.description.value.trim(),
     });
     f.reset();
@@ -4096,6 +4114,155 @@
       });
     });
   }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // ██ RECYCLE BIN PANEL ████████████████████████████████████████████████████
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  async function loadRecycleBinPanel() {
+    try {
+      const data = await SSC_API.get('/admin/recycle-bin');
+      renderRecycleTable('tbl-recycle-students', data.students || [], 'students');
+      renderRecycleTable('tbl-recycle-teachers', data.teachers || [], 'teachers');
+      renderRecycleTable('tbl-recycle-notices', data.notices || [], 'notices');
+      renderRecycleTable('tbl-recycle-courses', data.courses || [], 'courses');
+    } catch (err) {
+      msg('Failed to load recycle bin: ' + (err.message || err), true);
+    }
+  }
+  window.loadRecycleBinPanel = loadRecycleBinPanel;
+
+  function renderRecycleTable(tableId, items, type) {
+    const tbody = document.querySelector(`#${tableId} tbody`);
+    if (!tbody) return;
+    if (!items.length) {
+      tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;opacity:0.6;padding:1.5rem;">No deleted ${type} found</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = items.map(item => {
+      const name = esc(item.name || item.title || item.fullName || '—');
+      const col2 = type === 'notices' ? esc(item.audience || '—') : type === 'courses' ? esc(item.level || '—') : esc(item.email || '—');
+      const deletedAt = item.deletedAt ? new Date(item.deletedAt).toLocaleString() : '—';
+      const deletedBy = esc(item.deletedByName || '—');
+      return `<tr>
+        <td>${name}</td>
+        <td>${col2}</td>
+        <td>${deletedAt}</td>
+        <td>${deletedBy}</td>
+        <td><button class="btn small" style="font-size:0.7rem;" onclick="restoreItem('${type}','${item.id || item._id}')">♻️ Restore</button></td>
+      </tr>`;
+    }).join('');
+  }
+
+  async function restoreItem(type, id) {
+    if (!confirm('Are you sure you want to restore this item?')) return;
+    try {
+      await SSC_API.post(`/admin/${type}/${id}/restore`);
+      msg(`Item restored successfully`);
+      await loadRecycleBinPanel();
+    } catch (err) {
+      msg('Restore failed: ' + (err.message || err), true);
+    }
+  }
+  window.restoreItem = restoreItem;
+
+  function switchRecycleTab(tabName) {
+    document.querySelectorAll('[data-recycle-tab]').forEach(btn => {
+      btn.classList.toggle('active', btn.getAttribute('data-recycle-tab') === tabName);
+    });
+    document.querySelectorAll('.recycle-subpanel').forEach(sub => {
+      const id = sub.id || '';
+      sub.style.display = id === `recycle-${tabName}-sub` ? '' : 'none';
+      if (id === `recycle-${tabName}-sub`) sub.classList.add('active');
+      else sub.classList.remove('active');
+    });
+  }
+  window.switchRecycleTab = switchRecycleTab;
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // ██ AUDIT LOGS PANEL █████████████████████████████████████████████████████
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  let _auditCurrentPage = 1;
+  let _auditTotalPages = 1;
+
+  async function loadAuditLogsPanel(page) {
+    try {
+      _auditCurrentPage = page || 1;
+      const actionFilter = (document.getElementById('audit-filter-action') || {}).value || '';
+      const userIdFilter = (document.getElementById('audit-filter-userId') || {}).value || '';
+
+      let url = `/admin/audit-logs?page=${_auditCurrentPage}&limit=50`;
+      if (actionFilter.trim()) url += `&action=${encodeURIComponent(actionFilter.trim())}`;
+      if (userIdFilter.trim()) url += `&userId=${encodeURIComponent(userIdFilter.trim())}`;
+
+      const result = await SSC_API.get(url);
+      const logs = result.data || [];
+      const pagination = result.pagination || {};
+      _auditTotalPages = pagination.totalPages || 1;
+
+      const tbody = document.querySelector('#tbl-audit-logs tbody');
+      if (!tbody) return;
+
+      if (!logs.length) {
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;opacity:0.6;padding:1.5rem;">No audit logs found</td></tr>`;
+      } else {
+        tbody.innerHTML = logs.map(log => {
+          const ts = log.timestamp ? new Date(log.timestamp).toLocaleString() : '—';
+          const userName = esc(log.userName || log.userId || '—');
+          const userId = esc(log.userId || '—');
+          const role = esc(log.userRole || '—');
+          const action = esc(log.action || '—');
+          const target = esc(log.target || '—');
+          const ip = esc(log.ipAddress || '—');
+          const ua = esc((log.userAgent || '—').substring(0, 40));
+          let details = '—';
+          try {
+            const parsed = typeof log.details === 'string' ? JSON.parse(log.details) : log.details;
+            details = esc(JSON.stringify(parsed).substring(0, 60));
+          } catch { details = esc(String(log.details || '—').substring(0, 60)); }
+          return `<tr>
+            <td style="white-space:nowrap;">${ts}</td>
+            <td title="${userId}">${userName}</td>
+            <td>${role}</td>
+            <td><span class="badge">${action}</span></td>
+            <td style="font-size:0.7rem;word-break:break-all;">${target}</td>
+            <td style="font-size:0.7rem;">${ip}</td>
+            <td style="font-size:0.65rem;max-width:120px;overflow:hidden;text-overflow:ellipsis;" title="${esc(log.userAgent || '')}">${ua}</td>
+            <td style="font-size:0.7rem;max-width:150px;overflow:hidden;text-overflow:ellipsis;">${details}</td>
+          </tr>`;
+        }).join('');
+      }
+
+      // Update pagination
+      const pText = document.getElementById('audit-pagination-text');
+      if (pText) pText.textContent = `Showing page ${_auditCurrentPage} of ${_auditTotalPages} (${pagination.total || 0} total)`;
+      const prevBtn = document.getElementById('btn-audit-prev');
+      const nextBtn = document.getElementById('btn-audit-next');
+      if (prevBtn) prevBtn.disabled = _auditCurrentPage <= 1;
+      if (nextBtn) nextBtn.disabled = _auditCurrentPage >= _auditTotalPages;
+
+    } catch (err) {
+      msg('Failed to load audit logs: ' + (err.message || err), true);
+    }
+  }
+  window.loadAuditLogsPanel = loadAuditLogsPanel;
+
+  function clearAuditFilters() {
+    const actionEl = document.getElementById('audit-filter-action');
+    const userIdEl = document.getElementById('audit-filter-userId');
+    if (actionEl) actionEl.value = '';
+    if (userIdEl) userIdEl.value = '';
+    loadAuditLogsPanel(1);
+  }
+  window.clearAuditFilters = clearAuditFilters;
+
+  function changeAuditPage(delta) {
+    const newPage = _auditCurrentPage + delta;
+    if (newPage < 1 || newPage > _auditTotalPages) return;
+    loadAuditLogsPanel(newPage);
+  }
+  window.changeAuditPage = changeAuditPage;
 
   // ═══════════════════════════════════════════════════════════════════════════
 

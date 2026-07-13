@@ -49,7 +49,7 @@ export function studentRouter({ jwtSecret, jwtExpiresIn }) {
       // O(1) performance using SQLite JSON extraction function (avoid loading entire database into memory)
       const rawUsers = await prisma.$queryRaw`
         SELECT * FROM User 
-        WHERE role = 'student' AND (
+        WHERE role = 'student' AND isDeleted = 0 AND (
           lower(json_extract(studentProfile, '$.studentId')) = ${searchId} OR 
           lower(json_extract(studentProfile, '$.personalEmail')) = ${searchId} OR 
           lower(json_extract(studentProfile, '$.collegeEmail')) = ${searchId}
@@ -57,7 +57,7 @@ export function studentRouter({ jwtSecret, jwtExpiresIn }) {
       `;
       user = rawUsers[0] || null;
     }
-    if (!user || !user.isActive || user.role !== Role.student) {
+    if (!user || !user.isActive || user.isDeleted || user.role !== Role.student) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
     const ok = await verifyPassword(String(password), user.passwordHash);

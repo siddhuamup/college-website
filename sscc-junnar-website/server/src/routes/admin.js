@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
 import { prisma, withMongoId } from '../db/client.js';
@@ -272,14 +273,17 @@ export function adminRouter({ jwtSecret }) {
     const specials = '!@#$';
     const chars = lowercase + uppercase + numbers + specials;
     let pwd = '';
-    pwd += lowercase[Math.floor(Math.random() * lowercase.length)];
-    pwd += uppercase[Math.floor(Math.random() * uppercase.length)];
-    pwd += numbers[Math.floor(Math.random() * numbers.length)];
-    pwd += specials[Math.floor(Math.random() * specials.length)];
+    pwd += lowercase[crypto.randomInt(lowercase.length)];
+    pwd += uppercase[crypto.randomInt(uppercase.length)];
+    pwd += numbers[crypto.randomInt(numbers.length)];
+    pwd += specials[crypto.randomInt(specials.length)];
     for (let i = 0; i < 6; i++) {
-      pwd += chars[Math.floor(Math.random() * chars.length)];
+      pwd += chars[crypto.randomInt(chars.length)];
     }
-    const newPassword = pwd.split('').sort(() => 0.5 - Math.random()).join('');
+    // Secure shuffle using Fisher-Yates with crypto.randomInt
+    const arr = pwd.split('');
+    for (let i = arr.length - 1; i > 0; i--) { const j = crypto.randomInt(i + 1); [arr[i], arr[j]] = [arr[j], arr[i]]; }
+    const newPassword = arr.join('');
 
     // Update password hash and flag for mandatory change
     await prisma.user.update({
@@ -683,14 +687,17 @@ export function adminRouter({ jwtSecret }) {
         const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
         const numbers = '0123456789';
         const specials = '!@#$';
-        pwd += lowercase[Math.floor(Math.random() * lowercase.length)];
-        pwd += uppercase[Math.floor(Math.random() * uppercase.length)];
-        pwd += numbers[Math.floor(Math.random() * numbers.length)];
-        pwd += specials[Math.floor(Math.random() * specials.length)];
+        pwd += lowercase[crypto.randomInt(lowercase.length)];
+        pwd += uppercase[crypto.randomInt(uppercase.length)];
+        pwd += numbers[crypto.randomInt(numbers.length)];
+        pwd += specials[crypto.randomInt(specials.length)];
         for (let i = 0; i < 6; i++) {
-          pwd += chars[Math.floor(Math.random() * chars.length)];
+          pwd += chars[crypto.randomInt(chars.length)];
         }
-        plainPassword = pwd.split('').sort(() => 0.5 - Math.random()).join('');
+        // Secure shuffle using Fisher-Yates with crypto.randomInt
+        const arr = pwd.split('');
+        for (let i = arr.length - 1; i > 0; i--) { const j = crypto.randomInt(i + 1); [arr[i], arr[j]] = [arr[j], arr[i]]; }
+        plainPassword = arr.join('');
       }
 
       // Atomic Roll-Number generation using Counter model
@@ -726,6 +733,16 @@ export function adminRouter({ jwtSecret }) {
                 emergencyContact: doc.parentContact || '',
                 admissionYear: new Date().getFullYear(),
                 verificationId: generatedVerificationId,
+                // Academic marks & personal details from application
+                sscMarks: doc.sscMarks || 0,
+                marks12: doc.marks12 || 0,
+                maxMarks12: doc.maxMarks12 || 600,
+                board12: doc.board12 || '',
+                dob: doc.dob || '',
+                gender: doc.gender || '',
+                category: doc.category || '',
+                passingYear: doc.passingYear || '',
+                previousCollege: doc.previousCollege || '',
               },
             },
           });
@@ -1017,61 +1034,59 @@ export function adminRouter({ jwtSecret }) {
   });
 
   r.post('/courses', async (req, res) => {
-    const { name, code, departmentId, durationYears, description, level } = req.body || {};
+    const { name, level, duration, eligibility, description, seatsApprox, departmentId } = req.body || {};
     if (!name || typeof name !== 'string' || !name.trim()) {
       return res.status(400).json({ error: 'name is required' });
     }
-    if (!code || typeof code !== 'string' || !code.trim()) {
-      return res.status(400).json({ error: 'code is required' });
+
+    // Verify department exists (if provided)
+    if (departmentId) {
+      const dept = await prisma.department.findUnique({ where: { id: departmentId } });
+      if (!dept) return res.status(400).json({ error: 'Invalid departmentId' });
     }
-    if (!departmentId || typeof departmentId !== 'string') {
-      return res.status(400).json({ error: 'departmentId is required' });
-    }
-    // Verify department exists
-    const dept = await prisma.department.findUnique({ where: { id: departmentId } });
-    if (!dept) return res.status(400).json({ error: 'Invalid departmentId' });
 
     const c = await prisma.course.create({
       data: {
         name: String(name).trim(),
-        code: String(code).trim(),
-        departmentId: String(departmentId),
-        durationYears: durationYears ? Number(durationYears) : 3,
+        level: level ? String(level).trim() : 'UG',
+        duration: duration ? String(duration).trim() : '',
+        eligibility: eligibility ? String(eligibility).trim() : '',
         description: description ? String(description).trim() : '',
-        level: level ? Number(level) : 1,
+        seatsApprox: seatsApprox ? Number(seatsApprox) : 0,
+        departmentId: departmentId || null,
       }
     });
-    logAdminAction(req.user.id, 'CREATE_COURSE', c.id, { name: c.name, code: c.code });
+    logAdminAction(req, 'CREATE_COURSE', c.id, { name: c.name });
     res.status(201).json(withMongoId(c));
   });
 
   r.patch('/courses/:id', async (req, res) => {
     try {
       const data = {};
-      const { name, code, departmentId, durationYears, description, level } = req.body || {};
+      const { name, level, duration, eligibility, description, seatsApprox, departmentId } = req.body || {};
       
       if (name !== undefined) {
         if (typeof name !== 'string' || !name.trim()) return res.status(400).json({ error: 'name cannot be empty' });
         data.name = name.trim();
       }
-      if (code !== undefined) {
-        if (typeof code !== 'string' || !code.trim()) return res.status(400).json({ error: 'code cannot be empty' });
-        data.code = code.trim();
-      }
-      if (departmentId !== undefined) {
-        const dept = await prisma.department.findUnique({ where: { id: departmentId } });
-        if (!dept) return res.status(400).json({ error: 'Invalid departmentId' });
-        data.departmentId = departmentId;
-      }
-      if (durationYears !== undefined) data.durationYears = Number(durationYears);
+      if (level !== undefined) data.level = String(level).trim();
+      if (duration !== undefined) data.duration = String(duration).trim();
+      if (eligibility !== undefined) data.eligibility = String(eligibility).trim();
       if (description !== undefined) data.description = String(description).trim();
-      if (level !== undefined) data.level = Number(level);
+      if (seatsApprox !== undefined) data.seatsApprox = Number(seatsApprox) || 0;
+      if (departmentId !== undefined) {
+        if (departmentId) {
+          const dept = await prisma.department.findUnique({ where: { id: departmentId } });
+          if (!dept) return res.status(400).json({ error: 'Invalid departmentId' });
+        }
+        data.departmentId = departmentId || null;
+      }
 
       const c = await prisma.course.update({
         where: { id: req.params.id },
         data,
       });
-      logAdminAction(req.user.id, 'UPDATE_COURSE', req.params.id, { fields: Object.keys(data) });
+      logAdminAction(req, 'UPDATE_COURSE', req.params.id, { fields: Object.keys(data) });
       res.json(withMongoId(c));
     } catch {
       res.status(404).json({ error: 'Not found' });

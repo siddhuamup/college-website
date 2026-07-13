@@ -122,7 +122,7 @@ export function verifyMagicBytes(req, res, next) {
   for (const file of files) {
     const filePath = file.path;
     if (!fs.existsSync(filePath)) {
-      continue;
+      return next(new Error(`Uploaded file not found on disk: ${file.originalname}`));
     }
 
     try {
