@@ -3,7 +3,7 @@ import crypto from 'crypto';
 import { prisma, withMongoId } from '../db/client.js';
 import { hashPassword, verifyPassword, signToken, verifyToken } from '../utils/auth.js';
 import { Role } from '@prisma/client';
-import { loginLimiter, adminAccessLimiter } from '../middleware/rateLimit.js';
+import { loginLimiter, adminAccessLimiter, publicFormLimiter } from '../middleware/rateLimit.js';
 import { createAuthMiddleware } from '../middleware/auth.js';
 import { sendEmail } from '../utils/email.js';
 import {
@@ -147,16 +147,14 @@ export function authRouter({ jwtSecret, jwtExpiresIn }) {
     }
   });
 
-  r.post('/forgot-password', validate(forgotPasswordSchema), async (req, res) => {
+  r.post('/forgot-password', publicFormLimiter, validate(forgotPasswordSchema), async (req, res) => {
     const { email } = req.body;
-    const user = await prisma.user.findUnique({
-      where: { email: String(email).toLowerCase().trim() },
-    });
-    if (!user) {
-      // Return 200 to prevent user enumeration security issues, but don't send email
+    const user = await prisma.user.findUnique({ where: { email: String(email).toLowerCase().trim() } });
+    if (!user || !user.isActive || user.isDeleted) {
+      // Return 200 generic message to prevent email enumeration
       return res.json({ message: 'If the email exists, a reset link has been sent.' });
     }
-    
+
     // Clean up expired tokens for this user first
     await prisma.passwordResetToken.deleteMany({
       where: {
@@ -180,7 +178,8 @@ export function authRouter({ jwtSecret, jwtExpiresIn }) {
     });
     
     // Send email with reset url
-    const resetUrl = `${req.protocol}://${req.get('host')}/reset-password.html?token=${token}`;
+    const baseUrl = process.env.FRONTEND_URL || `${req.protocol}://${req.get('host')}`;
+    const resetUrl = `${baseUrl.replace(/\/$/, '')}/reset-password.html?token=${token}`;
     try {
       await sendEmail({
         to: user.email,

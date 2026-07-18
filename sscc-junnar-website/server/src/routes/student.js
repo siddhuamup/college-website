@@ -3,7 +3,7 @@ import { prisma, withMongoId } from '../db/client.js';
 import { createAuthMiddleware, requireRole } from '../middleware/auth.js';
 import { verifyPassword, signToken } from '../utils/auth.js';
 import { Role } from '@prisma/client';
-import { uploadAvatarImage } from '../multer/configure.js';
+import { uploadAvatarImage, verifyMagicBytes } from '../multer/configure.js';
 import { filterNotices } from '../utils/notices.js';
 import { noticeDto as buildNoticeDto } from '../utils/noticeDto.js';
 import { loginLimiter } from '../middleware/rateLimit.js';
@@ -183,7 +183,7 @@ export function studentRouter({ jwtSecret, jwtExpiresIn }) {
     });
   });
 
-  r.patch('/profile', uploadAvatarImage.single('avatar'), async (req, res) => {
+  r.patch('/profile', uploadAvatarImage.single('avatar'), verifyMagicBytes, async (req, res) => {
     const { name, phone, bio } = req.body || {};
     const updateData = {};
     if (name !== undefined) updateData.name = String(name).trim();

@@ -94,17 +94,25 @@ export function teacherRouter({ jwtSecret, jwtExpiresIn }) {
       return res.status(403).json({ error: 'You are not assigned to teach this subject for this class' });
     }
 
+    const obtainedNum = Number(marksObtained);
+    const maxNum = Number(maxMarks);
+    if (isNaN(obtainedNum) || isNaN(maxNum) || obtainedNum < 0 || maxNum <= 0 || obtainedNum > maxNum) {
+      return res.status(400).json({ error: `Marks obtained (${obtainedNum}) must be between 0 and max marks (${maxNum}).` });
+    }
+
     const existing = await prisma.mark.findFirst({
       where: { studentId, subject: String(subject), examName: String(examName) },
     });
     if (existing) {
+      if (existing.teacherId !== req.user.id) {
+        return res.status(403).json({ error: 'Cannot overwrite marks entered by another teacher.' });
+      }
       const m = await prisma.mark.update({
         where: { id: existing.id },
         data: {
-          marksObtained: Number(marksObtained),
-          maxMarks: Number(maxMarks),
+          marksObtained: obtainedNum,
+          maxMarks: maxNum,
           term: term || existing.term,
-          teacherId: req.user.id,
         },
       });
       return res.json(withMongoId(m));
@@ -159,32 +167,47 @@ export function teacherRouter({ jwtSecret, jwtExpiresIn }) {
     if (day > new Date()) {
       return res.status(400).json({ error: 'Cannot mark attendance for a future date' });
     }
-    let saved = 0;
+    const studentIds = entries.map(e => e.studentId).filter(Boolean);
+    const validStudents = await prisma.user.findMany({
+      where: { id: { in: studentIds }, role: Role.student, isActive: true },
+      select: { id: true, studentProfile: true },
+    });
+    const validStudentMap = new Map();
+    validStudents.forEach(stu => {
+      const sp = stu.studentProfile;
+      const cls = sp && typeof sp === 'object' && 'className' in sp ? sp.className : null;
+      if (cls && assignmentCovers(assignments, cls, subj)) {
+        validStudentMap.set(stu.id, true);
+      }
+    });
+
+    const txOps = [];
     for (const e of entries) {
       const { studentId, status } = e;
       if (!studentId || !['present', 'absent'].includes(status)) continue;
-      const stu = await prisma.user.findFirst({
-        where: { id: studentId, role: Role.student, isActive: true },
-      });
-      const sp = stu?.studentProfile;
-      const cls = sp && typeof sp === 'object' && 'className' in sp ? sp.className : null;
-      if (!stu || !cls || !assignmentCovers(assignments, cls, subj)) continue;
-      await prisma.attendance.upsert({
-        where: {
-          studentId_subject_date: { studentId, subject: subj, date: day },
-        },
-        create: {
-          studentId,
-          teacherId: req.user.id,
-          subject: subj,
-          date: day,
-          status,
-        },
-        update: { teacherId: req.user.id, status },
-      });
-      saved += 1;
+      if (!validStudentMap.has(studentId)) continue;
+
+      txOps.push(
+        prisma.attendance.upsert({
+          where: {
+            studentId_subject_date: { studentId, subject: subj, date: day },
+          },
+          create: {
+            studentId,
+            teacherId: req.user.id,
+            subject: subj,
+            date: day,
+            status,
+          },
+          update: { teacherId: req.user.id, status },
+        })
+      );
     }
-    res.json({ saved });
+
+    if (txOps.length > 0) {
+      await prisma.$transaction(txOps);
+    }
+    res.json({ saved: txOps.length });
   });
 
   r.get('/attendance', async (req, res) => {

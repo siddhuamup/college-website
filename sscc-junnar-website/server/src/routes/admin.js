@@ -1013,6 +1013,12 @@ export function adminRouter({ jwtSecret }) {
 
   r.delete('/departments/:id', async (req, res) => {
     try {
+      const activeCourses = await prisma.course.count({
+        where: { departmentId: req.params.id, isDeleted: false }
+      });
+      if (activeCourses > 0) {
+        return res.status(400).json({ error: `Cannot delete department: ${activeCourses} active course(s) are assigned to it.` });
+      }
       await prisma.department.delete({ where: { id: req.params.id } });
       logAdminAction(req.user.id, 'DELETE_DEPARTMENT', req.params.id);
       res.json({ ok: true });
