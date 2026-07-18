@@ -22,7 +22,17 @@ function rateLimitAuditLog(req, _res, _next) {
   );
 }
 
-export const loginLimiter = rateLimit({
+// Helper middleware to bypass rate limits during testing
+const skipInTest = (limiter) => {
+  return (req, res, next) => {
+    if (process.env.NODE_ENV === 'test') {
+      return next();
+    }
+    return limiter(req, res, next);
+  };
+};
+
+export const loginLimiter = skipInTest(rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 10,
   standardHeaders: true,
@@ -32,9 +42,9 @@ export const loginLimiter = rateLimit({
     rateLimitAuditLog(req, res, next);
     res.status(429).json(options.message);
   },
-});
+}));
 
-export const adminAccessLimiter = rateLimit({
+export const adminAccessLimiter = skipInTest(rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 5,
   standardHeaders: true,
@@ -44,9 +54,9 @@ export const adminAccessLimiter = rateLimit({
     rateLimitAuditLog(req, res, next);
     res.status(429).json(options.message);
   },
-});
+}));
 
-export const publicFormLimiter = rateLimit({
+export const publicFormLimiter = skipInTest(rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 20,
   standardHeaders: true,
@@ -56,9 +66,9 @@ export const publicFormLimiter = rateLimit({
     rateLimitAuditLog(req, res, next);
     res.status(429).json(options.message);
   },
-});
+}));
 
-export const globalApiLimiter = rateLimit({
+export const globalApiLimiter = skipInTest(rateLimit({
   windowMs: 60 * 1000, // 1 minute
   max: 100,
   standardHeaders: true,
@@ -68,4 +78,4 @@ export const globalApiLimiter = rateLimit({
     rateLimitAuditLog(req, res, next);
     res.status(429).json(options.message);
   },
-});
+}));

@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sscc_junnar_api
+    ports:
+      - "3000:3000"
+    volumes:
+      - sqlite_data:/app/prisma
+      - uploads_data:/app/uploads
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped
+
+volumes:
+  sqlite_data:
+  uploads_data:

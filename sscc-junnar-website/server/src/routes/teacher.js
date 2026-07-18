@@ -9,6 +9,7 @@ import { verifyPassword, signToken } from '../utils/auth.js';
 import { filterNotices } from '../utils/notices.js';
 import { noticeDto as buildNoticeDto } from '../utils/noticeDto.js';
 import { loginLimiter } from '../middleware/rateLimit.js';
+import { validate, markAttendanceSchema, saveMarkSchema } from '../middleware/validation.js';
 
 function noticeDto(n) {
   return withMongoId(buildNoticeDto(n));
@@ -78,11 +79,8 @@ export function teacherRouter({ jwtSecret, jwtExpiresIn }) {
     res.json(list.map(withMongoId));
   });
 
-  r.post('/marks', async (req, res) => {
-    const { studentId, subject, examName, marksObtained, maxMarks, term } = req.body || {};
-    if (!studentId || !subject || !examName || marksObtained === undefined || !maxMarks) {
-      return res.status(400).json({ error: 'Missing fields' });
-    }
+  r.post('/marks', validate(saveMarkSchema), async (req, res) => {
+    const { studentId, subject, examName, marksObtained, maxMarks, term } = req.body;
     const teacher = await prisma.user.findUnique({ where: { id: req.user.id } });
     const raw = teacher?.teacherProfile;
     const assignments = raw && typeof raw === 'object' && Array.isArray(raw.assignments) ? raw.assignments : [];
@@ -141,11 +139,8 @@ export function teacherRouter({ jwtSecret, jwtExpiresIn }) {
     res.json(list.map(withMongoId));
   });
 
-  r.post('/attendance', async (req, res) => {
-    const { subject, date, entries } = req.body || {};
-    if (!subject || !date || !Array.isArray(entries)) {
-      return res.status(400).json({ error: 'subject, date, entries[] required' });
-    }
+  r.post('/attendance', validate(markAttendanceSchema), async (req, res) => {
+    const { subject, date, entries } = req.body;
     const teacher = await prisma.user.findUnique({ where: { id: req.user.id } });
     const raw = teacher?.teacherProfile;
     const assignments = raw && typeof raw === 'object' && Array.isArray(raw.assignments) ? raw.assignments : [];
@@ -154,6 +149,16 @@ export function teacherRouter({ jwtSecret, jwtExpiresIn }) {
       return res.status(403).json({ error: 'Subject not in your teaching assignments' });
     }
     const day = new Date(date);
+    // Attendance freeze: only allow edits within the last 7 days
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    sevenDaysAgo.setHours(0, 0, 0, 0);
+    if (day < sevenDaysAgo) {
+      return res.status(403).json({ error: 'Cannot modify attendance older than 7 days' });
+    }
+    if (day > new Date()) {
+      return res.status(400).json({ error: 'Cannot mark attendance for a future date' });
+    }
     let saved = 0;
     for (const e of entries) {
       const { studentId, status } = e;

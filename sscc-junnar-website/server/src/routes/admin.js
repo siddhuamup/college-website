@@ -9,6 +9,16 @@ import { sendEmail } from '../utils/email.js';
 import { uploadNoticePdf, uploadGalleryImage, uploadAvatarImage, uploadsPath, verifyMagicBytes } from '../multer/configure.js';
 import { Role } from '@prisma/client';
 import { nextStudentId, nextRollNumber } from '../lib/studentIdGenerator.js';
+import {
+  validate,
+  createStudentSchema,
+  createTeacherSchema,
+  createDepartmentSchema,
+  createCourseSchema,
+  createNoticeSchema,
+  verifyAdmissionSchema,
+  decisionAdmissionSchema
+} from '../middleware/validation.js';
 
 function stripHash(user) {
   if (!user) return user;
@@ -132,9 +142,8 @@ export function adminRouter({ jwtSecret }) {
     res.json(list.map(stripHash));
   });
 
-  r.post('/students', async (req, res) => {
-    const { email, password, name, phone, rollNumber, className, courseName, year } = req.body || {};
-    if (!email || !password || !name) return res.status(400).json({ error: 'email, password, name required' });
+  r.post('/students', validate(createStudentSchema), async (req, res) => {
+    const { email, password, name, phone, rollNumber, className, courseName, year } = req.body;
     const exists = await prisma.user.findUnique({ where: { email: String(email).toLowerCase() } });
     if (exists) return res.status(409).json({ error: 'Email already registered' });
 
@@ -395,8 +404,8 @@ export function adminRouter({ jwtSecret }) {
     next();
   }
 
-  r.post('/teachers', optionalTeacherAvatar, verifyMagicBytes, async (req, res) => {
-    let { email, password, name, phone, employeeId, department, designation, qualifications, assignments, experience, specialization, bio } = req.body || {};
+  r.post('/teachers', optionalTeacherAvatar, verifyMagicBytes, validate(createTeacherSchema), async (req, res) => {
+    let { email, password, name, phone, employeeId, department, designation, qualifications, assignments, experience, specialization, bio } = req.body;
     if (!email || !password || !name) return res.status(400).json({ error: 'email, password, name required' });
     if (typeof assignments === 'string') {
       try {
@@ -635,7 +644,7 @@ export function adminRouter({ jwtSecret }) {
     }
   });
 
-  r.patch('/admissions/:id/verify', async (req, res) => {
+  r.patch('/admissions/:id/verify', validate(verifyAdmissionSchema), async (req, res) => {
     const doc = await prisma.admissionApplication.findUnique({ where: { id: req.params.id } });
     if (!doc) return res.status(404).json({ error: 'Not found' });
     const updated = await prisma.admissionApplication.update({
@@ -651,7 +660,7 @@ export function adminRouter({ jwtSecret }) {
     res.json(withMongoId(updated));
   });
 
-  r.post('/admissions/:id/decision', async (req, res) => {
+  r.post('/admissions/:id/decision', validate(decisionAdmissionSchema), async (req, res) => {
     const doc = await prisma.admissionApplication.findUnique({ where: { id: req.params.id } });
     if (!doc) return res.status(404).json({ error: 'Not found' });
     const { status, notes, createAccount, rollNumber, className, courseName, year, defaultPassword } =
@@ -828,9 +837,8 @@ export function adminRouter({ jwtSecret }) {
     res.json(items.map((n) => withMongoId({ ...n, pdfUrl: noticePdfUrl(n) })));
   });
 
-  r.post('/notices', uploadNoticePdf.single('pdf'), verifyMagicBytes, async (req, res) => {
-    const { title, body, isPublished, priority, audience, publishDate, expiryDate } = req.body || {};
-    if (!title) return res.status(400).json({ error: 'title required' });
+  r.post('/notices', uploadNoticePdf.single('pdf'), verifyMagicBytes, validate(createNoticeSchema), async (req, res) => {
+    const { title, body, isPublished, priority, audience, publishDate, expiryDate } = req.body;
     const pdfFile = req.file
       ? { originalName: req.file.originalname, storedName: req.file.filename }
       : undefined;
@@ -936,11 +944,8 @@ export function adminRouter({ jwtSecret }) {
     res.json(list.map(withMongoId));
   });
 
-  r.post('/departments', async (req, res) => {
-    const { name, stream, hodName, description, subjects } = req.body || {};
-    if (!name || typeof name !== 'string' || !name.trim()) {
-      return res.status(400).json({ error: 'name is required' });
-    }
+  r.post('/departments', validate(createDepartmentSchema), async (req, res) => {
+    const { name, stream, hodName, description, subjects } = req.body;
     
     // Ensure subjects is valid JSON array
     let parsedSubjects = '[]';
@@ -1033,11 +1038,8 @@ export function adminRouter({ jwtSecret }) {
     );
   });
 
-  r.post('/courses', async (req, res) => {
-    const { name, level, duration, eligibility, description, seatsApprox, departmentId } = req.body || {};
-    if (!name || typeof name !== 'string' || !name.trim()) {
-      return res.status(400).json({ error: 'name is required' });
-    }
+  r.post('/courses', validate(createCourseSchema), async (req, res) => {
+    const { name, level, duration, eligibility, description, seatsApprox, departmentId } = req.body;
 
     // Verify department exists (if provided)
     if (departmentId) {

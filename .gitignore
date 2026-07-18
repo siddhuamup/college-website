@@ -14,3 +14,8 @@ Thumbs.db
 
 dist/
 build/
+
+# IDE & AI tool artifacts
+.vscode/
+.lean_ai/
+.agents/

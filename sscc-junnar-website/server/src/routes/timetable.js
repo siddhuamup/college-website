@@ -91,21 +91,38 @@ export function adminTimetableRouter({ jwtSecret }) {
     });
 
     for (const slot of slots) {
-      if (!slot.teacherId) continue;
       const period = Number(slot.period);
 
       for (const other of otherTimetables) {
         const otherSlots = parseSlots(other.slots);
-        const conflict = otherSlots.find(os => 
-          os.day === slot.day && 
-          Number(os.period) === period && 
-          os.teacherId === slot.teacherId
-        );
+        
+        // 1. Teacher conflict check
+        if (slot.teacherId) {
+          const teacherConflict = otherSlots.find(os => 
+            os.day === slot.day && 
+            Number(os.period) === period && 
+            os.teacherId === slot.teacherId
+          );
+          if (teacherConflict) {
+            return res.status(400).json({
+              error: `Conflict: Teacher "${slot.teacherName || 'Selected teacher'}" is already assigned to class "${other.className}" on ${slot.day} during Period ${period}.`
+            });
+          }
+        }
 
-        if (conflict) {
-          return res.status(400).json({
-            error: `Conflict: Teacher "${slot.teacherName}" is already assigned to class "${other.className}" on ${slot.day} during Period ${period}.`
-          });
+        // 2. Room conflict check
+        const roomName = String(slot.room || '').trim();
+        if (roomName) {
+          const roomConflict = otherSlots.find(os => 
+            os.day === slot.day && 
+            Number(os.period) === period && 
+            String(os.room || '').trim().toLowerCase() === roomName.toLowerCase()
+          );
+          if (roomConflict) {
+            return res.status(400).json({
+              error: `Conflict: Room "${roomName}" is already occupied by class "${other.className}" on ${slot.day} during Period ${period}.`
+            });
+          }
         }
       }
     }

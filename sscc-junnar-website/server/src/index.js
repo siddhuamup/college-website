@@ -67,7 +67,7 @@ app.use(helmet({
       scriptSrc: ["'self'", "'unsafe-inline'"],
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
-      imgSrc: ["'self'", "data:", "/uploads"],
+      imgSrc: ["'self'", "data:"],
       connectSrc: ["'self'"],
       objectSrc: ["'none'"],
       upgradeInsecureRequests: [],
@@ -211,6 +211,16 @@ async function boot() {
 
     process.on('SIGTERM', () => shutdown('SIGTERM'));
     process.on('SIGINT', () => shutdown('SIGINT'));
+
+    // Crash-safe: log and exit on unhandled errors to avoid silent failures
+    process.on('unhandledRejection', (reason) => {
+      console.error('[FATAL] Unhandled Promise Rejection:', reason);
+      shutdown('unhandledRejection');
+    });
+    process.on('uncaughtException', (err) => {
+      console.error('[FATAL] Uncaught Exception:', err);
+      shutdown('uncaughtException');
+    });
 
   } catch (err) {
     console.error('Database connection failed:', err.message);

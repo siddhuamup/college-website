@@ -178,7 +178,6 @@ export function studentRouter({ jwtSecret, jwtExpiresIn }) {
         applicationNumber: app.applicationNumber,
         status: app.status,
         courseApplied: app.courseApplied,
-        verificationNotes: app.verificationNotes,
         documentsVerified: app.documentsVerified,
       },
     });
