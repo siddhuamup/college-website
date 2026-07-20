@@ -56,6 +56,18 @@ export const adminAccessLimiter = skipInTest(rateLimit({
   },
 }));
 
+export const meLimiter = skipInTest(rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many identity verification attempts. Please slow down.' },
+  handler: (req, res, next, options) => {
+    rateLimitAuditLog(req, res, next);
+    res.status(429).json(options.message);
+  },
+}));
+
 export const publicFormLimiter = skipInTest(rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 20,

@@ -3,7 +3,7 @@ import crypto from 'crypto';
 import { prisma, withMongoId } from '../db/client.js';
 import { hashPassword, verifyPassword, signToken, verifyToken } from '../utils/auth.js';
 import { Role } from '@prisma/client';
-import { loginLimiter, adminAccessLimiter, publicFormLimiter, checkAccountLockout, recordFailedLogin, clearFailedLogins } from '../middleware/rateLimit.js';
+import { loginLimiter, adminAccessLimiter, publicFormLimiter, checkAccountLockout, recordFailedLogin, clearFailedLogins, meLimiter } from '../middleware/rateLimit.js';
 import { createAuthMiddleware } from '../middleware/auth.js';
 import { sendEmail } from '../utils/email.js';
 import { blacklistToken } from '../utils/tokenBlacklist.js';
@@ -30,6 +30,7 @@ import {
 
 export function authRouter({ jwtSecret, jwtExpiresIn }) {
   const r = Router();
+  const auth = createAuthMiddleware(jwtSecret);
 
   /** Unlock admin UI with server-side key from .env; issues JWT for existing admin user. */
   r.post('/admin-access', adminAccessLimiter, validate(adminAccessSchema), async (req, res) => {
@@ -116,8 +117,8 @@ export function authRouter({ jwtSecret, jwtExpiresIn }) {
   });
 
   // ── Logout — clear cookie and blacklist token ───────────────────────
-  r.post('/logout', (req, res) => {
-    const token = req.cookies?.[COOKIE_NAME] || null;
+  r.post('/logout', auth, (req, res) => {
+    const token = req._token || req.cookies?.[COOKIE_NAME] || null;
     if (token) {
       try {
         const payload = verifyToken(token, jwtSecret);
@@ -132,8 +133,6 @@ export function authRouter({ jwtSecret, jwtExpiresIn }) {
   });
 
   // ── Change Password ───────────────────────────────────────────────────
-  const auth = createAuthMiddleware(jwtSecret);
-
   r.post('/change-password', auth, validate(changePasswordSchema), async (req, res) => {
     const { currentPassword, newPassword } = req.body;
 
@@ -154,7 +153,7 @@ export function authRouter({ jwtSecret, jwtExpiresIn }) {
     res.json({ ok: true, message: 'Password changed successfully' });
   });
 
-  r.get('/me', async (req, res) => {
+  r.get('/me', meLimiter, async (req, res) => {
     // Read from cookie first, fallback to header
     let token = req.cookies?.[COOKIE_NAME] || null;
     if (!token) {
@@ -193,7 +192,8 @@ export function authRouter({ jwtSecret, jwtExpiresIn }) {
     const { email } = req.body;
     const user = await prisma.user.findUnique({ where: { email: String(email).toLowerCase().trim() } });
     if (!user || !user.isActive || user.isDeleted) {
-      // Return 200 generic message to prevent email enumeration
+      // Return 200 generic message with timing equalization to prevent email enumeration
+      await new Promise((resolve) => setTimeout(resolve, 100));
       return res.json({ message: 'If the email exists, a reset link has been sent.' });
     }
 
@@ -207,21 +207,22 @@ export function authRouter({ jwtSecret, jwtExpiresIn }) {
       }
     });
 
-    // Generate a random secure token
-    const token = crypto.randomBytes(32).toString('hex');
+    // Generate a random secure raw token & store SHA-256 hash in DB
+    const rawToken = crypto.randomBytes(32).toString('hex');
+    const hashedToken = crypto.createHash('sha256').update(rawToken).digest('hex');
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
     
     await prisma.passwordResetToken.create({
       data: {
-        token,
+        token: hashedToken,
         userId: user.id,
         expiresAt,
       }
     });
     
-    // Send email with reset url
+    // Send email with raw reset token in URL
     const baseUrl = process.env.FRONTEND_URL || `${req.protocol}://${req.get('host')}`;
-    const resetUrl = `${baseUrl.replace(/\/$/, '')}/reset-password.html?token=${token}`;
+    const resetUrl = `${baseUrl.replace(/\/$/, '')}/reset-password.html?token=${rawToken}`;
     try {
       await sendEmail({
         to: user.email,
@@ -243,9 +244,11 @@ export function authRouter({ jwtSecret, jwtExpiresIn }) {
   });
 
   r.post('/reset-password', validate(resetPasswordSchema), async (req, res) => {
-    const { token, newPassword } = req.body;
+    const { token: rawToken, newPassword } = req.body;
+    const hashedToken = crypto.createHash('sha256').update(String(rawToken)).digest('hex');
+
     const record = await prisma.passwordResetToken.findUnique({
-      where: { token },
+      where: { token: hashedToken },
       include: { user: true }
     });
     if (!record || record.expiresAt < new Date()) {
