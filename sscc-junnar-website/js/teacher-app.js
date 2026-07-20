@@ -570,7 +570,7 @@
 
     // Populate top welcome
     const welcomeEl = document.getElementById('db-teach-welcome-name');
-    if (welcomeEl) welcomeEl.textContent = `Welcome, ${u.name}!`;
+    if (welcomeEl) welcomeEl.textContent = `Welcome, ${escapeText(u.name)}!`;
     
     const metaEl = document.getElementById('db-teach-meta');
     if (metaEl) metaEl.textContent = `${tp.designation || 'Assistant Professor'} • ${tp.department || 'Department'}`;
@@ -843,7 +843,7 @@
       teacherExamsCache.forEach(ex => {
         const optSel = document.createElement('option');
         optSel.value = ex.id || ex._id;
-        optSel.textContent = `${ex.title} (${ex.subject} - ${ex.className})`;
+        optSel.textContent = `${escapeText(ex.title)} (${escapeText(ex.subject)} - ${escapeText(ex.className)})`;
         resSelect.appendChild(optSel);
       });
     }
@@ -1825,7 +1825,7 @@
       subjects.forEach(s => {
         const opt = document.createElement('option');
         opt.value = s.subject;
-        opt.textContent = `${s.subject} (${s.className})`;
+        opt.textContent = `${escapeText(s.subject)} (${escapeText(s.className)})`;
         opt.dataset.class = s.className;
         subSel.appendChild(opt);
       });
@@ -2194,7 +2194,7 @@
       body.innerHTML = `
         <div style="text-align: center; margin-bottom: 1.5rem;">
           <div style="width: 70px; height: 70px; border-radius: 50%; background: var(--primary-muted); color: var(--primary); display: grid; place-items: center; font-size: 1.75rem; font-weight: 700; margin: 0 auto 0.75rem;">
-            ${(student.name || 'S').charAt(0).toUpperCase()}
+            ${escapeText((student.name || 'S').charAt(0).toUpperCase())}
           </div>
           <h3 style="margin: 0; font-size: 1.15rem;">${esc(student.name)}</h3>
           <p class="small text-secondary" style="margin: 0.15rem 0 0;">ERP ID: ${esc(sp.studentId || sid)}</p>

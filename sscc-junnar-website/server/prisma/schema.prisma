@@ -45,6 +45,10 @@ model User {
   leaveRequests            LeaveRequest[]         @relation("TeacherLeave")
   libraryIssues            LibraryIssue[]         @relation("LibraryIssueStudent")
   resetTokens              PasswordResetToken[]
+
+  @@index([role])
+  @@index([isDeleted])
+  @@index([email])
 }
 
 model AdmissionApplication {
@@ -105,17 +109,23 @@ model Notice {
   createdBy    User?     @relation(fields: [createdById], references: [id], onDelete: SetNull)
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
+
+  @@index([isPublished])
+  @@index([isDeleted])
 }
 
 model Department {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   name        String
-  stream      String   @default("Other")
-  hodName     String   @default("")
-  description String   @default("")
-  subjects    Json     @default("[]")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  stream      String    @default("Other")
+  hodName     String    @default("")
+  description String    @default("")
+  subjects    Json      @default("[]")
+  isDeleted   Boolean   @default(false)
+  deletedAt   DateTime?
+  deletedBy   String    @default("")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
   courses     Course[]
 }
 
@@ -276,6 +286,7 @@ model LeaveRequest {
   updatedAt   DateTime @updatedAt
 
   @@index([teacherId])
+  @@index([status])
 }
 
 model Timetable {
@@ -342,6 +353,7 @@ model Exam {
   updatedAt   DateTime  @updatedAt
 
   @@index([className])
+  @@index([isPublished])
 }
 
 model PasswordResetToken {

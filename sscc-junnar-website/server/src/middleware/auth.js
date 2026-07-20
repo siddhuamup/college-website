@@ -1,18 +1,29 @@
 import { verifyToken } from '../utils/auth.js';
 import { prisma } from '../db/client.js';
+import { isBlacklisted } from '../utils/tokenBlacklist.js';
 
 /**
  * JWT authentication middleware.
- * Verifies the Bearer token AND checks the user is still active in the database.
- * This prevents deactivated users from using valid tokens until expiry.
+ * Reads JWT from httpOnly cookie (preferred) or Authorization header (fallback for API clients).
+ * Checks the token blacklist and verifies the user is still active in the database.
  */
 export function createAuthMiddleware(jwtSecret) {
   return async function requireAuth(req, res, next) {
-    const header = req.headers.authorization || '';
-    const token = header.startsWith('Bearer ') ? header.slice(7) : null;
+    // Prefer httpOnly cookie, fall back to Authorization header for API/test clients
+    let token = req.cookies?.ssc_token || null;
+    if (!token) {
+      const header = req.headers.authorization || '';
+      token = header.startsWith('Bearer ') ? header.slice(7) : null;
+    }
     if (!token) {
       return res.status(401).json({ error: 'Authentication required' });
     }
+
+    // Check token blacklist (logout invalidation)
+    if (isBlacklisted(token)) {
+      return res.status(401).json({ error: 'Token has been invalidated. Please log in again.' });
+    }
+
     try {
       const payload = verifyToken(token, jwtSecret);
 
@@ -32,6 +43,7 @@ export function createAuthMiddleware(jwtSecret) {
         email: payload.email,
         mustChangePassword: dbUser.mustChangePassword,
       };
+      req._token = token; // Store for logout blacklisting
       next();
     } catch {
       return res.status(401).json({ error: 'Invalid or expired token' });

@@ -98,10 +98,12 @@ function initNavAndActive() {
     const items = slider.querySelectorAll('.slide');
     if (track && items.length) {
       let i = 0;
-      setInterval(() => {
+      const sliderId = setInterval(() => {
         i = (i + 1) % items.length;
         track.style.transform = `translateX(-${i * 100}%)`;
       }, 3500);
+      // Cleanup on page unload to prevent memory leaks
+      window.addEventListener('beforeunload', () => clearInterval(sliderId), { once: true });
     }
   }
 }

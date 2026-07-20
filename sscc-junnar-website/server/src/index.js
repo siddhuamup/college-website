@@ -15,6 +15,7 @@ import { adminPlacementRouter, studentPlacementRouter } from './routes/placement
 import { adminTimetableRouter, teacherTimetableRouter, studentTimetableRouter } from './routes/timetable.js';
 import { adminLibraryRouter, studentLibraryRouter } from './routes/library.js';
 import { adminExamRouter, teacherExamRouter, studentExamRouter } from './routes/exam.js';
+import cookieParser from 'cookie-parser';
 import { errorHandler } from './middleware/errorHandler.js';
 import { globalApiLimiter } from './middleware/rateLimit.js';
 import { prisma } from './db/client.js';
@@ -110,7 +111,8 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(express.json({ limit: '2mb' }));
+app.use(cookieParser());
+app.use(express.json({ limit: '10kb' }));
 
 // Global rate limit on all API routes
 app.use('/api', globalApiLimiter);
@@ -176,6 +178,14 @@ app.get(['/admin', '/admin/'], (req, res) => {
 });
 
 app.use(express.static(siteRoot));
+
+// Catch-all: serve 404 page for unmatched non-API routes
+app.use((req, res, next) => {
+  if (req.accepts('html')) {
+    return res.status(404).sendFile(path.join(siteRoot, '404.html'));
+  }
+  next();
+});
 
 app.use(errorHandler);
 

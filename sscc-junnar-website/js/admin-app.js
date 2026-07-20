@@ -199,7 +199,7 @@
           list.push({
             id: 'adm-' + (a._id || a.id),
             category: 'Pending Admissions',
-            text: `New admission application from ${a.fullName} for ${a.courseApplied}`,
+            text: `New admission application from ${escapeText(a.fullName)} for ${a.courseApplied}`,
             panel: 'admissions',
             date: a.createdAt ? new Date(a.createdAt) : new Date()
           });
@@ -212,7 +212,7 @@
           list.push({
             id: 'leave-' + (l._id || l.id),
             category: 'Teacher Leave Requests',
-            text: `Leave request from ${l.teacher?.name || 'Teacher'} (${l.leaveType})`,
+            text: `Leave request from ${escapeText(l.teacher?.name || 'Teacher')} (${escapeText(l.leaveType)})`,
             panel: 'leaves',
             date: l.createdAt ? new Date(l.createdAt) : new Date()
           });
@@ -225,7 +225,7 @@
           list.push({
             id: 'att-' + s.rollNumber,
             category: 'Low Attendance Alerts',
-            text: `Low attendance alert for ${s.name} (${s.className}): ${s.percentage}%`,
+            text: `Low attendance alert for ${escapeText(s.name)} (${escapeText(s.className)}): ${s.percentage}%`,
             panel: 'attendance-analytics',
             date: new Date()
           });
@@ -238,7 +238,7 @@
           list.push({
             id: 'place-' + (p._id || p.id),
             category: 'Placement Updates',
-            text: `New placement application: ${p.studentName} applied for ${p.companyName} (${p.driveTitle})`,
+            text: `New placement application: ${p.studentName} applied for ${escapeText(p.companyName)} (${p.driveTitle})`,
             panel: 'placement',
             date: p.appliedAt ? new Date(p.appliedAt) : new Date()
           });
@@ -2310,7 +2310,7 @@
       const d = await SSC_API.get('/admin/admissions/' + id);
 
       // Title
-      document.getElementById('adm-detail-title').textContent = `Application ${d.applicationNumber || ''}`;
+      document.getElementById('adm-detail-title').textContent = `Application ${escapeText(d.applicationNumber || '')}`;
       document.getElementById('adm-detail-id').value = d._id || d.id;
 
       // Overview tab
@@ -2487,14 +2487,14 @@
         all.forEach(a => {
           csvRows.push([
             a.applicationNumber,
-            `"${(a.fullName || '').replace(/"/g, '""')}"`,
+            `"${escapeText((a.fullName || '').replace(/"/g, '""'))}"`,
             a.email,
             a.phone,
             `"${(a.courseApplied || '').replace(/"/g, '""')}"`,
             a.marks12,
             a.maxMarks12,
             a.sscMarks,
-            `"${(a.board12 || '').replace(/"/g, '""')}"`,
+            `"${escapeText((a.board12 || '').replace(/"/g, '""'))}"`,
             a.category,
             a.status,
             a.documentsVerified ? 'Yes' : 'No',
@@ -2680,7 +2680,7 @@
       departments.forEach(d => {
         const opt = document.createElement('option');
         opt.value = d._id || d.id;
-        opt.textContent = `${d.name} (${d.stream})`;
+        opt.textContent = `${escapeText(d.name)} (${escapeText(d.stream)})`;
         select.appendChild(opt);
       });
     }
@@ -2796,7 +2796,7 @@
     list.forEach((m) => {
       const tr = document.createElement('tr');
       const date = m.createdAt ? new Date(m.createdAt).toLocaleDateString() : '';
-      const author = m.teacher ? `${m.teacher.name} (${m.teacher.email})` : 'Unknown';
+      const author = m.teacher ? `${escapeText(m.teacher.name)} (${escapeText(m.teacher.email)})` : 'Unknown';
       tr.innerHTML = `
         <td>${esc(m.title)}</td>
         <td>${esc(m.subject)}</td>
@@ -2984,7 +2984,7 @@
     }
     let csv = 'Student ID,Roll Number,Student Name,Class,Subject,Attendance Percentage,Present Count,Absent Count\n';
     lastAnalyticsData.fullReportList.forEach(s => {
-      csv += `"${s.studentId}","${s.rollNumber}","${s.name}","${s.className}","${s.subject}",${s.percentage}%,${s.present},${s.absent}\n`;
+      csv += `"${escapeText(s.studentId)}","${escapeText(s.rollNumber)}","${escapeText(s.name)}","${escapeText(s.className)}","${escapeText(s.subject)}",${s.percentage}%,${s.present},${s.absent}\n`;
     });
     downloadCSV(csv, 'student_attendance_report.csv');
   }
@@ -2996,7 +2996,7 @@
     }
     let xls = 'Student ID\tRoll Number\tStudent Name\tClass\tSubject\tAttendance Percentage\tPresent Count\tAbsent Count\n';
     lastAnalyticsData.fullReportList.forEach(s => {
-      xls += `"${s.studentId}"\t"${s.rollNumber}"\t"${s.name}"\t"${s.className}"\t"${s.subject}"\t${s.percentage}%\t${s.present}\t${s.absent}\n`;
+      xls += `"${escapeText(s.studentId)}"\t"${escapeText(s.rollNumber)}"\t"${escapeText(s.name)}"\t"${escapeText(s.className)}"\t"${escapeText(s.subject)}"\t${s.percentage}%\t${s.present}\t${s.absent}\n`;
     });
     const blob = new Blob([xls], { type: 'application/vnd.ms-excel;charset=utf-8;' });
     const link = document.createElement("a");
@@ -3455,7 +3455,7 @@
           if (os.day === slot.day && Number(os.period) === slot.period && os.teacherId === slot.teacherId) {
             hasConflict = true;
             slot.element.style.border = '2px solid #eab308';
-            conflictsList.push(`Teacher "${slot.teacherName}" is already assigned to class "${tt.className}" on ${slot.day} during Period ${slot.period}.`);
+            conflictsList.push(`Teacher "${slot.teacherName}" is already assigned to class "${escapeText(tt.className)}" on ${slot.day} during Period ${slot.period}.`);
           }
         });
       });
@@ -3678,14 +3678,14 @@
       const opt = document.createElement('option');
       opt.value = s.id;
       const sp = s.studentProfile || {};
-      opt.textContent = `${s.name} (${sp.rollNumber || ''} - ${sp.className || ''})`;
+      opt.textContent = `${escapeText(s.name)} (${escapeText(sp.rollNumber || '')} - ${escapeText(sp.className || '')})`;
       studentSelect.appendChild(opt);
     });
 
     books.filter(b => b.availableQty > 0).forEach(b => {
       const opt = document.createElement('option');
       opt.value = b.id;
-      opt.textContent = `${b.title} by ${b.author} [ISBN: ${b.isbn || 'N/A'}] (${b.availableQty} available)`;
+      opt.textContent = `${escapeText(b.title)} by ${escapeText(b.author)} [ISBN: ${escapeText(b.isbn || 'N/A')}] (${b.availableQty} available)`;
       bookSelect.appendChild(opt);
     });
 
@@ -3961,7 +3961,7 @@
           if (subjectSel) {
             subjectSel.innerHTML = '<option value="">-- Choose Subject --</option>';
             try {
-              const tt = await SSC_API.get(`/admin/timetable/${ex.className}`);
+              const tt = await SSC_API.get(`/admin/timetable/${escapeText(ex.className)}`);
               const subjectsSet = new Set();
               if (tt && Array.isArray(tt.slots)) {
                 tt.slots.forEach(slot => {
@@ -4069,7 +4069,7 @@
 
       tr.innerHTML = `
         <td><strong>${esc(lv.teacher?.name)}</strong><br><small>${esc(lv.teacher?.email)}</small></td>
-        <td><span style="text-transform: capitalize;">${lv.leaveType}</span></td>
+        <td><span style="text-transform: capitalize;">${escapeText(lv.leaveType)}</span></td>
         <td>${start} to ${end}</td>
         <td>${esc(lv.reason)}</td>
         <td>${statusStr}</td>

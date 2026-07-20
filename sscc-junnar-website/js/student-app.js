@@ -607,8 +607,8 @@
       setText('vp-meta', `${courseName} · Class ${className}`);
 
       // Badges
-      setText('vp-badge-id', `ID: ${sp.studentId || u.id || 'N/A'}`);
-      setText('vp-badge-roll', `Roll: ${sp.rollNumber || 'N/A'}`);
+      setText('vp-badge-id', `ID: ${escapeText(sp.studentId || u.id || 'N/A')}`);
+      setText('vp-badge-roll', `Roll: ${escapeText(sp.rollNumber || 'N/A')}`);
 
       // Avatar
       const img = el('vp-avatar-img');
@@ -655,8 +655,8 @@
       const u = await SSC_API.get('/student/profile');
       const sp = u.studentProfile || {};
 
-      setText('db-welcome-name', `Welcome, ${u.name}!`);
-      setText('db-student-meta', `${sp.courseName || 'General'} • Year ${sp.year || '1'} (Roll: ${sp.rollNumber || 'N/A'})`);
+      setText('db-welcome-name', `Welcome, ${escapeText(u.name)}!`);
+      setText('db-student-meta', `${sp.courseName || 'General'} • Year ${sp.year || '1'} (Roll: ${escapeText(sp.rollNumber || 'N/A')})`);
       
       const dbAvatar = el('db-avatar-img');
       const dbPlaceholder = el('db-avatar-placeholder');
@@ -2053,11 +2053,11 @@
           contentEl.textContent = 'No linked application found.';
         } else {
           contentEl.textContent = [
-            `Application: ${a.applicationNumber}`,
+            `Application: ${escapeText(a.applicationNumber)}`,
             `Status: ${a.status}`,
             `Course: ${a.courseApplied || ''}`,
             a.documentsVerified != null ? `Documents verified: ${a.documentsVerified ? 'Yes' : 'No'}` : '',
-            a.verificationNotes ? `Notes: ${a.verificationNotes}` : '',
+            a.verificationNotes ? `Notes: ${escapeText(a.verificationNotes)}` : '',
           ]
             .filter(Boolean)
             .join('\n');
@@ -2471,7 +2471,7 @@
             activeNotifications.push({
               id: 'lib-' + (is._id || is.id),
               title: isOverdue ? 'Library Book Overdue!' : 'Library Return Due Soon',
-              desc: `"${is.book?.title || 'Book'}" is ${isOverdue ? 'overdue' : `due in ${daysLeft} days`}.`,
+              desc: `"${escapeText(is.book?.title || 'Book')}" is ${isOverdue ? 'overdue' : `due in ${daysLeft} days`}.`,
               time: new Date(is.dueDate),
               icon: isOverdue ? 'red' : 'amber',
               svg: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>'
@@ -2485,7 +2485,7 @@
             activeNotifications.push({
               id: 'drive-' + (d._id || d.id),
               title: 'Active Placement Drive',
-              desc: `${d.company?.companyName || 'Company'} is hiring for ${d.title}. Apply now!`,
+              desc: `${escapeText(d.company?.companyName || 'Company')} is hiring for ${escapeText(d.title)}. Apply now!`,
               time: d.createdAt ? new Date(d.createdAt) : new Date(),
               icon: 'green',
               svg: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>'

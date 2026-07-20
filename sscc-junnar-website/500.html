@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Server Error — SSC College, Junnar</title>
+  <meta name="description" content="An internal server error occurred."/>
+  <script src="/js/theme.js"></script>
+  <link rel="stylesheet" href="/css/styles.css"/>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
+  <style>
+    .error-page {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 80vh;
+      text-align: center;
+      padding: 2rem;
+    }
+    .error-code {
+      font-size: 8rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--danger, #ef4444), var(--warning, #f59e0b));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1;
+      margin-bottom: 0.5rem;
+    }
+    .error-title {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: var(--text, #e2e8f0);
+      margin-bottom: 0.75rem;
+    }
+    .error-message {
+      font-size: 1.05rem;
+      color: var(--text-secondary, #94a3b8);
+      max-width: 480px;
+      line-height: 1.6;
+      margin-bottom: 2rem;
+    }
+  </style>
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+  <div id="site-header"></div>
+
+<main id="main-content">
+  <div class="error-page">
+    <div class="error-code">500</div>
+    <h1 class="error-title">Internal Server Error</h1>
+    <p class="error-message">
+      Something went wrong on our end. Our team has been notified. 
+      Please try again in a few minutes.
+    </p>
+    <div class="cta-row">
+      <a href="/" class="btn">Go Home</a>
+      <a href="javascript:location.reload()" class="btn secondary">Retry</a>
+    </div>
+  </div>
+</main>
+
+  <div id="site-footer"></div>
+  <script src="/js/layout.js"></script>
+  <script src="/js/app.js"></script>
+</body>
+</html>

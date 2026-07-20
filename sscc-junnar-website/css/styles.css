@@ -46,6 +46,15 @@
   --topbar-border: rgba(255,255,255,0.06);
   --scrollbar-thumb: rgba(255,255,255,0.1);
   --scrollbar-track: transparent;
+
+  /* ── Z-Index Token System ───────────────────────────────── */
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-sidebar: 300;
+  --z-modal-backdrop: 400;
+  --z-modal-content: 500;
+  --z-toast: 600;
+  --z-tooltip: 700;
 }
 
 /* ── Light Theme ──────────────────────────────────────────── */
@@ -2088,3 +2097,248 @@ button.step-pill { background: transparent; color: var(--text-secondary); }
   box-shadow: 0 1px 3px rgba(0,0,0,0.05);
 }
 
+/* ══════════════════════════════════════════════════════════════
+   ACCESSIBILITY — Skip Link
+   ══════════════════════════════════════════════════════════════ */
+.skip-link {
+  position: absolute;
+  top: -100%;
+  left: 1rem;
+  z-index: var(--z-tooltip, 700);
+  padding: 0.75rem 1.5rem;
+  background: var(--primary, #6366f1);
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.9rem;
+  border-radius: 0 0 var(--radius-sm, 10px) var(--radius-sm, 10px);
+  text-decoration: none;
+  transition: top 0.2s ease;
+}
+.skip-link:focus {
+  top: 0;
+  outline: 3px solid var(--ring, rgba(99,102,241,0.3));
+  outline-offset: 2px;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   ACCESSIBILITY — Reduced Motion
+   ══════════════════════════════════════════════════════════════ */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   ACCESSIBILITY — Auto Dark Mode Detection (fallback)
+   ══════════════════════════════════════════════════════════════ */
+@media (prefers-color-scheme: dark) {
+  html:not([data-theme]) {
+    --bg: #0a0f1e;
+    --text: #e2e8f0;
+    --card: #111c30;
+    --surface: #111c30;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   PRINT STYLES — Academic Layout
+   ══════════════════════════════════════════════════════════════ */
+@media print {
+  body {
+    background: #fff !important;
+    color: #000 !important;
+    font-size: 12pt;
+  }
+  .skip-link,
+  .dash-side,
+  .dash-topbar,
+  .navbar,
+  #site-header,
+  #site-footer,
+  #back-to-top,
+  #toast-container,
+  .btn,
+  button {
+    display: none !important;
+  }
+  .dash-main {
+    margin-left: 0 !important;
+    padding: 0 !important;
+  }
+  .card {
+    border: 1px solid #ccc !important;
+    box-shadow: none !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+  }
+  table th, table td {
+    border: 1px solid #333 !important;
+    padding: 0.3rem 0.5rem;
+    color: #000 !important;
+    background: #fff !important;
+  }
+  a[href]::after {
+    content: " (" attr(href) ")";
+    font-size: 0.8em;
+    color: #666;
+  }
+  .hero {
+    background: none !important;
+    color: #000 !important;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   REGIONALIZATION — Devanagari Font Support (Marathi)
+   ══════════════════════════════════════════════════════════════ */
+[lang="mr"], .lang-mr {
+  font-family: 'Noto Sans Devanagari', 'Inter', system-ui, sans-serif;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   UI COMPONENTS — Button Loading States
+   ══════════════════════════════════════════════════════════════ */
+.btn.loading {
+  position: relative;
+  pointer-events: none;
+  opacity: 0.7;
+}
+.btn.loading::after {
+  content: '';
+  position: absolute;
+  width: 1em;
+  height: 1em;
+  top: 50%;
+  left: 50%;
+  margin: -0.5em 0 0 -0.5em;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: btn-spin 0.6s linear infinite;
+}
+@keyframes btn-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   UI COMPONENTS — Breadcrumbs
+   ══════════════════════════════════════════════════════════════ */
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--text-secondary, #94a3b8);
+  margin-bottom: 1rem;
+}
+.breadcrumb a {
+  color: var(--primary, #6366f1);
+  text-decoration: none;
+}
+.breadcrumb a:hover {
+  text-decoration: underline;
+}
+.breadcrumb .separator {
+  color: var(--muted, #64748b);
+}
+.breadcrumb .current {
+  color: var(--text, #e2e8f0);
+  font-weight: 500;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   UI COMPONENTS — Accessible Accordion
+   ══════════════════════════════════════════════════════════════ */
+.accordion {
+  border: 1px solid var(--card-border, rgba(255,255,255,0.06));
+  border-radius: var(--radius-sm, 10px);
+  overflow: hidden;
+}
+.accordion-item + .accordion-item {
+  border-top: 1px solid var(--card-border, rgba(255,255,255,0.06));
+}
+.accordion-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 1rem 1.25rem;
+  background: var(--surface, #111c30);
+  color: var(--text, #e2e8f0);
+  border: none;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 500;
+  text-align: left;
+  transition: background-color 0.15s ease;
+}
+.accordion-trigger:hover {
+  background: var(--surface-hover, #162040);
+}
+.accordion-trigger::after {
+  content: '\25BC';
+  font-size: 0.7em;
+  transition: transform 0.2s ease;
+}
+.accordion-trigger[aria-expanded="true"]::after {
+  transform: rotate(180deg);
+}
+.accordion-panel {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+  background: var(--card, #111c30);
+}
+.accordion-panel[aria-hidden="false"] {
+  max-height: 500px;
+}
+.accordion-panel-inner {
+  padding: 1rem 1.25rem;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   UI COMPONENTS — Confirmation Dialog
+   ══════════════════════════════════════════════════════════════ */
+.confirm-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  backdrop-filter: blur(4px);
+  z-index: var(--z-modal-backdrop, 400);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.confirm-dialog {
+  background: var(--card, #111c30);
+  border: 1px solid var(--card-border, rgba(255,255,255,0.06));
+  border-radius: var(--radius, 14px);
+  padding: 2rem;
+  max-width: 420px;
+  width: 90%;
+  z-index: var(--z-modal-content, 500);
+  box-shadow: var(--shadow-lg);
+}
+.confirm-dialog h3 {
+  margin: 0 0 0.75rem;
+  font-size: 1.1rem;
+}
+.confirm-dialog p {
+  margin: 0 0 1.5rem;
+  color: var(--text-secondary, #94a3b8);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+.confirm-dialog-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+}

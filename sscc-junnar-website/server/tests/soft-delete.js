@@ -8,7 +8,7 @@ import { PrismaClient, Role } from '@prisma/client';
 
 const prisma = new PrismaClient();
 const BASE = `http://localhost:${process.env.PORT || 3000}`;
-const SECRET = process.env.JWT_SECRET || 'secret';
+const SECRET = process.env.JWT_SECRET;
 
 function makeToken(role, sub, email) {
   return jwt.sign({ sub, role, email }, SECRET, { expiresIn: '1h' });

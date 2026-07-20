@@ -3,9 +3,22 @@ import crypto from 'crypto';
 import { prisma, withMongoId } from '../db/client.js';
 import { hashPassword, verifyPassword, signToken, verifyToken } from '../utils/auth.js';
 import { Role } from '@prisma/client';
-import { loginLimiter, adminAccessLimiter, publicFormLimiter } from '../middleware/rateLimit.js';
+import { loginLimiter, adminAccessLimiter, publicFormLimiter, checkAccountLockout, recordFailedLogin, clearFailedLogins } from '../middleware/rateLimit.js';
 import { createAuthMiddleware } from '../middleware/auth.js';
 import { sendEmail } from '../utils/email.js';
+import { blacklistToken } from '../utils/tokenBlacklist.js';
+
+// Cookie options for JWT storage
+const COOKIE_NAME = 'ssc_token';
+function cookieOpts(maxAgeMs) {
+  return {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    path: '/',
+    maxAge: maxAgeMs,
+  };
+}
 import {
   validate,
   adminAccessSchema,
@@ -39,6 +52,7 @@ export function authRouter({ jwtSecret, jwtExpiresIn }) {
       return res.status(503).json({ error: 'No admin user in database. Run npm run seed in server/ once.' });
     }
     const token = signToken({ _id: admin.id, role: admin.role, email: admin.email }, jwtSecret, jwtExpiresIn);
+    res.cookie(COOKIE_NAME, token, cookieOpts(7 * 24 * 60 * 60 * 1000));
     res.json({
       token,
       user: withMongoId({
@@ -53,7 +67,7 @@ export function authRouter({ jwtSecret, jwtExpiresIn }) {
     });
   });
 
-  r.post('/login', loginLimiter, validate(loginSchema), async (req, res) => {
+  r.post('/login', loginLimiter, checkAccountLockout, validate(loginSchema), async (req, res) => {
     const { email, password } = req.body;
     const searchId = String(email).toLowerCase().trim();
     let user = await prisma.user.findUnique({
@@ -72,12 +86,20 @@ export function authRouter({ jwtSecret, jwtExpiresIn }) {
       user = rawUsers[0] || null;
     }
     if (!user || !user.isActive || user.isDeleted) {
+      recordFailedLogin(searchId);
       return res.status(401).json({ error: 'Invalid credentials' });
     }
     const ok = await verifyPassword(password, user.passwordHash);
-    if (!ok) return res.status(401).json({ error: 'Invalid credentials' });
+    if (!ok) {
+      recordFailedLogin(searchId);
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    // Successful login — clear any failed attempt tracking
+    clearFailedLogins(searchId);
 
     const token = signToken({ _id: user.id, role: user.role, email: user.email }, jwtSecret, jwtExpiresIn);
+    res.cookie(COOKIE_NAME, token, cookieOpts(7 * 24 * 60 * 60 * 1000));
     res.json({
       token,
       mustChangePassword: user.mustChangePassword || false,
@@ -91,6 +113,22 @@ export function authRouter({ jwtSecret, jwtExpiresIn }) {
         studentProfile: typeof user.studentProfile === 'string' ? JSON.parse(user.studentProfile) : user.studentProfile,
       }),
     });
+  });
+
+  // ── Logout — clear cookie and blacklist token ───────────────────────
+  r.post('/logout', (req, res) => {
+    const token = req.cookies?.[COOKIE_NAME] || null;
+    if (token) {
+      try {
+        const payload = verifyToken(token, jwtSecret);
+        const exp = payload.exp ? payload.exp * 1000 : Date.now() + 7 * 24 * 60 * 60 * 1000;
+        blacklistToken(token, exp);
+      } catch {
+        // Token is already invalid — just clear the cookie
+      }
+    }
+    res.clearCookie(COOKIE_NAME, { httpOnly: true, sameSite: 'strict', path: '/' });
+    res.json({ ok: true, message: 'Logged out successfully' });
   });
 
   // ── Change Password ───────────────────────────────────────────────────
@@ -117,8 +155,12 @@ export function authRouter({ jwtSecret, jwtExpiresIn }) {
   });
 
   r.get('/me', async (req, res) => {
-    const header = req.headers.authorization || '';
-    const token = header.startsWith('Bearer ') ? header.slice(7) : null;
+    // Read from cookie first, fallback to header
+    let token = req.cookies?.[COOKIE_NAME] || null;
+    if (!token) {
+      const header = req.headers.authorization || '';
+      token = header.startsWith('Bearer ') ? header.slice(7) : null;
+    }
     if (!token) return res.status(401).json({ error: 'Authentication required' });
     try {
       const payload = verifyToken(token, jwtSecret);
