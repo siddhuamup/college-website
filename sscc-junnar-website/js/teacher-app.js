@@ -452,7 +452,7 @@
 
     const formMat = document.getElementById('form-mat');
     if (formMat) {
-      formMat.addEventListener('submit', async (e) => {
+      formMat.addEventListener('submit', withSubmitGuard(async (e) => {
         e.preventDefault();
         const f = e.target;
         const fd = new FormData();
@@ -473,7 +473,7 @@
 
     const formProfile = document.getElementById('form-edit-profile');
     if (formProfile) {
-      formProfile.addEventListener('submit', async (e) => {
+      formProfile.addEventListener('submit', withSubmitGuard(async (e) => {
         e.preventDefault();
         const fd = new FormData();
         fd.append('name', document.getElementById('teacher-profile-name').value.trim());
@@ -1396,7 +1396,7 @@
     const form = document.getElementById('form-leave');
     if (form && !form.dataset.bound) {
       form.dataset.bound = '1';
-      form.addEventListener('submit', async (e) => {
+      form.addEventListener('submit', withSubmitGuard(async (e) => {
         e.preventDefault();
         const msgEl = document.getElementById('leave-msg');
         if (msgEl) {
@@ -1716,7 +1716,7 @@
           validatePasswordStrength(newInput.value, 'must-criteria-');
         });
         
-        form.addEventListener('submit', async (e) => {
+        form.addEventListener('submit', withSubmitGuard(async (e) => {
           e.preventDefault();
           if (newInput.value !== confirmInput.value) {
             showToast('New passwords do not match', 'error');
@@ -1776,7 +1776,7 @@
         validatePasswordStrength(newInput.value, 'criteria-');
       });
       
-      form.addEventListener('submit', async (e) => {
+      form.addEventListener('submit', withSubmitGuard(async (e) => {
         e.preventDefault();
         if (newInput.value !== confirmInput.value) {
           showToast('New passwords do not match', 'error');

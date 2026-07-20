@@ -477,7 +477,7 @@
 
     const formFb = el('form-fb');
     if (formFb) {
-      formFb.addEventListener('submit', async (e) => {
+      formFb.addEventListener('submit', withSubmitGuard(async (e) => {
         e.preventDefault();
         try {
           await SSC_API.post('/student/feedback', {
@@ -494,7 +494,7 @@
 
     const formProfile = el('form-edit-profile');
     if (formProfile) {
-      formProfile.addEventListener('submit', async (e) => {
+      formProfile.addEventListener('submit', withSubmitGuard(async (e) => {
         e.preventDefault();
         const fd = new FormData();
         fd.append('name', el('student-profile-name').value.trim());
@@ -2559,7 +2559,7 @@
           validatePasswordStrength(newInput.value, 'must-criteria-');
         });
         
-        form.addEventListener('submit', async (e) => {
+        form.addEventListener('submit', withSubmitGuard(async (e) => {
           e.preventDefault();
           if (newInput.value !== confirmInput.value) {
             showToast('New passwords do not match', 'error');
@@ -2619,7 +2619,7 @@
         validatePasswordStrength(newInput.value, 'criteria-');
       });
       
-      form.addEventListener('submit', async (e) => {
+      form.addEventListener('submit', withSubmitGuard(async (e) => {
         e.preventDefault();
         if (newInput.value !== confirmInput.value) {
           showToast('New passwords do not match', 'error');

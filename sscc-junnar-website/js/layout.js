@@ -150,3 +150,31 @@ window.initAccordions = function(container = document) {
     });
   });
 };
+
+// ── Duplicate Submit Guard Helper (Item B6) ───────────────────
+window.withSubmitGuard = function(fn) {
+  let isSubmitting = false;
+  return async function(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    if (isSubmitting) return;
+
+    const form = e && e.target && e.target.tagName === 'FORM' ? e.target : null;
+    const btn = form ? (form.querySelector('button[type="submit"]') || form.querySelector('button:not([type="button"])')) : null;
+
+    isSubmitting = true;
+    if (btn) {
+      btn.disabled = true;
+      btn.classList.add('loading');
+    }
+
+    try {
+      await fn(e);
+    } finally {
+      isSubmitting = false;
+      if (btn) {
+        btn.disabled = false;
+        btn.classList.remove('loading');
+      }
+    }
+  };
+};

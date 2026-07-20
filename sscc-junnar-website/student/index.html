@@ -198,9 +198,9 @@
               <table class="table small" id="tbl-db-marks">
                 <thead>
                   <tr>
-                    <th>Subject</th>
-                    <th>Exam</th>
-                    <th>Score</th>
+                    <th scope="col">Subject</th>
+                    <th scope="col">Exam</th>
+                    <th scope="col">Score</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -216,9 +216,9 @@
               <table class="table small" id="tbl-db-attendance">
                 <thead>
                   <tr>
-                    <th>Subject</th>
-                    <th>Attended</th>
-                    <th>Percentage</th>
+                    <th scope="col">Subject</th>
+                    <th scope="col">Attended</th>
+                    <th scope="col">Percentage</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -267,19 +267,19 @@
         <div class="card">
           <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem;">
             <h3 style="margin: 0;">Class Timetable</h3>
-            <button class="btn small" onclick="window.print()" style="color: #000;">Print Timetable</button>
+            <button type="button" class="btn small" onclick="window.print()" style="color: #000;">Print Timetable</button>
           </div>
           <div class="table-wrap">
             <table class="table small" style="width: 100%; min-width: 800px;">
               <thead>
                 <tr>
-                  <th>Period / Time</th>
-                  <th>Monday</th>
-                  <th>Tuesday</th>
-                  <th>Wednesday</th>
-                  <th>Thursday</th>
-                  <th>Friday</th>
-                  <th>Saturday</th>
+                  <th scope="col">Period / Time</th>
+                  <th scope="col">Monday</th>
+                  <th scope="col">Tuesday</th>
+                  <th scope="col">Wednesday</th>
+                  <th scope="col">Thursday</th>
+                  <th scope="col">Friday</th>
+                  <th scope="col">Saturday</th>
                 </tr>
               </thead>
               <tbody id="tbl-student-timetable">
@@ -303,12 +303,12 @@
             <table class="table small" id="tbl-stu-lib-issued">
               <thead>
                 <tr>
-                  <th>Book Title</th>
-                  <th>Author</th>
-                  <th>Category</th>
-                  <th>Issued Date</th>
-                  <th>Due Date</th>
-                  <th>Fine</th>
+                  <th scope="col">Book Title</th>
+                  <th scope="col">Author</th>
+                  <th scope="col">Category</th>
+                  <th scope="col">Issued Date</th>
+                  <th scope="col">Due Date</th>
+                  <th scope="col">Fine</th>
                 </tr>
               </thead>
               <tbody></tbody>
@@ -322,12 +322,12 @@
             <table class="table small" id="tbl-stu-lib-history">
               <thead>
                 <tr>
-                  <th>Book Title</th>
-                  <th>Author</th>
-                  <th>Category</th>
-                  <th>Issued Date</th>
-                  <th>Returned Date</th>
-                  <th>Fine Paid</th>
+                  <th scope="col">Book Title</th>
+                  <th scope="col">Author</th>
+                  <th scope="col">Category</th>
+                  <th scope="col">Issued Date</th>
+                  <th scope="col">Returned Date</th>
+                  <th scope="col">Fine Paid</th>
                 </tr>
               </thead>
               <tbody></tbody>
@@ -344,12 +344,12 @@
             <table class="table small" id="tbl-stu-exams">
               <thead>
                 <tr>
-                  <th>Exam Name</th>
-                  <th>Type</th>
-                  <th>Subject</th>
-                  <th>Date / Time</th>
-                  <th>Venue</th>
-                  <th>Max Marks</th>
+                  <th scope="col">Exam Name</th>
+                  <th scope="col">Type</th>
+                  <th scope="col">Subject</th>
+                  <th scope="col">Date / Time</th>
+                  <th scope="col">Venue</th>
+                  <th scope="col">Max Marks</th>
                 </tr>
               </thead>
               <tbody></tbody>
@@ -400,16 +400,16 @@
             <table class="table small" id="tbl-stu-results">
               <thead>
                 <tr>
-                  <th>Exam Title</th>
-                  <th>Subject</th>
-                  <th>Type</th>
-                  <th>Date</th>
-                  <th>Marks Obtained</th>
-                  <th>Percentage</th>
-                  <th>Grade</th>
-                  <th>Pass / Fail</th>
-                  <th>Class Rank</th>
-                  <th>Actions</th>
+                  <th scope="col">Exam Title</th>
+                  <th scope="col">Subject</th>
+                  <th scope="col">Type</th>
+                  <th scope="col">Date</th>
+                  <th scope="col">Marks Obtained</th>
+                  <th scope="col">Percentage</th>
+                  <th scope="col">Grade</th>
+                  <th scope="col">Pass / Fail</th>
+                  <th scope="col">Class Rank</th>
+                  <th scope="col">Actions</th>
                 </tr>
               </thead>
               <tbody></tbody>
@@ -426,7 +426,7 @@
           <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed rgba(56,189,248,0.2); padding-bottom: 0.5rem; margin-bottom: 1rem;">
             <h4 id="pr-student-info" style="margin: 0;"></h4>
             <div class="no-print">
-              <button class="btn small" onclick="window.print()" style="color: #000;">Print Report / Save as PDF</button>
+              <button type="button" class="btn small" onclick="window.print()" style="color: #000;">Print Report / Save as PDF</button>
               <button class="btn secondary small" id="btn-close-print-view" type="button">Close Preview</button>
             </div>
           </div>
@@ -434,14 +434,14 @@
             <table class="table small" id="tbl-print-result" style="width: 100%;">
               <thead>
                 <tr>
-                  <th>Exam</th>
-                  <th>Subject</th>
-                  <th>Exam Type</th>
-                  <th>Marks Obtained</th>
-                  <th>Percentage</th>
-                  <th>Grade</th>
-                  <th>Status</th>
-                  <th>Class Rank</th>
+                  <th scope="col">Exam</th>
+                  <th scope="col">Subject</th>
+                  <th scope="col">Exam Type</th>
+                  <th scope="col">Marks Obtained</th>
+                  <th scope="col">Percentage</th>
+                  <th scope="col">Grade</th>
+                  <th scope="col">Status</th>
+                  <th scope="col">Class Rank</th>
                 </tr>
               </thead>
               <tbody></tbody>
@@ -492,10 +492,10 @@
             <table class="table small" id="tbl-subject-breakdown">
               <thead>
                 <tr>
-                  <th>Subject</th>
-                  <th>Attended</th>
-                  <th>Total Classes</th>
-                  <th>Percentage</th>
+                  <th scope="col">Subject</th>
+                  <th scope="col">Attended</th>
+                  <th scope="col">Total Classes</th>
+                  <th scope="col">Percentage</th>
                 </tr>
               </thead>
               <tbody></tbody>
@@ -511,9 +511,9 @@
                 <table class="table small" id="tbl-att">
                   <thead>
                     <tr>
-                      <th>Date</th>
-                      <th>Subject</th>
-                      <th>Status</th>
+                      <th scope="col">Date</th>
+                      <th scope="col">Subject</th>
+                      <th scope="col">Status</th>
                     </tr>
                   </thead>
                   <tbody></tbody>
@@ -744,13 +744,13 @@
                   </h3>
                   <table class="profile-details-table">
                     <tbody>
-                      <tr><th>Full Name</th><td id="view-name">—</td></tr>
-                      <tr><th>Personal Email</th><td id="view-personal-email">—</td></tr>
-                      <tr><th>Phone Number</th><td id="view-phone">—</td></tr>
-                      <tr><th>Residential Address</th><td id="view-address">—</td></tr>
-                      <tr><th>Parent Contact</th><td id="view-parent">—</td></tr>
-                      <tr><th>Emergency Contact</th><td id="view-emergency">—</td></tr>
-                      <tr><th>Personal Bio</th><td id="view-bio" style="font-style: italic; color: var(--text-secondary);">No bio written yet.</td></tr>
+                      <tr><th scope="col">Full Name</th><td id="view-name">—</td></tr>
+                      <tr><th scope="col">Personal Email</th><td id="view-personal-email">—</td></tr>
+                      <tr><th scope="col">Phone Number</th><td id="view-phone">—</td></tr>
+                      <tr><th scope="col">Residential Address</th><td id="view-address">—</td></tr>
+                      <tr><th scope="col">Parent Contact</th><td id="view-parent">—</td></tr>
+                      <tr><th scope="col">Emergency Contact</th><td id="view-emergency">—</td></tr>
+                      <tr><th scope="col">Personal Bio</th><td id="view-bio" style="font-style: italic; color: var(--text-secondary);">No bio written yet.</td></tr>
                     </tbody>
                   </table>
                   <button type="button" class="btn small" id="btn-trigger-student-edit" style="color: #000; margin-top: 1rem;">Edit Profile Details</button>
@@ -764,11 +764,11 @@
                   <div class="card" id="card-academic-snapshot" style="background: var(--surface); border: 1px solid var(--card-border); margin-top: 1rem; padding: 1.25rem;">
                     <table class="profile-details-table" style="margin-top:0;">
                       <tbody>
-                        <tr><th>Application Number</th><td id="snap-app-num">—</td></tr>
-                        <tr><th>Admission Year</th><td id="snap-adm-year">—</td></tr>
-                        <tr><th>Documents Verified</th><td id="snap-docs-verified">—</td></tr>
-                        <tr><th>Verification Status</th><td id="snap-verify-status">—</td></tr>
-                        <tr><th>Verification Notes</th><td id="snap-verify-notes" style="font-style: italic; color: var(--text-secondary);">—</td></tr>
+                        <tr><th scope="col">Application Number</th><td id="snap-app-num">—</td></tr>
+                        <tr><th scope="col">Admission Year</th><td id="snap-adm-year">—</td></tr>
+                        <tr><th scope="col">Documents Verified</th><td id="snap-docs-verified">—</td></tr>
+                        <tr><th scope="col">Verification Status</th><td id="snap-verify-status">—</td></tr>
+                        <tr><th scope="col">Verification Notes</th><td id="snap-verify-notes" style="font-style: italic; color: var(--text-secondary);">—</td></tr>
                       </tbody>
                     </table>
                   </div>
@@ -783,13 +783,13 @@
                   <h3 style="margin-top:0; border-bottom: 2px solid var(--primary-muted); padding-bottom: 0.5rem; color: var(--text);">Course Information</h3>
                   <table class="profile-details-table">
                     <tbody>
-                      <tr><th>Course</th><td id="acad-course">—</td></tr>
-                      <tr><th>Current Class</th><td id="acad-class">—</td></tr>
-                      <tr><th>Academic Year</th><td id="acad-year">—</td></tr>
-                      <tr><th>Current Semester</th><td id="acad-sem">—</td></tr>
-                      <tr><th>Division</th><td id="acad-div">—</td></tr>
-                      <tr><th>Estimated CGPA</th><td id="acad-cgpa" style="font-weight:700; color:var(--primary);">—</td></tr>
-                      <tr><th>Active Backlogs</th><td id="acad-backlogs" style="font-weight:600;">0</td></tr>
+                      <tr><th scope="col">Course</th><td id="acad-course">—</td></tr>
+                      <tr><th scope="col">Current Class</th><td id="acad-class">—</td></tr>
+                      <tr><th scope="col">Academic Year</th><td id="acad-year">—</td></tr>
+                      <tr><th scope="col">Current Semester</th><td id="acad-sem">—</td></tr>
+                      <tr><th scope="col">Division</th><td id="acad-div">—</td></tr>
+                      <tr><th scope="col">Estimated CGPA</th><td id="acad-cgpa" style="font-weight:700; color:var(--primary);">—</td></tr>
+                      <tr><th scope="col">Active Backlogs</th><td id="acad-backlogs" style="font-weight:600;">0</td></tr>
                     </tbody>
                   </table>
                 </div>
@@ -798,7 +798,7 @@
                   <div class="table-wrap mt-2">
                     <table class="table small" id="tbl-prof-acad-grades">
                       <thead>
-                        <tr><th>Subject</th><th>Exam</th><th>Score</th><th>Percentage</th></tr>
+                        <tr><th scope="col">Subject</th><th scope="col">Exam</th><th scope="col">Score</th><th scope="col">Percentage</th></tr>
                       </thead>
                       <tbody>
                         <tr><td colspan="4" class="text-center text-muted">No marks recorded.</td></tr>
@@ -820,7 +820,7 @@
                   <div class="table-wrap mt-2">
                     <table class="table small" id="tbl-prof-att-subjects">
                       <thead>
-                        <tr><th>Subject</th><th>Attended / Total</th><th>Percentage</th></tr>
+                        <tr><th scope="col">Subject</th><th scope="col">Attended / Total</th><th scope="col">Percentage</th></tr>
                       </thead>
                       <tbody>
                         <tr><td colspan="3" class="text-center text-muted">No logs available.</td></tr>
@@ -832,10 +832,10 @@
                   <h3 style="margin-top:0; border-bottom: 2px solid var(--primary-muted); padding-bottom: 0.5rem; color: var(--text);">Attendance Statistics & Trend</h3>
                   <table class="profile-details-table">
                     <tbody>
-                      <tr><th>Overall Attendance</th><td id="prof-att-rate-field" style="font-weight:700;">—</td></tr>
-                      <tr><th>Classes Attended</th><td id="prof-att-present-field">—</td></tr>
-                      <tr><th>Classes Missed</th><td id="prof-att-missed-field" style="color:#ef4444;">—</td></tr>
-                      <tr><th>Trend Status</th><td id="prof-att-trend-field">—</td></tr>
+                      <tr><th scope="col">Overall Attendance</th><td id="prof-att-rate-field" style="font-weight:700;">—</td></tr>
+                      <tr><th scope="col">Classes Attended</th><td id="prof-att-present-field">—</td></tr>
+                      <tr><th scope="col">Classes Missed</th><td id="prof-att-missed-field" style="color:#ef4444;">—</td></tr>
+                      <tr><th scope="col">Trend Status</th><td id="prof-att-trend-field">—</td></tr>
                     </tbody>
                   </table>
                 </div>
@@ -849,10 +849,10 @@
                   <h3 style="margin-top:0; border-bottom: 2px solid var(--primary-muted); padding-bottom: 0.5rem; color: var(--text);">Placement Statistics</h3>
                   <table class="profile-details-table">
                     <tbody>
-                      <tr><th>Eligibility Status</th><td id="prof-pl-eligible" style="font-weight:600;">—</td></tr>
-                      <tr><th>Applied Drives</th><td id="prof-pl-applied">—</td></tr>
-                      <tr><th>Shortlisted Count</th><td id="prof-pl-shortlisted" style="color:#f59e0b;">—</td></tr>
-                      <tr><th>Job Offers Selected</th><td id="prof-pl-offers" style="color:#22c55e; font-weight:700;">—</td></tr>
+                      <tr><th scope="col">Eligibility Status</th><td id="prof-pl-eligible" style="font-weight:600;">—</td></tr>
+                      <tr><th scope="col">Applied Drives</th><td id="prof-pl-applied">—</td></tr>
+                      <tr><th scope="col">Shortlisted Count</th><td id="prof-pl-shortlisted" style="color:#f59e0b;">—</td></tr>
+                      <tr><th scope="col">Job Offers Selected</th><td id="prof-pl-offers" style="color:#22c55e; font-weight:700;">—</td></tr>
                     </tbody>
                   </table>
                 </div>
@@ -861,7 +861,7 @@
                   <div class="table-wrap mt-2">
                     <table class="table small" id="tbl-prof-pl-apps-list">
                       <thead>
-                        <tr><th>Company</th><th>Drive</th><th>Salary Package</th><th>Status</th></tr>
+                        <tr><th scope="col">Company</th><th scope="col">Drive</th><th scope="col">Salary Package</th><th scope="col">Status</th></tr>
                       </thead>
                       <tbody>
                         <tr><td colspan="4" class="text-center text-muted">No applications submitted.</td></tr>
@@ -1023,7 +1023,7 @@
           </div>
           <div class="table-wrap" style="display:none;">
             <table class="table small" id="tbl-stu-pl-apps">
-              <thead><tr><th>Company</th><th>Drive</th><th>Package</th><th>Location</th><th>Status</th><th>Applied On</th></tr></thead>
+              <thead><tr><th scope="col">Company</th><th scope="col">Drive</th><th scope="col">Package</th><th scope="col">Location</th><th scope="col">Status</th><th scope="col">Applied On</th></tr></thead>
               <tbody></tbody>
             </table>
           </div>

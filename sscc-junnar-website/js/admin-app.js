@@ -1,8 +1,13 @@
 (function () {
   const msg = (t, err) => {
     const el = document.getElementById('dash-msg');
-    el.textContent = t || '';
-    el.className = 'small mt-3' + (err ? ' alert error' : t ? ' alert success' : '');
+    if (el) {
+      el.textContent = t || '';
+      el.className = 'small mt-3' + (err ? ' alert error' : t ? ' alert success' : '');
+    }
+    if (t && typeof window.showToast === 'function') {
+      window.showToast(t, err ? 'error' : 'success');
+    }
   };
 
   function showModalAlert(message, title = 'Notification') {
@@ -139,7 +144,7 @@
     const msgEl = document.getElementById('admin-gate-msg');
     if (!form || form.dataset.bound) return;
     form.dataset.bound = '1';
-    form.addEventListener('submit', async (e) => {
+    form.addEventListener('submit', withSubmitGuard(async (e) => {
       e.preventDefault();
       msgEl.textContent = '';
       msgEl.className = 'small mt-3';
@@ -718,7 +723,8 @@
                 tb.querySelectorAll('[data-del-adm]').forEach(b =>
                   b.addEventListener('click', async () => {
                     const id = b.getAttribute('data-del-adm');
-                    if (!confirm('Are you sure you want to delete this application? This action can be reversed by an admin.')) return;
+                    const ok = await window.showConfirm('Are you sure you want to delete this application? This action can be reversed by an admin.', 'Delete Application', 'Delete', 'btn danger');
+                    if (!ok) return;
                     try {
                       await SSC_API.delete('/admin/admissions/' + id);
                       msg('Application deleted');
@@ -1024,7 +1030,8 @@
 
     tb.querySelectorAll('[data-del-student]').forEach((b) =>
       b.addEventListener('click', async () => {
-        if (!confirm('Are you sure you want to delete this student?')) return;
+        const ok = await window.showConfirm('Are you sure you want to delete this student?', 'Delete Student', 'Delete', 'btn danger');
+        if (!ok) return;
         try {
           await SSC_API.delete('/admin/students/' + b.getAttribute('data-del-student'));
           msg('Student deleted successfully');
@@ -1428,7 +1435,7 @@
   }
 
   // Student form bindings
-  document.getElementById('form-student').addEventListener('submit', async (e) => {
+  document.getElementById('form-student').addEventListener('submit', withSubmitGuard(async (e) => {
     e.preventDefault();
     const f = e.target;
     const body = {
@@ -1456,7 +1463,7 @@
   // Admissions Decision Form Submit
   const decisionForm = document.getElementById('form-admission-decision');
   if (decisionForm) {
-    decisionForm.addEventListener('submit', async (e) => {
+    decisionForm.addEventListener('submit', withSubmitGuard(async (e) => {
       e.preventDefault();
       const id = document.getElementById('decision-app-id').value;
       const rollNumber = document.getElementById('decision-student-id').value;
@@ -1549,7 +1556,7 @@
   // Admissions Reject Form Submit
   const rejectForm = document.getElementById('form-admission-reject');
   if (rejectForm) {
-    rejectForm.addEventListener('submit', async (e) => {
+    rejectForm.addEventListener('submit', withSubmitGuard(async (e) => {
       e.preventDefault();
       const id = document.getElementById('reject-app-id').value;
       const notes = document.getElementById('reject-notes').value.trim();
@@ -1575,7 +1582,7 @@
   // Edit Student Form Submit
   const editStudentForm = document.getElementById('form-edit-student');
   if (editStudentForm) {
-    editStudentForm.addEventListener('submit', async (e) => {
+    editStudentForm.addEventListener('submit', withSubmitGuard(async (e) => {
       e.preventDefault();
       const id = document.getElementById('edit-student-id').value;
       const email = document.getElementById('edit-student-email').value.trim();
@@ -1797,7 +1804,8 @@
 
     tb.querySelectorAll('[data-del-teacher]').forEach((b) =>
       b.addEventListener('click', async () => {
-        if (!confirm('Are you sure you want to delete this teacher?')) return;
+        const ok = await window.showConfirm('Are you sure you want to delete this teacher?', 'Delete Teacher', 'Delete', 'btn danger');
+        if (!ok) return;
         try {
           await SSC_API.delete('/admin/teachers/' + b.getAttribute('data-del-teacher'));
           msg('Teacher removed');
@@ -1813,7 +1821,7 @@
   }
 
   // Teacher Creation Submit
-  document.getElementById('form-teacher').addEventListener('submit', async (e) => {
+  document.getElementById('form-teacher').addEventListener('submit', withSubmitGuard(async (e) => {
     e.preventDefault();
     const f = e.target;
     const assignments = [];
@@ -1859,7 +1867,7 @@
   // Edit Teacher Form Submit
   const editTeacherForm = document.getElementById('form-edit-teacher');
   if (editTeacherForm) {
-    editTeacherForm.addEventListener('submit', async (e) => {
+    editTeacherForm.addEventListener('submit', withSubmitGuard(async (e) => {
       e.preventDefault();
       const id = document.getElementById('edit-teacher-id').value;
       const email = document.getElementById('edit-teacher-email').value.trim();
@@ -2276,7 +2284,8 @@
     tb.querySelectorAll('[data-del-adm]').forEach(b =>
       b.addEventListener('click', async () => {
         const id = b.getAttribute('data-del-adm');
-        if (!confirm('Are you sure you want to delete this application? This action can be reversed by an admin.')) return;
+        const ok = await window.showConfirm('Are you sure you want to delete this application? This action can be reversed by an admin.', 'Delete Application', 'Delete', 'btn danger');
+        if (!ok) return;
         try {
           await SSC_API.delete('/admin/admissions/' + id);
           msg('Application deleted');
@@ -2453,7 +2462,8 @@
   if (admDDelete) {
     admDDelete.addEventListener('click', async () => {
       const id = document.getElementById('adm-detail-id').value;
-      if (!confirm('Are you sure you want to delete this application?')) return;
+      const ok = await window.showConfirm('Are you sure you want to delete this application?', 'Delete Application', 'Delete', 'btn danger');
+      if (!ok) return;
       try {
         await SSC_API.delete('/admin/admissions/' + id);
         document.getElementById('modal-admission-detail').style.display = 'none';
@@ -2555,7 +2565,8 @@
 
     box.querySelectorAll('[data-del-notice]').forEach((b) =>
       b.addEventListener('click', async () => {
-        if (!confirm('Are you sure you want to delete this notice?')) return;
+        const ok = await window.showConfirm('Are you sure you want to delete this notice?', 'Delete Notice', 'Delete', 'btn danger');
+        if (!ok) return;
         try {
           await SSC_API.delete('/admin/notices/' + b.getAttribute('data-del-notice'));
           msg('Notice deleted');
@@ -2568,7 +2579,7 @@
     );
   }
 
-  document.getElementById('form-notice').addEventListener('submit', async (e) => {
+  document.getElementById('form-notice').addEventListener('submit', withSubmitGuard(async (e) => {
     e.preventDefault();
     const f = e.target;
     const fd = new FormData();
@@ -2602,7 +2613,7 @@
   // Edit Notice Form Submit
   const editNoticeForm = document.getElementById('form-edit-notice');
   if (editNoticeForm) {
-    editNoticeForm.addEventListener('submit', async (e) => {
+    editNoticeForm.addEventListener('submit', withSubmitGuard(async (e) => {
       e.preventDefault();
       const id = document.getElementById('edit-notice-id').value;
       const title = document.getElementById('edit-notice-title').value.trim();
@@ -2654,7 +2665,7 @@
     makeTableSortableAndFilterable('tbl-dept');
   }
 
-  document.getElementById('form-dept').addEventListener('submit', async (e) => {
+  document.getElementById('form-dept').addEventListener('submit', withSubmitGuard(async (e) => {
     e.preventDefault();
     const f = e.target;
     await SSC_API.post('/admin/departments', {
@@ -2702,7 +2713,7 @@
     makeTableSortableAndFilterable('tbl-courses');
   }
 
-  document.getElementById('form-course').addEventListener('submit', async (e) => {
+  document.getElementById('form-course').addEventListener('submit', withSubmitGuard(async (e) => {
     e.preventDefault();
     const f = e.target;
     await SSC_API.post('/admin/courses', {
@@ -2740,7 +2751,7 @@
     );
   }
 
-  document.getElementById('form-gallery').addEventListener('submit', async (e) => {
+  document.getElementById('form-gallery').addEventListener('submit', withSubmitGuard(async (e) => {
     e.preventDefault();
     const f = e.target;
     const fd = new FormData();
@@ -2777,7 +2788,7 @@
     if (threshold) threshold.value = s.attendanceThreshold || 75;
   }
 
-  document.getElementById('form-settings').addEventListener('submit', async (e) => {
+  document.getElementById('form-settings').addEventListener('submit', withSubmitGuard(async (e) => {
     e.preventDefault();
     const f = e.target;
     await SSC_API.put('/admin/settings', {
@@ -2812,7 +2823,8 @@
 
     tb.querySelectorAll('[data-del-mat]').forEach((b) => {
       b.addEventListener('click', async () => {
-        if (!confirm('Delete this study material?')) return;
+        const ok = await window.showConfirm('Delete this study material?', 'Delete Material', 'Delete', 'btn danger');
+        if (!ok) return;
         try {
           await SSC_API.delete('/admin/study-materials/' + b.getAttribute('data-del-mat'));
           msg('Material deleted');
@@ -3102,7 +3114,8 @@
     // Delete handlers
     tb.querySelectorAll('[data-del-company]').forEach((b) => {
       b.addEventListener('click', async () => {
-        if (!confirm('Delete this company and all its drives?')) return;
+        const ok = await window.showConfirm('Delete this company and all its drives?', 'Delete Company', 'Delete', 'btn danger');
+        if (!ok) return;
         await SSC_API.delete('/admin/placement/companies/' + b.getAttribute('data-del-company'));
         msg('Company deleted');
         loadPlCompanies();
@@ -3139,7 +3152,8 @@
     });
     tb.querySelectorAll('[data-close-drive]').forEach((b) => {
       b.addEventListener('click', async () => {
-        if (!confirm('Close this drive? Students will no longer be able to apply.')) return;
+        const ok = await window.showConfirm('Close this drive? Students will no longer be able to apply.', 'Close Drive', 'Close', 'btn warning');
+        if (!ok) return;
         await SSC_API.patch('/admin/placement/drives/' + b.getAttribute('data-close-drive'), { status: 'closed' });
         msg('Drive closed');
         loadPlDrives(); loadPlAnalytics();
@@ -3147,7 +3161,8 @@
     });
     tb.querySelectorAll('[data-del-drive]').forEach((b) => {
       b.addEventListener('click', async () => {
-        if (!confirm('Delete this drive and all its applications?')) return;
+        const ok = await window.showConfirm('Delete this drive and all its applications?', 'Delete Drive', 'Delete', 'btn danger');
+        if (!ok) return;
         await SSC_API.delete('/admin/placement/drives/' + b.getAttribute('data-del-drive'));
         msg('Drive deleted');
         loadPlDrives(); loadPlAnalytics();
@@ -3237,7 +3252,7 @@
     const formCo = document.getElementById('form-company');
     if (formCo && !formCo.dataset.bound) {
       formCo.dataset.bound = '1';
-      formCo.addEventListener('submit', async (e) => {
+      formCo.addEventListener('submit', withSubmitGuard(async (e) => {
         e.preventDefault();
         const f = e.target;
         await SSC_API.post('/admin/placement/companies', {
@@ -3259,7 +3274,7 @@
     const formDr = document.getElementById('form-drive');
     if (formDr && !formDr.dataset.bound) {
       formDr.dataset.bound = '1';
-      formDr.addEventListener('submit', async (e) => {
+      formDr.addEventListener('submit', withSubmitGuard(async (e) => {
         e.preventDefault();
         const f = e.target;
         await SSC_API.post('/admin/placement/drives', {
@@ -3513,7 +3528,8 @@
 
   async function deleteTimetable() {
     if (!currentTimetableClass) return;
-    if (!confirm(`Are you sure you want to delete the timetable for ${currentTimetableClass}?`)) return;
+    const ok = await window.showConfirm(`Are you sure you want to delete the timetable for ${currentTimetableClass}?`, 'Delete Timetable', 'Delete', 'btn danger');
+    if (!ok) return;
     
     try {
       await SSC_API.delete(`/admin/timetable/${currentTimetableClass}`);
@@ -3619,7 +3635,8 @@
     tbody.querySelectorAll('.delete-book-btn').forEach(btn => {
       btn.addEventListener('click', async () => {
         const id = btn.dataset.id;
-        if (confirm('Are you sure you want to delete this book?')) {
+        const ok = await window.showConfirm('Are you sure you want to delete this book?', 'Delete Book', 'Delete', 'btn danger');
+        if (ok) {
           await SSC_API.delete(`/admin/library/books/${id}`);
           msg('Book deleted successfully');
           loadLibraryBooks();
@@ -3692,7 +3709,7 @@
     const form = document.getElementById('lib-issue-form');
     if (!form.dataset.bound) {
       form.dataset.bound = '1';
-      form.addEventListener('submit', async (e) => {
+      form.addEventListener('submit', withSubmitGuard(async (e) => {
         e.preventDefault();
         msgEl.textContent = '';
         msgEl.className = 'small mt-3';
@@ -4005,7 +4022,8 @@
     tbody.querySelectorAll('.delete-exam-btn').forEach(btn => {
       btn.addEventListener('click', async () => {
         const id = btn.dataset.id;
-        if (confirm('Are you sure you want to delete this exam schedule?')) {
+        const ok = await window.showConfirm('Are you sure you want to delete this exam schedule?', 'Delete Exam', 'Delete', 'btn danger');
+        if (ok) {
           await SSC_API.delete(`/admin/exams/${id}`);
           msg('Exam schedule deleted');
           loadExams();
@@ -4155,7 +4173,8 @@
   }
 
   async function restoreItem(type, id) {
-    if (!confirm('Are you sure you want to restore this item?')) return;
+    const ok = await window.showConfirm('Are you sure you want to restore this item?', 'Restore Item', 'Restore', 'btn primary');
+    if (!ok) return;
     try {
       await SSC_API.post(`/admin/${type}/${id}/restore`);
       msg(`Item restored successfully`);

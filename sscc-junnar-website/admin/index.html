@@ -186,6 +186,11 @@
         </div>
       </div>
 
+      <!-- Global Feedback Message (Always visible across all active panels) -->
+      <div style="padding: 0 1.5rem 0.5rem 1.5rem;">
+        <p id="dash-msg" class="small mt-3" style="margin-top:0.5rem !important;"></p>
+      </div>
+
       <div class="dash-content">
       <div class="dash-top" style="display:none;"><!-- legacy --></div>
 
@@ -271,8 +276,6 @@
             <div id="attendance-summary-content"></div>
           </div>
         </div>
-
-        <p id="dash-msg" class="small mt-3"></p>
       </section>
 
       <section class="dash-panel" data-panel="students">
@@ -322,7 +325,7 @@
         </div>
         <div class="card mt-4">
           <h3>All students</h3>
-          <div class="table-wrap"><table class="table small" id="tbl-students"><thead><tr><th>Name</th><th>Email</th><th>Class</th><th></th></tr></thead><tbody></tbody></table></div>
+          <div class="table-wrap"><table class="table small" id="tbl-students"><thead><tr><th scope="col">Name</th><th scope="col">Email</th><th scope="col">Class</th><th scope="col"></th></tr></thead><tbody></tbody></table></div>
         </div>
       </section>
 
@@ -368,7 +371,7 @@
         </div>
         <div class="card mt-4">
           <h3>Faculty</h3>
-          <div class="table-wrap"><table class="table small" id="tbl-teachers"><thead><tr><th>Name</th><th>Email</th><th>Dept</th><th>Assignments</th><th></th></tr></thead><tbody></tbody></table></div>
+          <div class="table-wrap"><table class="table small" id="tbl-teachers"><thead><tr><th scope="col">Name</th><th scope="col">Email</th><th scope="col">Dept</th><th scope="col">Assignments</th><th scope="col"></th></tr></thead><tbody></tbody></table></div>
         </div>
       </section>
 
@@ -406,7 +409,7 @@
               <select class="input" id="adm-filter-course" style="width:150px;padding:0.4rem 0.5rem;font-size:0.85rem;">
                 <option value="">All Courses</option>
               </select>
-              <button class="btn small secondary" id="btn-adm-export" title="Export CSV" style="padding:0.4rem 0.75rem;">
+              <button type="button" class="btn small secondary" id="btn-adm-export" title="Export CSV" style="padding:0.4rem 0.75rem;">
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                 Export
               </button>
@@ -421,7 +424,7 @@
           <div class="table-wrap">
             <table class="table small" id="tbl-admissions">
               <thead><tr>
-                <th>#</th><th>Name</th><th>Course</th><th>Marks</th><th>Verified</th><th>Status</th><th></th>
+                <th scope="col">#</th><th scope="col">Name</th><th scope="col">Course</th><th scope="col">Marks</th><th scope="col">Verified</th><th scope="col">Status</th><th scope="col"></th>
               </tr></thead>
               <tbody></tbody>
             </table>
@@ -430,8 +433,8 @@
           <div id="adm-pagination" style="display:flex;align-items:center;justify-content:space-between;margin-top:1rem;flex-wrap:wrap;gap:0.5rem;">
             <span class="small" id="adm-page-info" style="color:var(--muted);"></span>
             <div style="display:flex;gap:0.35rem;">
-              <button class="btn small secondary" id="adm-prev-page" disabled>← Prev</button>
-              <button class="btn small secondary" id="adm-next-page" disabled>Next →</button>
+              <button type="button" class="btn small secondary" id="adm-prev-page" disabled>← Prev</button>
+              <button type="button" class="btn small secondary" id="adm-next-page" disabled>Next →</button>
             </div>
           </div>
         </div>
@@ -491,7 +494,7 @@
             <div><button class="btn" type="submit">Save</button></div>
           </form>
         </div>
-        <div class="table-wrap card mt-4"><table class="table small" id="tbl-dept"><thead><tr><th>Name</th><th>Stream</th><th></th></tr></thead><tbody></tbody></table></div>
+        <div class="table-wrap card mt-4"><table class="table small" id="tbl-dept"><thead><tr><th scope="col">Name</th><th scope="col">Stream</th><th scope="col"></th></tr></thead><tbody></tbody></table></div>
       </section>
 
       <section class="dash-panel" data-panel="courses">
@@ -514,7 +517,7 @@
             <div><button class="btn" type="submit">Save</button></div>
           </form>
         </div>
-        <div class="table-wrap card mt-4"><table class="table small" id="tbl-courses"><thead><tr><th>Name</th><th>Level</th><th></th></tr></thead><tbody></tbody></table></div>
+        <div class="table-wrap card mt-4"><table class="table small" id="tbl-courses"><thead><tr><th scope="col">Name</th><th scope="col">Level</th><th scope="col"></th></tr></thead><tbody></tbody></table></div>
       </section>
 
       <section class="dash-panel" data-panel="gallery">
@@ -557,12 +560,12 @@
             <table class="table small" id="tbl-study-materials">
               <thead>
                 <tr>
-                  <th>Title</th>
-                  <th>Subject</th>
-                  <th>Class</th>
-                  <th>Uploaded By</th>
-                  <th>Date</th>
-                  <th></th>
+                  <th scope="col">Title</th>
+                  <th scope="col">Subject</th>
+                  <th scope="col">Class</th>
+                  <th scope="col">Uploaded By</th>
+                  <th scope="col">Date</th>
+                  <th scope="col"></th>
                 </tr>
               </thead>
               <tbody></tbody>
@@ -575,9 +578,9 @@
         <div class="stat-grid" id="att-stats-grid"></div>
 
         <div style="display: flex; gap: 0.75rem; margin-top: 1.5rem; justify-content: flex-end;">
-          <button class="btn small" id="btn-export-csv">Export CSV</button>
-          <button class="btn small" id="btn-export-excel">Export Excel</button>
-          <button class="btn small secondary" id="btn-print-att">Print Report</button>
+          <button type="button" class="btn small" id="btn-export-csv">Export CSV</button>
+          <button type="button" class="btn small" id="btn-export-excel">Export Excel</button>
+          <button type="button" class="btn small secondary" id="btn-print-att">Print Report</button>
         </div>
 
         <div class="grid grid-2 mt-4">
@@ -587,12 +590,12 @@
               <table class="table small" id="tbl-low-att">
                 <thead>
                   <tr>
-                    <th>Roll No</th>
-                    <th>Name</th>
-                    <th>Class</th>
-                    <th>Attended</th>
-                    <th>Total Classes</th>
-                    <th>Percentage</th>
+                    <th scope="col">Roll No</th>
+                    <th scope="col">Name</th>
+                    <th scope="col">Class</th>
+                    <th scope="col">Attended</th>
+                    <th scope="col">Total Classes</th>
+                    <th scope="col">Percentage</th>
                   </tr>
                 </thead>
                 <tbody></tbody>
@@ -606,12 +609,12 @@
               <table class="table small" id="tbl-risk-att">
                 <thead>
                   <tr>
-                    <th>Roll No</th>
-                    <th>Name</th>
-                    <th>Class</th>
-                    <th>Attended</th>
-                    <th>Total Classes</th>
-                    <th>Percentage</th>
+                    <th scope="col">Roll No</th>
+                    <th scope="col">Name</th>
+                    <th scope="col">Class</th>
+                    <th scope="col">Attended</th>
+                    <th scope="col">Total Classes</th>
+                    <th scope="col">Percentage</th>
                   </tr>
                 </thead>
                 <tbody></tbody>
@@ -627,11 +630,11 @@
               <table class="table small" id="tbl-class-att">
                 <thead>
                   <tr>
-                    <th>Class</th>
-                    <th>Records</th>
-                    <th>This Month</th>
-                    <th>Last Month</th>
-                    <th>Trend</th>
+                    <th scope="col">Class</th>
+                    <th scope="col">Records</th>
+                    <th scope="col">This Month</th>
+                    <th scope="col">Last Month</th>
+                    <th scope="col">Trend</th>
                   </tr>
                 </thead>
                 <tbody></tbody>
@@ -645,11 +648,11 @@
               <table class="table small" id="tbl-subject-att">
                 <thead>
                   <tr>
-                    <th>Subject</th>
-                    <th>Records</th>
-                    <th>This Month</th>
-                    <th>Last Month</th>
-                    <th>Trend</th>
+                    <th scope="col">Subject</th>
+                    <th scope="col">Records</th>
+                    <th scope="col">This Month</th>
+                    <th scope="col">Last Month</th>
+                    <th scope="col">Trend</th>
                   </tr>
                 </thead>
                 <tbody></tbody>
@@ -664,10 +667,10 @@
             <table class="table small" id="tbl-monthly-att">
               <thead>
                 <tr>
-                  <th>Month</th>
-                  <th>Present</th>
-                  <th>Absent</th>
-                  <th>Attendance %</th>
+                  <th scope="col">Month</th>
+                  <th scope="col">Present</th>
+                  <th scope="col">Absent</th>
+                  <th scope="col">Attendance %</th>
                 </tr>
               </thead>
               <tbody></tbody>
@@ -675,8 +678,6 @@
           </div>
         </div>
       </section>
-
-      <p id="dash-msg" class="small mt-3"></p>
 
       <!-- ══ PLACEMENT CELL PANEL ══════════════════════════════════════════ -->
       <section class="dash-panel" data-panel="placement">
@@ -686,15 +687,15 @@
 
         <!-- Export / Print bar -->
         <div style="display:flex;gap:0.75rem;margin-top:1.5rem;justify-content:flex-end;flex-wrap:wrap;">
-          <button class="btn small" id="btn-pl-export-csv">Export CSV</button>
-          <button class="btn small secondary" id="btn-pl-print">Print Report</button>
+          <button type="button" class="btn small" id="btn-pl-export-csv">Export CSV</button>
+          <button type="button" class="btn small secondary" id="btn-pl-print">Print Report</button>
         </div>
 
         <!-- Companies -->
         <div class="card mt-4">
           <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;">
             <h3 style="margin:0;">Companies</h3>
-            <button class="btn small" id="btn-add-company">+ Add Company</button>
+            <button type="button" class="btn small" id="btn-add-company">+ Add Company</button>
           </div>
           <div id="form-company-wrap" style="display:none;" class="mt-3">
             <form id="form-company" class="form-grid two">
@@ -713,7 +714,7 @@
           </div>
           <div class="table-wrap mt-3">
             <table class="table small" id="tbl-companies">
-              <thead><tr><th>Company</th><th>Industry</th><th>Package</th><th>Location</th><th>Drives</th><th></th></tr></thead>
+              <thead><tr><th scope="col">Company</th><th scope="col">Industry</th><th scope="col">Package</th><th scope="col">Location</th><th scope="col">Drives</th><th scope="col"></th></tr></thead>
               <tbody></tbody>
             </table>
           </div>
@@ -723,7 +724,7 @@
         <div class="card mt-4">
           <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;">
             <h3 style="margin:0;">Placement Drives</h3>
-            <button class="btn small" id="btn-add-drive">+ Add Drive</button>
+            <button type="button" class="btn small" id="btn-add-drive">+ Add Drive</button>
           </div>
           <div id="form-drive-wrap" style="display:none;" class="mt-3">
             <form id="form-drive" class="form-grid two">
@@ -747,7 +748,7 @@
           </div>
           <div class="table-wrap mt-3">
             <table class="table small" id="tbl-drives">
-              <thead><tr><th>Company</th><th>Drive Title</th><th>Date</th><th>Deadline</th><th>Status</th><th>Apps</th><th></th></tr></thead>
+              <thead><tr><th scope="col">Company</th><th scope="col">Drive Title</th><th scope="col">Date</th><th scope="col">Deadline</th><th scope="col">Status</th><th scope="col">Apps</th><th scope="col"></th></tr></thead>
               <tbody></tbody>
             </table>
           </div>
@@ -768,11 +769,11 @@
                 <option value="rejected">Rejected</option>
               </select>
             </div>
-            <button class="btn small" id="btn-filter-apps">Apply Filter</button>
+            <button type="button" class="btn small" id="btn-filter-apps">Apply Filter</button>
           </div>
           <div class="table-wrap">
             <table class="table small" id="tbl-pl-applications">
-              <thead><tr><th>Student</th><th>Roll</th><th>Class</th><th>Company</th><th>Drive</th><th>Status</th><th>Applied On</th><th></th></tr></thead>
+              <thead><tr><th scope="col">Student</th><th scope="col">Roll</th><th scope="col">Class</th><th scope="col">Company</th><th scope="col">Drive</th><th scope="col">Status</th><th scope="col">Applied On</th><th scope="col"></th></tr></thead>
               <tbody></tbody>
             </table>
           </div>
@@ -783,7 +784,7 @@
           <h3>Company-wise Placement Stats</h3>
           <div class="table-wrap">
             <table class="table small" id="tbl-company-stats">
-              <thead><tr><th>Company</th><th>Industry</th><th>Drives</th><th>Applications</th><th>Selected</th><th>Success Rate</th></tr></thead>
+              <thead><tr><th scope="col">Company</th><th scope="col">Industry</th><th scope="col">Drives</th><th scope="col">Applications</th><th scope="col">Selected</th><th scope="col">Success Rate</th></tr></thead>
               <tbody></tbody>
             </table>
           </div>
@@ -821,13 +822,13 @@
               <table class="table small" style="width: 100%; min-width: 800px;">
                 <thead>
                   <tr>
-                    <th>Day / Period</th>
-                    <th>Period 1<br><small>09:00 - 10:00</small></th>
-                    <th>Period 2<br><small>10:00 - 11:00</small></th>
-                    <th>Period 3<br><small>11:00 - 12:00</small></th>
-                    <th>Period 4<br><small>12:00 - 01:00</small></th>
-                    <th>Period 5<br><small>01:30 - 02:30</small></th>
-                    <th>Period 6<br><small>02:30 - 03:30</small></th>
+                    <th scope="col">Day / Period</th>
+                    <th scope="col">Period 1<br><small>09:00 - 10:00</small></th>
+                    <th scope="col">Period 2<br><small>10:00 - 11:00</small></th>
+                    <th scope="col">Period 3<br><small>11:00 - 12:00</small></th>
+                    <th scope="col">Period 4<br><small>12:00 - 01:00</small></th>
+                    <th scope="col">Period 5<br><small>01:30 - 02:30</small></th>
+                    <th scope="col">Period 6<br><small>02:30 - 03:30</small></th>
                   </tr>
                 </thead>
                 <tbody id="tt-grid-body">
@@ -878,13 +879,13 @@
             <table class="table small" id="tbl-lib-books">
               <thead>
                 <tr>
-                  <th>Title</th>
-                  <th>Author</th>
-                  <th>Category</th>
-                  <th>ISBN</th>
-                  <th>Shelf</th>
-                  <th>Qty (Avail/Total)</th>
-                  <th>Actions</th>
+                  <th scope="col">Title</th>
+                  <th scope="col">Author</th>
+                  <th scope="col">Category</th>
+                  <th scope="col">ISBN</th>
+                  <th scope="col">Shelf</th>
+                  <th scope="col">Qty (Avail/Total)</th>
+                  <th scope="col">Actions</th>
                 </tr>
               </thead>
               <tbody></tbody>
@@ -926,13 +927,13 @@
             <table class="table small" id="tbl-lib-issues">
               <thead>
                 <tr>
-                  <th>Student</th>
-                  <th>Book</th>
-                  <th>Issued Date</th>
-                  <th>Due Date</th>
-                  <th>Status</th>
-                  <th>Fine</th>
-                  <th>Actions</th>
+                  <th scope="col">Student</th>
+                  <th scope="col">Book</th>
+                  <th scope="col">Issued Date</th>
+                  <th scope="col">Due Date</th>
+                  <th scope="col">Status</th>
+                  <th scope="col">Fine</th>
+                  <th scope="col">Actions</th>
                 </tr>
               </thead>
               <tbody></tbody>
@@ -958,7 +959,7 @@
               <h3>Overdue Borrowers List</h3>
               <div class="table-wrap">
                 <table class="table small" id="tbl-lib-overdue-list">
-                  <thead><tr><th>Student</th><th>Book</th><th>Due Date</th><th>Fine</th></tr></thead>
+                  <thead><tr><th scope="col">Student</th><th scope="col">Book</th><th scope="col">Due Date</th><th scope="col">Fine</th></tr></thead>
                   <tbody></tbody>
                 </table>
               </div>
@@ -967,7 +968,7 @@
               <h3>Popular / Most Issued Books</h3>
               <div class="table-wrap">
                 <table class="table small" id="tbl-lib-popular-books">
-                  <thead><tr><th>Title</th><th>Author</th><th>Category</th><th>Times Issued</th></tr></thead>
+                  <thead><tr><th scope="col">Title</th><th scope="col">Author</th><th scope="col">Category</th><th scope="col">Times Issued</th></tr></thead>
                   <tbody></tbody>
                 </table>
               </div>
@@ -1014,15 +1015,15 @@
             <table class="table small" id="tbl-exams">
               <thead>
                 <tr>
-                  <th>Exam Title</th>
-                  <th>Type</th>
-                  <th>Class</th>
-                  <th>Subject</th>
-                  <th>Date</th>
-                  <th>Max Marks</th>
-                  <th>Schedule</th>
-                  <th>Results</th>
-                  <th>Actions</th>
+                  <th scope="col">Exam Title</th>
+                  <th scope="col">Type</th>
+                  <th scope="col">Class</th>
+                  <th scope="col">Subject</th>
+                  <th scope="col">Date</th>
+                  <th scope="col">Max Marks</th>
+                  <th scope="col">Schedule</th>
+                  <th scope="col">Results</th>
+                  <th scope="col">Actions</th>
                 </tr>
               </thead>
               <tbody></tbody>
@@ -1040,13 +1041,13 @@
             <table class="table small" id="tbl-admin-leaves">
               <thead>
                 <tr>
-                  <th>Teacher</th>
-                  <th>Leave Type</th>
-                  <th>Duration</th>
-                  <th>Reason</th>
-                  <th>Status</th>
-                  <th>Admin Note</th>
-                  <th>Actions</th>
+                  <th scope="col">Teacher</th>
+                  <th scope="col">Leave Type</th>
+                  <th scope="col">Duration</th>
+                  <th scope="col">Reason</th>
+                  <th scope="col">Status</th>
+                  <th scope="col">Admin Note</th>
+                  <th scope="col">Actions</th>
                 </tr>
               </thead>
               <tbody></tbody>
@@ -1083,11 +1084,11 @@
               <table class="table small" id="tbl-recycle-students">
                 <thead>
                   <tr>
-                    <th>Name</th>
-                    <th>Email</th>
-                    <th>Deleted At</th>
-                    <th>Deleted By</th>
-                    <th>Actions</th>
+                    <th scope="col">Name</th>
+                    <th scope="col">Email</th>
+                    <th scope="col">Deleted At</th>
+                    <th scope="col">Deleted By</th>
+                    <th scope="col">Actions</th>
                   </tr>
                 </thead>
                 <tbody></tbody>
@@ -1101,11 +1102,11 @@
               <table class="table small" id="tbl-recycle-teachers">
                 <thead>
                   <tr>
-                    <th>Name</th>
-                    <th>Email</th>
-                    <th>Deleted At</th>
-                    <th>Deleted By</th>
-                    <th>Actions</th>
+                    <th scope="col">Name</th>
+                    <th scope="col">Email</th>
+                    <th scope="col">Deleted At</th>
+                    <th scope="col">Deleted By</th>
+                    <th scope="col">Actions</th>
                   </tr>
                 </thead>
                 <tbody></tbody>
@@ -1119,11 +1120,11 @@
               <table class="table small" id="tbl-recycle-notices">
                 <thead>
                   <tr>
-                    <th>Title</th>
-                    <th>Audience</th>
-                    <th>Deleted At</th>
-                    <th>Deleted By</th>
-                    <th>Actions</th>
+                    <th scope="col">Title</th>
+                    <th scope="col">Audience</th>
+                    <th scope="col">Deleted At</th>
+                    <th scope="col">Deleted By</th>
+                    <th scope="col">Actions</th>
                   </tr>
                 </thead>
                 <tbody></tbody>
@@ -1137,11 +1138,11 @@
               <table class="table small" id="tbl-recycle-courses">
                 <thead>
                   <tr>
-                    <th>Name</th>
-                    <th>Level</th>
-                    <th>Deleted At</th>
-                    <th>Deleted By</th>
-                    <th>Actions</th>
+                    <th scope="col">Name</th>
+                    <th scope="col">Level</th>
+                    <th scope="col">Deleted At</th>
+                    <th scope="col">Deleted By</th>
+                    <th scope="col">Actions</th>
                   </tr>
                 </thead>
                 <tbody></tbody>
@@ -1172,14 +1173,14 @@
             <table class="table small" id="tbl-audit-logs">
               <thead>
                 <tr>
-                  <th>Timestamp</th>
-                  <th>User</th>
-                  <th>Role</th>
-                  <th>Action</th>
-                  <th>Target ID</th>
-                  <th>IP Address</th>
-                  <th>User Agent</th>
-                  <th>Details</th>
+                  <th scope="col">Timestamp</th>
+                  <th scope="col">User</th>
+                  <th scope="col">Role</th>
+                  <th scope="col">Action</th>
+                  <th scope="col">Target ID</th>
+                  <th scope="col">IP Address</th>
+                  <th scope="col">User Agent</th>
+                  <th scope="col">Details</th>
                 </tr>
               </thead>
               <tbody></tbody>
@@ -1278,7 +1279,7 @@
       <!-- Applicant Summary Bar -->
       <div id="adm-applicant-bar" style="display:flex;gap:1rem;align-items:center;background:var(--surface,#f8fafc);padding:1rem;border-radius:8px;margin-bottom:1rem;border:1px solid var(--border-color,#e2e8f0);">
         <div id="adm-photo-preview" style="width:70px;height:70px;border-radius:50%;background:var(--muted,#e2e8f0);overflow:hidden;flex-shrink:0;border:2px solid var(--primary,#6366f1);display:grid;place-items:center;">
-          <img id="adm-photo-img" src="" style="width:100%;height:100%;object-fit:cover;display:none;"/>
+          <img alt="" id="adm-photo-img" src="" style="width:100%;height:100%;object-fit:cover;display:none;"/>
           <span id="adm-photo-placeholder" style="font-size:0.7rem;color:var(--text-secondary);">No Photo</span>
         </div>
         <div>
@@ -1370,9 +1371,9 @@
 
       <!-- Tabs -->
       <div class="adm-detail-tabs" style="display:flex;gap:0;border-bottom:2px solid var(--border,#e2e8f0);margin-bottom:1.25rem;">
-        <button class="adm-tab-btn active" data-adm-tab="overview" style="padding:0.6rem 1.25rem;border:none;background:none;cursor:pointer;font-weight:600;font-size:0.9rem;color:var(--muted,#94a3b8);border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .2s;">Overview</button>
-        <button class="adm-tab-btn" data-adm-tab="documents" style="padding:0.6rem 1.25rem;border:none;background:none;cursor:pointer;font-weight:600;font-size:0.9rem;color:var(--muted,#94a3b8);border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .2s;">Documents</button>
-        <button class="adm-tab-btn" data-adm-tab="actions" style="padding:0.6rem 1.25rem;border:none;background:none;cursor:pointer;font-weight:600;font-size:0.9rem;color:var(--muted,#94a3b8);border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .2s;">Actions</button>
+        <button type="button" class="adm-tab-btn active" data-adm-tab="overview" style="padding:0.6rem 1.25rem;border:none;background:none;cursor:pointer;font-weight:600;font-size:0.9rem;color:var(--muted,#94a3b8);border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .2s;">Overview</button>
+        <button type="button" class="adm-tab-btn" data-adm-tab="documents" style="padding:0.6rem 1.25rem;border:none;background:none;cursor:pointer;font-weight:600;font-size:0.9rem;color:var(--muted,#94a3b8);border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .2s;">Documents</button>
+        <button type="button" class="adm-tab-btn" data-adm-tab="actions" style="padding:0.6rem 1.25rem;border:none;background:none;cursor:pointer;font-weight:600;font-size:0.9rem;color:var(--muted,#94a3b8);border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .2s;">Actions</button>
       </div>
 
       <!-- Overview Tab -->
@@ -1411,12 +1412,12 @@
           <div style="display:flex;align-items:center;gap:1rem;padding:1rem;border-radius:0.5rem;background:var(--surface,#f8fafc);">
             <span style="font-weight:600;min-width:130px;">Verification:</span>
             <span id="adm-d-verify-label" style="font-weight:600;"></span>
-            <button class="btn small" id="adm-d-toggle-verify" style="margin-left:auto;">Toggle Verify</button>
+            <button type="button" class="btn small" id="adm-d-toggle-verify" style="margin-left:auto;">Toggle Verify</button>
           </div>
           <div style="display:flex;gap:0.75rem;flex-wrap:wrap;">
-            <button class="btn" id="adm-d-approve" style="color:#000;">Approve + Create Account</button>
-            <button class="btn danger" id="adm-d-reject" style="color:#fff;">Reject</button>
-            <button class="btn secondary" id="adm-d-delete" style="margin-left:auto;color:var(--danger,#ef4444);">
+            <button type="button" class="btn" id="adm-d-approve" style="color:#000;">Approve + Create Account</button>
+            <button type="button" class="btn danger" id="adm-d-reject" style="color:#fff;">Reject</button>
+            <button type="button" class="btn secondary" id="adm-d-delete" style="margin-left:auto;color:var(--danger,#ef4444);">
               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
               Delete
             </button>
@@ -1428,7 +1429,7 @@
 
   <!-- Fullscreen Image Viewer -->
   <div id="adm-fullscreen-viewer" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.9);cursor:zoom-out;align-items:center;justify-content:center;" onclick="this.style.display='none'">
-    <img id="adm-fullscreen-img" style="max-width:95vw;max-height:95vh;object-fit:contain;border-radius:0.5rem;" />
+    <img alt="" id="adm-fullscreen-img" style="max-width:95vw;max-height:95vh;object-fit:contain;border-radius:0.5rem;" />
   </div>
 
   <!-- Faculty Edit Modal -->
@@ -1644,13 +1645,13 @@
             <div>
               <table class="table" style="width: 100%;">
                 <tbody>
-                  <tr><th style="width: 35%;">ERP ID</th><td id="prof-details-erp-id">N/A</td></tr>
-                  <tr><th>Roll Number</th><td id="prof-details-roll">N/A</td></tr>
-                  <tr><th>Course</th><td id="prof-details-course">N/A</td></tr>
-                  <tr><th>Class</th><td id="prof-details-class">N/A</td></tr>
-                  <tr><th>Email</th><td id="prof-details-email">N/A</td></tr>
-                  <tr><th>Phone</th><td id="prof-details-phone">N/A</td></tr>
-                  <tr><th>Bio</th><td id="prof-details-bio">N/A</td></tr>
+                  <tr><th scope="col" style="width: 35%;">ERP ID</th><td id="prof-details-erp-id">N/A</td></tr>
+                  <tr><th scope="col">Roll Number</th><td id="prof-details-roll">N/A</td></tr>
+                  <tr><th scope="col">Course</th><td id="prof-details-course">N/A</td></tr>
+                  <tr><th scope="col">Class</th><td id="prof-details-class">N/A</td></tr>
+                  <tr><th scope="col">Email</th><td id="prof-details-email">N/A</td></tr>
+                  <tr><th scope="col">Phone</th><td id="prof-details-phone">N/A</td></tr>
+                  <tr><th scope="col">Bio</th><td id="prof-details-bio">N/A</td></tr>
                 </tbody>
               </table>
             </div>
@@ -1677,10 +1678,10 @@
             <table class="table" id="tbl-prof-attendance">
               <thead>
                 <tr>
-                  <th>Date</th>
-                  <th>Status</th>
-                  <th>Subject</th>
-                  <th>Marked By</th>
+                  <th scope="col">Date</th>
+                  <th scope="col">Status</th>
+                  <th scope="col">Subject</th>
+                  <th scope="col">Marked By</th>
                 </tr>
               </thead>
               <tbody>
@@ -1696,11 +1697,11 @@
             <table class="table" id="tbl-prof-marks">
               <thead>
                 <tr>
-                  <th>Subject</th>
-                  <th>Exam Name</th>
-                  <th>Marks Obtained</th>
-                  <th>Max Marks</th>
-                  <th>Percentage</th>
+                  <th scope="col">Subject</th>
+                  <th scope="col">Exam Name</th>
+                  <th scope="col">Marks Obtained</th>
+                  <th scope="col">Max Marks</th>
+                  <th scope="col">Percentage</th>
                 </tr>
               </thead>
               <tbody>
@@ -1716,10 +1717,10 @@
             <table class="table" id="tbl-prof-placements">
               <thead>
                 <tr>
-                  <th>Company</th>
-                  <th>Role</th>
-                  <th>Date</th>
-                  <th>Status</th>
+                  <th scope="col">Company</th>
+                  <th scope="col">Role</th>
+                  <th scope="col">Date</th>
+                  <th scope="col">Status</th>
                 </tr>
               </thead>
               <tbody>
@@ -1767,13 +1768,13 @@
             <div>
               <table class="table" style="width: 100%;">
                 <tbody>
-                  <tr><th style="width: 35%;">Employee ID</th><td id="teach-prof-erp-id">N/A</td></tr>
-                  <tr><th>Department</th><td id="teach-prof-dept">N/A</td></tr>
-                  <tr><th>Designation</th><td id="teach-prof-desg">N/A</td></tr>
-                  <tr><th>Qualifications</th><td id="teach-prof-qual">N/A</td></tr>
-                  <tr><th>Email</th><td id="teach-prof-email">N/A</td></tr>
-                  <tr><th>Phone</th><td id="teach-prof-phone">N/A</td></tr>
-                  <tr><th>Bio</th><td id="teach-prof-bio">N/A</td></tr>
+                  <tr><th scope="col" style="width: 35%;">Employee ID</th><td id="teach-prof-erp-id">N/A</td></tr>
+                  <tr><th scope="col">Department</th><td id="teach-prof-dept">N/A</td></tr>
+                  <tr><th scope="col">Designation</th><td id="teach-prof-desg">N/A</td></tr>
+                  <tr><th scope="col">Qualifications</th><td id="teach-prof-qual">N/A</td></tr>
+                  <tr><th scope="col">Email</th><td id="teach-prof-email">N/A</td></tr>
+                  <tr><th scope="col">Phone</th><td id="teach-prof-phone">N/A</td></tr>
+                  <tr><th scope="col">Bio</th><td id="teach-prof-bio">N/A</td></tr>
                 </tbody>
               </table>
             </div>
@@ -1786,8 +1787,8 @@
             <table class="table" id="tbl-teach-prof-subjects">
               <thead>
                 <tr>
-                  <th>Subject</th>
-                  <th>Class Assigned</th>
+                  <th scope="col">Subject</th>
+                  <th scope="col">Class Assigned</th>
                 </tr>
               </thead>
               <tbody>
@@ -1803,9 +1804,9 @@
             <table class="table" id="tbl-teach-prof-attendance">
               <thead>
                 <tr>
-                  <th>Date</th>
-                  <th>Subject</th>
-                  <th>Total Students</th>
+                  <th scope="col">Date</th>
+                  <th scope="col">Subject</th>
+                  <th scope="col">Total Students</th>
                 </tr>
               </thead>
               <tbody>
@@ -1821,10 +1822,10 @@
             <table class="table" id="tbl-teach-prof-leaves">
               <thead>
                 <tr>
-                  <th>Start Date</th>
-                  <th>End Date</th>
-                  <th>Type</th>
-                  <th>Status</th>
+                  <th scope="col">Start Date</th>
+                  <th scope="col">End Date</th>
+                  <th scope="col">Type</th>
+                  <th scope="col">Status</th>
                 </tr>
               </thead>
               <tbody>
@@ -1840,10 +1841,10 @@
             <table class="table" id="tbl-teach-prof-materials">
               <thead>
                 <tr>
-                  <th>Title</th>
-                  <th>Subject</th>
-                  <th>Class</th>
-                  <th>Link</th>
+                  <th scope="col">Title</th>
+                  <th scope="col">Subject</th>
+                  <th scope="col">Class</th>
+                  <th scope="col">Link</th>
                 </tr>
               </thead>
               <tbody>

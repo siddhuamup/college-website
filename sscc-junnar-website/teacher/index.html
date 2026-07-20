@@ -142,11 +142,11 @@
             </div>
           </div>
           <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-            <button class="btn small" onclick="panel('marks'); load('marks');" style="color: #000; font-size: 0.8rem;">Enter Marks</button>
-            <button class="btn secondary small" onclick="panel('attendance'); load('attendance');" style="font-size: 0.8rem; color: var(--text);">Mark Attendance</button>
-            <button class="btn secondary small" onclick="panel('leave'); load('leave');" style="font-size: 0.8rem; color: var(--text);">Apply Leave</button>
-            <button class="btn secondary small" id="qa-id-card" style="font-size: 0.8rem; color: var(--text);">Digital ID Card</button>
-            <button class="btn secondary small" id="btn-quick-edit-creds" style="font-size: 0.8rem; color: var(--accent,#6366f1); font-weight: 600;">🔑 Change Password</button>
+            <button type="button" class="btn small" onclick="panel('marks'); load('marks');" style="color: #000; font-size: 0.8rem;">Enter Marks</button>
+            <button type="button" class="btn secondary small" onclick="panel('attendance'); load('attendance');" style="font-size: 0.8rem; color: var(--text);">Mark Attendance</button>
+            <button type="button" class="btn secondary small" onclick="panel('leave'); load('leave');" style="font-size: 0.8rem; color: var(--text);">Apply Leave</button>
+            <button type="button" class="btn secondary small" id="qa-id-card" style="font-size: 0.8rem; color: var(--text);">Digital ID Card</button>
+            <button type="button" class="btn secondary small" id="btn-quick-edit-creds" style="font-size: 0.8rem; color: var(--accent,#6366f1); font-weight: 600;">🔑 Change Password</button>
           </div>
         </div>
 
@@ -182,8 +182,8 @@
               <table class="table small" id="tbl-db-teach-subjects">
                 <thead>
                   <tr>
-                    <th>Subject</th>
-                    <th>Class</th>
+                    <th scope="col">Subject</th>
+                    <th scope="col">Class</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -198,9 +198,9 @@
               <table class="table small" id="tbl-db-teach-exams">
                 <thead>
                   <tr>
-                    <th>Exam</th>
-                    <th>Subject</th>
-                    <th>Date</th>
+                    <th scope="col">Exam</th>
+                    <th scope="col">Subject</th>
+                    <th scope="col">Date</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -246,7 +246,7 @@
       <section class="dash-panel" data-panel="students">
         <div class="card">
           <h3>Students in your classes</h3>
-          <div class="table-wrap"><table class="table small" id="tbl-stu"><thead><tr><th>Name</th><th>Roll</th><th>Class</th><th>Email</th></tr></thead><tbody></tbody></table></div>
+          <div class="table-wrap"><table class="table small" id="tbl-stu"><thead><tr><th scope="col">Name</th><th scope="col">Roll</th><th scope="col">Class</th><th scope="col">Email</th></tr></thead><tbody></tbody></table></div>
         </div>
       </section>
 
@@ -281,9 +281,9 @@
               <table class="table small" id="tbl-bulk-marks-roster" style="width: 100%;">
                 <thead>
                   <tr>
-                    <th>Roll No</th>
-                    <th>Student Name</th>
-                    <th>Marks Obtained</th>
+                    <th scope="col">Roll No</th>
+                    <th scope="col">Student Name</th>
+                    <th scope="col">Marks Obtained</th>
                   </tr>
                 </thead>
                 <tbody></tbody>
@@ -310,20 +310,20 @@
           <div id="res-sheet-container" style="display: none;" class="mt-4">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
               <h4 id="res-sheet-title" style="margin: 0;"></h4>
-              <button class="btn small" onclick="window.print()" style="color: #000;">Print / Save as PDF</button>
+              <button type="button" class="btn small" onclick="window.print()" style="color: #000;">Print / Save as PDF</button>
             </div>
             
             <div class="table-wrap">
               <table class="table small" id="tbl-res-sheet" style="width: 100%;">
                 <thead>
                   <tr>
-                    <th>Roll No</th>
-                    <th>Student Name</th>
-                    <th>Marks</th>
-                    <th>Percentage</th>
-                    <th>Grade</th>
-                    <th>Pass / Fail</th>
-                    <th>Class Rank</th>
+                    <th scope="col">Roll No</th>
+                    <th scope="col">Student Name</th>
+                    <th scope="col">Marks</th>
+                    <th scope="col">Percentage</th>
+                    <th scope="col">Grade</th>
+                    <th scope="col">Pass / Fail</th>
+                    <th scope="col">Class Rank</th>
                   </tr>
                 </thead>
                 <tbody></tbody>
@@ -332,7 +332,7 @@
           </div>
         </div>
 
-        <div class="card mt-4"><h3>Recent entries</h3><div class="table-wrap"><table class="table small" id="tbl-marks"><thead><tr><th>Student</th><th>Subject</th><th>Exam</th><th>Score</th></tr></thead><tbody></tbody></table></div></div>
+        <div class="card mt-4"><h3>Recent entries</h3><div class="table-wrap"><table class="table small" id="tbl-marks"><thead><tr><th scope="col">Student</th><th scope="col">Subject</th><th scope="col">Exam</th><th scope="col">Score</th></tr></thead><tbody></tbody></table></div></div>
       </section>
 
       <section class="dash-panel" data-panel="attendance">
@@ -452,14 +452,14 @@
                   </h3>
                   <table class="profile-details-table">
                     <tbody>
-                      <tr><th>Full Name</th><td id="view-name">—</td></tr>
-                      <tr><th>Employee ID</th><td id="view-erp-id">—</td></tr>
-                      <tr><th>Department</th><td id="view-dept">—</td></tr>
-                      <tr><th>Designation</th><td id="view-desg">—</td></tr>
-                      <tr><th>Qualifications</th><td id="view-qual">—</td></tr>
-                      <tr><th>Phone Number</th><td id="view-phone">—</td></tr>
-                      <tr><th>Official Email</th><td id="view-email">—</td></tr>
-                      <tr><th>Personal Bio</th><td id="view-bio" style="font-style: italic; color: var(--text-secondary);">No bio written yet.</td></tr>
+                      <tr><th scope="col">Full Name</th><td id="view-name">—</td></tr>
+                      <tr><th scope="col">Employee ID</th><td id="view-erp-id">—</td></tr>
+                      <tr><th scope="col">Department</th><td id="view-dept">—</td></tr>
+                      <tr><th scope="col">Designation</th><td id="view-desg">—</td></tr>
+                      <tr><th scope="col">Qualifications</th><td id="view-qual">—</td></tr>
+                      <tr><th scope="col">Phone Number</th><td id="view-phone">—</td></tr>
+                      <tr><th scope="col">Official Email</th><td id="view-email">—</td></tr>
+                      <tr><th scope="col">Personal Bio</th><td id="view-bio" style="font-style: italic; color: var(--text-secondary);">No bio written yet.</td></tr>
                     </tbody>
                   </table>
                   <button type="button" class="btn small" id="btn-trigger-teacher-edit" style="color: #000; margin-top: 1rem;">Edit Profile Details</button>
@@ -473,7 +473,7 @@
               <div class="table-wrap mt-2">
                 <table class="table small" id="tbl-prof-teach-subjects">
                   <thead>
-                    <tr><th>Subject / Course Name</th><th>Class Assigned</th></tr>
+                    <tr><th scope="col">Subject / Course Name</th><th scope="col">Class Assigned</th></tr>
                   </thead>
                   <tbody>
                     <tr><td colspan="2" class="text-center text-muted">No courses assigned.</td></tr>
@@ -488,7 +488,7 @@
               <div class="table-wrap mt-2">
                 <table class="table small" id="tbl-prof-teach-attendance">
                   <thead>
-                    <tr><th>Date</th><th>Subject / Course</th><th>Total Students</th><th>Status</th></tr>
+                    <tr><th scope="col">Date</th><th scope="col">Subject / Course</th><th scope="col">Total Students</th><th scope="col">Status</th></tr>
                   </thead>
                   <tbody>
                     <tr><td colspan="4" class="text-center text-muted">No lecture logs found.</td></tr>
@@ -503,7 +503,7 @@
               <div class="table-wrap mt-2">
                 <table class="table small" id="tbl-prof-teach-materials">
                   <thead>
-                    <tr><th>Title</th><th>Subject</th><th>Class Name</th><th>Date Uploaded</th><th>Action</th></tr>
+                    <tr><th scope="col">Title</th><th scope="col">Subject</th><th scope="col">Class Name</th><th scope="col">Date Uploaded</th><th scope="col">Action</th></tr>
                   </thead>
                   <tbody>
                     <tr><td colspan="5" class="text-center text-muted">No materials uploaded yet.</td></tr>
@@ -518,7 +518,7 @@
               <div class="table-wrap mt-2">
                 <table class="table small" id="tbl-prof-teach-leaves">
                   <thead>
-                    <tr><th>Start Date</th><th>End Date</th><th>Type</th><th>Status</th><th>Verification Note</th></tr>
+                    <tr><th scope="col">Start Date</th><th scope="col">End Date</th><th scope="col">Type</th><th scope="col">Status</th><th scope="col">Verification Note</th></tr>
                   </thead>
                   <tbody>
                     <tr><td colspan="5" class="text-center text-muted">No leave requests found.</td></tr>
@@ -657,13 +657,13 @@
             <table class="table small" style="width: 100%; min-width: 800px;">
               <thead>
                 <tr>
-                  <th>Period / Time</th>
-                  <th>Monday</th>
-                  <th>Tuesday</th>
-                  <th>Wednesday</th>
-                  <th>Thursday</th>
-                  <th>Friday</th>
-                  <th>Saturday</th>
+                  <th scope="col">Period / Time</th>
+                  <th scope="col">Monday</th>
+                  <th scope="col">Tuesday</th>
+                  <th scope="col">Wednesday</th>
+                  <th scope="col">Thursday</th>
+                  <th scope="col">Friday</th>
+                  <th scope="col">Saturday</th>
                 </tr>
               </thead>
               <tbody id="tbl-teacher-timetable">
@@ -714,11 +714,11 @@
             <table class="table small" id="tbl-teacher-leaves">
               <thead>
                 <tr>
-                  <th>Leave Type</th>
-                  <th>Duration</th>
-                  <th>Reason</th>
-                  <th>Status</th>
-                  <th>Admin Note</th>
+                  <th scope="col">Leave Type</th>
+                  <th scope="col">Duration</th>
+                  <th scope="col">Reason</th>
+                  <th scope="col">Status</th>
+                  <th scope="col">Admin Note</th>
                 </tr>
               </thead>
               <tbody></tbody>
@@ -909,11 +909,11 @@
             <table class="table small" id="tbl-teacher-leaves">
               <thead>
                 <tr>
-                  <th>Leave Type</th>
-                  <th>Duration</th>
-                  <th>Reason</th>
-                  <th>Status</th>
-                  <th>Admin Note</th>
+                  <th scope="col">Leave Type</th>
+                  <th scope="col">Duration</th>
+                  <th scope="col">Reason</th>
+                  <th scope="col">Status</th>
+                  <th scope="col">Admin Note</th>
                 </tr>
               </thead>
               <tbody></tbody>

@@ -74,8 +74,21 @@ app.use(helmet({
       upgradeInsecureRequests: [],
     },
   },
+  hsts: {
+    maxAge: 31536000, // 1 year
+    includeSubDomains: true,
+    preload: true,
+  },
   crossOriginEmbedderPolicy: false,
 }));
+
+// Optional HTTPS enforcement middleware for production reverse proxies (Nginx/Traefik)
+app.use((req, res, next) => {
+  if (process.env.NODE_ENV === 'production' && req.headers['x-forwarded-proto'] === 'http') {
+    return res.redirect(301, `https://${req.headers.host}${req.url}`);
+  }
+  next();
+});
 
 // CORS — configurable whitelist (no more origin:true)
 const CORS_ORIGIN = process.env.CORS_ORIGIN || `http://localhost:${PORT}`;

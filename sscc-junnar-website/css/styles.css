@@ -2342,3 +2342,47 @@ button.step-pill { background: transparent; color: var(--text-secondary); }
   gap: 0.75rem;
   justify-content: flex-end;
 }
+
+/* ══════════════════════════════════════════════════════════════
+   ACCESSIBILITY — Focus-Visible Styling (Item B10)
+   ══════════════════════════════════════════════════════════════ */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--primary, #6366f1) !important;
+  outline-offset: 2px !important;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   MISSING CSS CLASSES ALIASES (Item B7)
+   ══════════════════════════════════════════════════════════════ */
+.btn-secondary {
+  background: var(--surface-hover, #162040) !important;
+  color: var(--text, #e2e8f0) !important;
+  border: 1px solid var(--card-border, rgba(255,255,255,0.08)) !important;
+}
+.btn-primary {
+  background: var(--primary, #6366f1) !important;
+  color: #ffffff !important;
+}
+.modal-body {
+  padding: 1.5rem;
+}
+.modal-content {
+  background: var(--surface, #111c30);
+  border: 1px solid var(--card-border, rgba(255,255,255,0.06));
+  border-radius: var(--radius, 14px);
+  overflow: hidden;
+}
+.no-print-section {
+  display: block;
+}
+@media print {
+  .no-print-section {
+    display: none !important;
+  }
+}
+
