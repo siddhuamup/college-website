@@ -7,6 +7,7 @@ import { uploadAvatarImage, verifyMagicBytes } from '../multer/configure.js';
 import { filterNotices } from '../utils/notices.js';
 import { noticeDto as buildNoticeDto } from '../utils/noticeDto.js';
 import { loginLimiter } from '../middleware/rateLimit.js';
+import { safeJsonParse } from '../utils/json.js';
 
 function noticeDto(n) {
   return withMongoId(buildNoticeDto(n));
@@ -72,7 +73,7 @@ export function studentRouter({ jwtSecret, jwtExpiresIn }) {
         role: user.role,
         name: user.name,
         phone: user.phone,
-        studentProfile: typeof user.studentProfile === 'string' ? JSON.parse(user.studentProfile) : user.studentProfile,
+        studentProfile: typeof user.studentProfile === 'string' ? safeJsonParse(user.studentProfile, null) : user.studentProfile,
       }),
     });
   });

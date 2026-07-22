@@ -7,6 +7,7 @@ import { loginLimiter, adminAccessLimiter, publicFormLimiter, checkAccountLockou
 import { createAuthMiddleware } from '../middleware/auth.js';
 import { sendEmail } from '../utils/email.js';
 import { blacklistToken } from '../utils/tokenBlacklist.js';
+import { safeJsonParse } from '../utils/json.js';
 
 // Cookie options for JWT storage
 const COOKIE_NAME = 'ssc_token';
@@ -110,8 +111,8 @@ export function authRouter({ jwtSecret, jwtExpiresIn }) {
         role: user.role,
         name: user.name,
         phone: user.phone,
-        teacherProfile: typeof user.teacherProfile === 'string' ? JSON.parse(user.teacherProfile) : user.teacherProfile,
-        studentProfile: typeof user.studentProfile === 'string' ? JSON.parse(user.studentProfile) : user.studentProfile,
+        teacherProfile: typeof user.teacherProfile === 'string' ? safeJsonParse(user.teacherProfile, null) : user.teacherProfile,
+        studentProfile: typeof user.studentProfile === 'string' ? safeJsonParse(user.studentProfile, null) : user.studentProfile,
       }),
     });
   });

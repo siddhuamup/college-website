@@ -4,6 +4,12 @@
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>Admissions — SSC College, Junnar</title>
+  <meta name="description" content="Apply online for Undergraduate and Postgraduate admissions at Shri Shiv Chhatrapati College, Junnar."/>
+  <meta property="og:title" content="Online Admissions — SSC College, Junnar"/>
+  <meta property="og:description" content="Apply for Arts, Commerce, Science, Computer Science and BBA courses online."/>
+  <meta property="og:type" content="website"/>
+  <meta property="og:url" content="https://ssccjunnar.edu/admissions.html"/>
+  <meta property="og:image" content="https://ssccjunnar.edu/assets/hero-banner.jpg"/>
   <script src="/js/theme.js"></script>
   <link rel="stylesheet" href="css/styles.css"/>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
@@ -262,10 +268,6 @@
         <button type="button" class="btn secondary" onclick="location.reload()" style="color: var(--text);">Apply for another program</button>
       </div>
     </div>
-  </section>
-</main>
-
- 
   <div id="site-footer"></div>
   <script src="js/layout.js"></script>
   <script src="js/app.js"></script>
@@ -283,14 +285,17 @@
       });
     }
 
-    // Auto-setup wrapper class for inline validation indicators
-    document.querySelectorAll('#adm-form input, #adm-form select, #adm-form textarea').forEach(input => {
-      if (!input.placeholder) input.placeholder = " ";
-      const parent = input.parentElement;
-      if (parent) {
-        parent.classList.add('form-control-validate');
-      }
-    });
+    // Dynamic max constraint synchronization
+    const maxMarks12Input = document.getElementById('maxMarks12');
+    const marks12Input = document.getElementById('marks12');
+    if (maxMarks12Input && marks12Input) {
+      const syncMax = () => {
+        const val = Number(maxMarks12Input.value) || 600;
+        marks12Input.max = val;
+      };
+      maxMarks12Input.addEventListener('input', syncMax);
+      syncMax();
+    }
 
     // Auto-save form draft functionality
     function saveDraft() {

@@ -5,15 +5,21 @@ import path from 'path';
 import { getAcademicYear } from '../src/utils/academicYear.js';
 
 const prisma = new PrismaClient();
-const API_URL = 'http://localhost:3000/api';
-const BASE_URL = 'http://localhost:3000';
-const ARTIFACT_DIR = 'C:\\Users\\Siddhu\\.gemini\\antigravity-ide\\brain\\305c8135-2fa2-44d5-be0b-6bce1eacce5f';
+const API_URL = process.env.API_URL || 'http://localhost:3000/api';
+const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
+const ARTIFACT_DIR = process.env.ARTIFACT_DIR || path.join(process.cwd(), 'screenshots');
+if (!fs.existsSync(ARTIFACT_DIR)) {
+  fs.mkdirSync(ARTIFACT_DIR, { recursive: true });
+}
+
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'principal@ssccjunnar.edu';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'Admin@123';
 
 async function loginAdmin() {
   const res = await fetch(`${API_URL}/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email: 'principal@ssccjunnar.edu', password: 'Admin@123' })
+    body: JSON.stringify({ email: ADMIN_EMAIL, password: ADMIN_PASSWORD })
   });
   const data = await res.json();
   if (!data.token) throw new Error('Admin login failed: ' + JSON.stringify(data));
@@ -37,7 +43,7 @@ async function apiCall(token, method, endpoint, body = null) {
 async function runTests() {
   let mdReport = `# CRUD Verification Report\n\n`;
   const token = await loginAdmin();
-  const adminUser = await prisma.user.findUnique({ where: { email: 'principal@ssccjunnar.edu' } });
+  const adminUser = await prisma.user.findUnique({ where: { email: ADMIN_EMAIL } });
   const adminId = adminUser ? adminUser.id : null;
   
   // Cleanup leftover test data from previous failed runs

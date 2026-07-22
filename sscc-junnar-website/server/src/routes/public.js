@@ -159,6 +159,9 @@ export function publicRouter() {
     if (!fullName || !email || !phone || !address || !courseApplied || Number.isNaN(marks12)) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
+    if (marks12 < 0 || maxMarks12 <= 0 || marks12 > maxMarks12) {
+      return res.status(400).json({ error: `Marks obtained (${marks12}) cannot exceed maximum marks (${maxMarks12}).` });
+    }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email))) {
       return res.status(400).json({ error: 'Invalid email format' });
     }

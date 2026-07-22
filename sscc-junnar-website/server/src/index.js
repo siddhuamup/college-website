@@ -70,6 +70,7 @@ app.use(helmet({
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
       imgSrc: ["'self'", "data:"],
       connectSrc: ["'self'"],
+      frameSrc: ["'self'", "https://www.google.com", "https://maps.google.com"],
       objectSrc: ["'none'"],
       upgradeInsecureRequests: [],
     },
