@@ -8,6 +8,9 @@
       </span>
     </a>
     <div class="nav-right">
+      <button class="nav-toggle-btn" id="nav-toggle" aria-label="Toggle navigation menu" type="button" aria-expanded="false">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
       <div class="navlinks" id="primary-nav">
         <a href="/index.html">Home</a>
         <a href="/courses.html">Courses</a>
@@ -28,7 +31,7 @@
           </div>
         </div>
       </div>
-      <button class="theme-toggle-btn" onclick="window.ThemeManager.cycle()" aria-label="Toggle Theme" type="button">🌙 Dark</button>
+      <button class="theme-toggle-btn" onclick="window.ThemeManager.toggle()" aria-label="Toggle Theme" type="button">☀️ Light</button>
       <a href="/login.html" class="btn secondary nav-login">Login</a>
     </div>
   </div>

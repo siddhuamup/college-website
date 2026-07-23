@@ -489,7 +489,7 @@
         } catch (err) {
           showToast(err.data?.error || err.message || 'Could not submit feedback', 'error');
         }
-      });
+      }));
     }
 
     const formProfile = el('form-edit-profile');
@@ -523,7 +523,7 @@
         } catch (err) {
           showToast(err.message || 'Update failed', 'error');
         }
-      });
+      }));
     }
 
     const filterTabsContainer = el('exam-filter-tabs');
@@ -2580,7 +2580,7 @@
           } catch (err) {
             showToast(err.message || 'Failed to change password', 'error');
           }
-        });
+        }));
       }
     }
   }
@@ -2640,7 +2640,7 @@
         } catch (err) {
           showToast(err.message || 'Failed to change password', 'error');
         }
-      });
+      }));
     }
   }
 

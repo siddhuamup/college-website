@@ -7,7 +7,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       const res = await fetch('/partials/nav.html');
       if (res.ok) {
         header.innerHTML = await res.text();
-        if (window.ThemeManager) window.ThemeManager.updateToggles();
+        if (window.ThemeManager) {
+          window.ThemeManager.apply();
+        }
       }
     }
     if (footer) {

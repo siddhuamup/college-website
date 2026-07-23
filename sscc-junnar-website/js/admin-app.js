@@ -148,17 +148,25 @@
       e.preventDefault();
       msgEl.textContent = '';
       msgEl.className = 'small mt-3';
-      const accessKey = document.getElementById('admin-access-key').value;
+      const accessKeyEl = document.getElementById('admin-access-key');
+      const accessKey = accessKeyEl ? accessKeyEl.value.trim() : '';
+
+      if (!accessKey) {
+        msgEl.textContent = 'Please enter your access key.';
+        msgEl.className = 'small mt-3 alert error';
+        return;
+      }
+
       try {
         const data = await SSC_API.post('/auth/admin-access', { accessKey });
         SSC_API.setToken(data.token);
-        location.reload();
+        await boot();
       } catch (err) {
         const detail = err.data && err.data.error ? err.data.error : err.message;
         msgEl.textContent = detail || 'Access denied';
         msgEl.className = 'small mt-3 alert error';
       }
-    });
+    }));
   }
 
   /* ── Search index cache ──────────────────────────────────── */
@@ -479,8 +487,8 @@
 
   async function boot() {
     setupGateForm();
-    initStudentProfileTabs();
-    initTeacherProfileTabs();
+    if (typeof initStudentProfileTabs === 'function') initStudentProfileTabs();
+    if (typeof initTeacherProfileTabs === 'function') initTeacherProfileTabs();
     if (!SSC_API.token()) {
       showGate();
       return;
@@ -500,16 +508,21 @@
       if (avatarEl) avatarEl.textContent = (user.name || 'A').charAt(0).toUpperCase();
 
       loadNotifications();
-    } catch {
+    } catch (err) {
+      console.error('Admin boot session verification failed:', err);
       SSC_API.setToken(null);
       showGate();
       return;
     }
 
-    document.getElementById('logout-btn').addEventListener('click', () => {
-      SSC_API.setToken(null);
-      showGate();
-    });
+    const logoutBtn = document.getElementById('logout-btn');
+    if (logoutBtn && !logoutBtn.dataset.bound) {
+      logoutBtn.dataset.bound = '1';
+      logoutBtn.addEventListener('click', async () => {
+        await SSC_API.logout();
+        showGate();
+      });
+    }
 
     const notifBtn = document.getElementById('topbar-notif-btn');
     const notifDropdown = document.getElementById('notif-dropdown');
@@ -1458,7 +1471,7 @@
     } catch (err) {
       showModalAlert(err.message || 'Creation failed', 'Error');
     }
-  });
+  }));
 
   // Admissions Decision Form Submit
   const decisionForm = document.getElementById('form-admission-decision');
@@ -1499,7 +1512,7 @@
       } catch (err) {
         showModalAlert(err.message || 'Approval decision failed', 'Error');
       }
-    });
+    }));
   }  // Bind Credentials Modal Actions
   const btnCredsCopy = document.getElementById('btn-creds-copy');
   if (btnCredsCopy) {
@@ -1576,7 +1589,7 @@
       } catch (err) {
         showModalAlert(err.message || 'Rejection decision failed', 'Error');
       }
-    });
+    }));
   }
 
   // Edit Student Form Submit
@@ -1621,7 +1634,7 @@
       } catch (err) {
         showModalAlert(err.message || 'Update failed', 'Error');
       }
-    });
+    }));
 
     document.getElementById('btn-student-gen-pass').addEventListener('click', () => {
       document.getElementById('edit-student-password').value = randPass();
@@ -1862,7 +1875,7 @@
     } catch (err) {
       showModalAlert(err.message || 'Creation failed', 'Error');
     }
-  });
+  }));
 
   // Edit Teacher Form Submit
   const editTeacherForm = document.getElementById('form-edit-teacher');
@@ -1923,7 +1936,7 @@
       } catch (err) {
         showModalAlert(err.message || 'Update failed', 'Error');
       }
-    });
+    }));
 
     const removePhotoBtn = document.getElementById('btn-edit-teacher-remove-photo');
     if (removePhotoBtn) {
@@ -2608,7 +2621,7 @@
     } catch (err) {
       showModalAlert(err.message || 'Publish failed', 'Error');
     }
-  });
+  }));
 
   // Edit Notice Form Submit
   const editNoticeForm = document.getElementById('form-edit-notice');
@@ -2642,7 +2655,7 @@
       } catch (err) {
         showModalAlert(err.message || 'Update failed', 'Error');
       }
-    });
+    }));
   }
 
   async function loadDepartments() {
@@ -2675,7 +2688,7 @@
     });
     f.reset();
     loadDepartments();
-  });
+  }));
 
   async function loadCourses() {
     showTableShimmer('#tbl-courses tbody', 3);
@@ -2727,7 +2740,7 @@
     });
     f.reset();
     loadCourses();
-  });
+  }));
 
   async function loadGalleryAdmin() {
     const items = await SSC_API.get('/admin/gallery');
@@ -2760,7 +2773,7 @@
     await SSC_API.upload('/admin/gallery', fd);
     f.reset();
     loadGalleryAdmin();
-  });
+  }));
 
   async function loadFeedback() {
     const items = await SSC_API.get('/admin/feedback');
@@ -2798,7 +2811,7 @@
       attendanceThreshold: Number(f.attendanceThreshold.value.trim()) || 75,
     });
     msg('Settings saved');
-  });
+  }));
 
   async function loadStudyMaterials() {
     const list = await SSC_API.get('/admin/study-materials');
@@ -3268,7 +3281,7 @@
         document.getElementById('form-company-wrap').style.display = 'none';
         msg('Company added');
         loadPlCompanies(); loadPlAnalytics();
-      });
+      }));
     }
     // Create drive form
     const formDr = document.getElementById('form-drive');
@@ -3289,7 +3302,7 @@
         document.getElementById('form-drive-wrap').style.display = 'none';
         msg('Drive created');
         loadPlDrives(); loadPlAnalytics();
-      });
+      }));
     }
     // Filter applications
     const btnFilter = document.getElementById('btn-filter-apps');
@@ -3728,7 +3741,7 @@
           msgEl.textContent = err.data && err.data.error ? err.data.error : err.message;
           msgEl.className = 'small mt-3 alert error';
         }
-      });
+      }));
     }
   }
 

@@ -105,14 +105,27 @@
       const email = document.getElementById('email').value.trim();
       const password = document.getElementById('password').value;
 
+      if (!email || !password) {
+        loginMsg.textContent = 'Please enter both email/ID and password.';
+        loginMsg.className = 'small mt-3 alert error';
+        return;
+      }
 
-      const endpoint = selectedRole === 'student' ? '/student/login' : '/teacher/login';
+      // Try general auth login endpoint first, fallback to role-specific endpoint
       try {
-        const data = await SSC_API.post(endpoint, { email, password });
+        let data;
+        try {
+          data = await SSC_API.post('/auth/login', { email, password });
+        } catch {
+          const endpoint = selectedRole === 'student' ? '/student/login' : '/teacher/login';
+          data = await SSC_API.post(endpoint, { email, password });
+        }
+
         SSC_API.setToken(data.token);
         const role = String(data.user && data.user.role != null ? data.user.role : '').toLowerCase();
         if (role === 'teacher') location.href = 'teacher/index.html';
         else if (role === 'student') location.href = 'student/index.html';
+        else if (role === 'admin') location.href = 'admin/index.html';
         else {
           SSC_API.setToken(null);
           loginMsg.textContent = 'Unrecognised role on this account. Contact the administrator.';
@@ -120,7 +133,7 @@
         }
       } catch (err) {
         const detail = err.data && err.data.error ? err.data.error : err.message;
-        loginMsg.textContent = detail || 'Sign in failed';
+        loginMsg.textContent = detail || 'Sign in failed. Check your credentials.';
         loginMsg.className = 'small mt-3 alert error';
       }
     });

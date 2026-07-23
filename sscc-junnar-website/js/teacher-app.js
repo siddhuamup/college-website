@@ -468,7 +468,7 @@
         } catch (err) {
           showToast(err.message || 'Could not upload material', 'error');
         }
-      });
+      }));
     }
 
     const formProfile = document.getElementById('form-edit-profile');
@@ -503,7 +503,7 @@
         } catch (err) {
           showToast(err.message || 'Update failed', 'error');
         }
-      });
+      }));
     }
 
     setupKeyboardShortcuts();
@@ -1417,7 +1417,7 @@
         } catch (err) {
           showToast(err.data && err.data.error ? err.data.error : err.message, 'error');
         }
-      });
+      }));
     }
     await loadTeacherLeaves();
   }
@@ -1737,7 +1737,7 @@
           } catch (err) {
             showToast(err.message || 'Failed to change password', 'error');
           }
-        });
+        }));
       }
     }
   }
@@ -1797,7 +1797,7 @@
         } catch (err) {
           showToast(err.message || 'Failed to change password', 'error');
         }
-      });
+      }));
     }
   }
 
