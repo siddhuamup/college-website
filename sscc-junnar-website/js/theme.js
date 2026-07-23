@@ -1,6 +1,5 @@
 /**
  * ThemeManager — handles theme switching (light/dark) and persistence
- * Binary toggle: Light | Dark with ☀️/🌙 icon switching
  */
 (function() {
   const THEME_KEY = 'ssc_theme';
@@ -42,30 +41,21 @@
       this.updateToggles();
     },
 
-    getLabel() {
-      return this.current === 'light' ? 'Dark' : 'Light';
-    },
-
-    getIcon() {
-      return this.current === 'light' ? '🌙' : '☀️';
-    },
-
     updateToggles() {
-      const label = this.getLabel();
-      const icon = this.getIcon();
-      const toggles = document.querySelectorAll('.theme-toggle-btn');
-      toggles.forEach(btn => {
+      const isDark = this.current === 'dark';
+      const label = isDark ? '☀️ Light' : '🌙 Dark';
+      document.querySelectorAll('.theme-toggle-btn').forEach(btn => {
         const svg = btn.querySelector('svg');
         if (svg) {
           Array.from(btn.childNodes).forEach(n => {
             if (n.nodeType === Node.TEXT_NODE) n.remove();
           });
-          btn.appendChild(document.createTextNode(` ${icon} ${label}`));
+          btn.appendChild(document.createTextNode(' ' + label));
         } else {
-          btn.textContent = `${icon} ${label}`;
+          btn.textContent = label;
         }
-        btn.setAttribute('aria-label', `Switch to ${label} theme`);
-        btn.title = `Switch to ${label} theme`;
+        btn.setAttribute('aria-label', 'Switch to ' + (isDark ? 'light' : 'dark') + ' theme');
+        btn.title = 'Switch to ' + (isDark ? 'light' : 'dark') + ' theme';
       });
     }
   };

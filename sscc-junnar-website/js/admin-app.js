@@ -283,7 +283,7 @@
     if (badge) {
       if (unread.length > 0) {
         badge.textContent = unread.length;
-        badge.style.display = 'block';
+        badge.style.display = 'grid';
       } else {
         badge.style.display = 'none';
       }
@@ -487,8 +487,12 @@
 
   async function boot() {
     setupGateForm();
-    if (typeof initStudentProfileTabs === 'function') initStudentProfileTabs();
-    if (typeof initTeacherProfileTabs === 'function') initTeacherProfileTabs();
+    try {
+      if (typeof initStudentProfileTabs === 'function') initStudentProfileTabs();
+      if (typeof initTeacherProfileTabs === 'function') initTeacherProfileTabs();
+    } catch (e) {
+      console.warn('Profile tab init skipped:', e.message);
+    }
     if (!SSC_API.token()) {
       showGate();
       return;
@@ -1448,7 +1452,8 @@
   }
 
   // Student form bindings
-  document.getElementById('form-student').addEventListener('submit', withSubmitGuard(async (e) => {
+  const formStudent = document.getElementById('form-student');
+  if (formStudent) formStudent.addEventListener('submit', withSubmitGuard(async (e) => {
     e.preventDefault();
     const f = e.target;
     const body = {
@@ -2592,7 +2597,8 @@
     );
   }
 
-  document.getElementById('form-notice').addEventListener('submit', withSubmitGuard(async (e) => {
+  const formNotice = document.getElementById('form-notice');
+  if (formNotice) formNotice.addEventListener('submit', withSubmitGuard(async (e) => {
     e.preventDefault();
     const f = e.target;
     const fd = new FormData();
@@ -2678,7 +2684,8 @@
     makeTableSortableAndFilterable('tbl-dept');
   }
 
-  document.getElementById('form-dept').addEventListener('submit', withSubmitGuard(async (e) => {
+  const formDept = document.getElementById('form-dept');
+  if (formDept) formDept.addEventListener('submit', withSubmitGuard(async (e) => {
     e.preventDefault();
     const f = e.target;
     await SSC_API.post('/admin/departments', {
@@ -2726,7 +2733,8 @@
     makeTableSortableAndFilterable('tbl-courses');
   }
 
-  document.getElementById('form-course').addEventListener('submit', withSubmitGuard(async (e) => {
+  const formCourse = document.getElementById('form-course');
+  if (formCourse) formCourse.addEventListener('submit', withSubmitGuard(async (e) => {
     e.preventDefault();
     const f = e.target;
     await SSC_API.post('/admin/courses', {
