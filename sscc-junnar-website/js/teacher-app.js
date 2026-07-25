@@ -1809,7 +1809,10 @@
     const tbody = document.querySelector('#tbl-bulk-marks-roster tbody');
     const saveBtn = document.getElementById('btn-save-bulk-marks');
     
-    if (!subSel) return;
+    if (!subSel || !examInput || !maxInput || !container || !tbody || !saveBtn) {
+      console.warn('setupBulkMarks: required elements missing');
+      return;
+    }
 
     let debounceTimeout = null;
     function debouncedLoadRoster() {
@@ -2054,7 +2057,10 @@
     const frontCard = document.getElementById('id-card-front');
     const backCard = document.getElementById('id-card-back');
     
-    if (!idBtn || !modal) return;
+    if (!idBtn || !modal || !closeBtn || !tabFront || !tabBack || !frontCard || !backCard) {
+      console.warn('setupTeacherIdCard: required elements missing');
+      return;
+    }
     
     idBtn.addEventListener('click', () => {
       try {
@@ -2164,7 +2170,7 @@
     const body = document.getElementById('drawer-student-body');
     const title = document.getElementById('drawer-student-name');
     
-    if (!drawer || !overlay || !body) return;
+    if (!drawer || !overlay || !body || !title) return;
     
     const student = studentsCache.find(s => String(s._id || s.id) === String(sid));
     if (!student) return;

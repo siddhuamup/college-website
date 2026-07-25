@@ -465,10 +465,14 @@
           html += '</div>';
         }
         resultsEl.innerHTML = html;
-        resultsEl.querySelectorAll('.search-result-item').forEach(el => {
-          el.addEventListener('click', () => {
-            const panel = el.dataset.panel;
-            const id = el.dataset.id;
+        // Event delegation — single listener, no memory leak
+        if (!resultsEl.dataset.delegated) {
+          resultsEl.dataset.delegated = '1';
+          resultsEl.addEventListener('click', (evt) => {
+            const item = evt.target.closest('.search-result-item');
+            if (!item) return;
+            const panel = item.dataset.panel;
+            const id = item.dataset.id;
             if (panel === 'students' && id) {
               openStudentProfile(id);
             } else if (panel === 'teachers' && id) {
@@ -479,7 +483,7 @@
             resultsEl.classList.remove('visible');
             input.value = '';
           });
-        });
+        }
       }
       resultsEl.classList.add('visible');
     }
@@ -600,9 +604,12 @@
     // Build search index in background
     buildSearchIndex();
 
-    document.getElementById('btn-export-csv').addEventListener('click', exportCSV);
-    document.getElementById('btn-export-excel').addEventListener('click', exportExcel);
-    document.getElementById('btn-print-att').addEventListener('click', printReport);
+    const btnExportCsv = document.getElementById('btn-export-csv');
+    if (btnExportCsv) btnExportCsv.addEventListener('click', exportCSV);
+    const btnExportExcel = document.getElementById('btn-export-excel');
+    if (btnExportExcel) btnExportExcel.addEventListener('click', exportExcel);
+    const btnPrintAtt = document.getElementById('btn-print-att');
+    if (btnPrintAtt) btnPrintAtt.addEventListener('click', printReport);
   }
 
   function setupKeyboardShortcuts() {
@@ -1641,11 +1648,14 @@
       }
     }));
 
-    document.getElementById('btn-student-gen-pass').addEventListener('click', () => {
-      document.getElementById('edit-student-password').value = randPass();
+    const btnStudentGenPass = document.getElementById('btn-student-gen-pass');
+    if (btnStudentGenPass) btnStudentGenPass.addEventListener('click', () => {
+      const passEl = document.getElementById('edit-student-password');
+      if (passEl) passEl.value = randPass();
     });
 
-    document.getElementById('btn-student-copy-creds').addEventListener('click', () => {
+    const btnStudentCopyCreds = document.getElementById('btn-student-copy-creds');
+    if (btnStudentCopyCreds) btnStudentCopyCreds.addEventListener('click', () => {
       const email = document.getElementById('edit-student-email').value;
       const name = document.getElementById('edit-student-name').value;
       const erpId = document.getElementById('edit-student-erp-id').value;
@@ -1655,7 +1665,8 @@
       navigator.clipboard.writeText(text).then(() => showModalAlert('Credentials copied to clipboard!', 'Success'));
     });
 
-    document.getElementById('btn-student-print-creds').addEventListener('click', () => {
+    const btnStudentPrintCreds = document.getElementById('btn-student-print-creds');
+    if (btnStudentPrintCreds) btnStudentPrintCreds.addEventListener('click', () => {
       const email = document.getElementById('edit-student-email').value;
       const name = document.getElementById('edit-student-name').value;
       const erpId = document.getElementById('edit-student-erp-id').value;
@@ -1839,7 +1850,8 @@
   }
 
   // Teacher Creation Submit
-  document.getElementById('form-teacher').addEventListener('submit', withSubmitGuard(async (e) => {
+  const formTeacher = document.getElementById('form-teacher');
+  if (formTeacher) formTeacher.addEventListener('submit', withSubmitGuard(async (e) => {
     e.preventDefault();
     const f = e.target;
     const assignments = [];
@@ -1973,18 +1985,22 @@
       });
     }
 
-    document.getElementById('btn-teacher-gen-pass').addEventListener('click', () => {
-      document.getElementById('edit-teacher-password').value = randPass();
+    const btnTeacherGenPass = document.getElementById('btn-teacher-gen-pass');
+    if (btnTeacherGenPass) btnTeacherGenPass.addEventListener('click', () => {
+      const passEl = document.getElementById('edit-teacher-password');
+      if (passEl) passEl.value = randPass();
     });
 
-    document.getElementById('btn-teacher-copy-creds').addEventListener('click', () => {
+    const btnTeacherCopyCreds = document.getElementById('btn-teacher-copy-creds');
+    if (btnTeacherCopyCreds) btnTeacherCopyCreds.addEventListener('click', () => {
       const email = document.getElementById('edit-teacher-email').value;
       const name = document.getElementById('edit-teacher-name').value;
       const pass = document.getElementById('edit-teacher-password').value || '(Keep existing)';
       navigator.clipboard.writeText(text).then(() => showModalAlert('Credentials copied to clipboard!', 'Success'));
     });
 
-    document.getElementById('btn-teacher-print-creds').addEventListener('click', () => {
+    const btnTeacherPrintCreds = document.getElementById('btn-teacher-print-creds');
+    if (btnTeacherPrintCreds) btnTeacherPrintCreds.addEventListener('click', () => {
       const email = document.getElementById('edit-teacher-email').value;
       const name = document.getElementById('edit-teacher-name').value;
       const pass = document.getElementById('edit-teacher-password').value || '(Keep existing)';
@@ -2075,6 +2091,7 @@
       const courses = await SSC_API.get('/admin/courses');
       const sel = document.getElementById('adm-filter-course');
       if (!sel) return;
+      sel.innerHTML = '<option value="">All Courses</option>';
       courses.forEach(c => {
         const o = document.createElement('option');
         o.value = c.name;
@@ -2772,7 +2789,8 @@
     );
   }
 
-  document.getElementById('form-gallery').addEventListener('submit', withSubmitGuard(async (e) => {
+  const formGallery = document.getElementById('form-gallery');
+  if (formGallery) formGallery.addEventListener('submit', withSubmitGuard(async (e) => {
     e.preventDefault();
     const f = e.target;
     const fd = new FormData();
@@ -2786,6 +2804,7 @@
   async function loadFeedback() {
     const items = await SSC_API.get('/admin/feedback');
     const box = document.getElementById('feedback-list');
+    if (!box) return;
     box.innerHTML = items
       .map(
         (f) =>
@@ -2800,7 +2819,8 @@
 
   async function loadSettings() {
     const s = await SSC_API.get('/admin/settings');
-    document.getElementById('set-tag').value = s.siteTagline || '';
+    const setTag = document.getElementById('set-tag');
+    if (setTag) setTag.value = s.siteTagline || '';
     const syllabus = document.getElementById('set-syllabus');
     const prospectus = document.getElementById('set-prospectus');
     if (syllabus) syllabus.value = s.syllabusPdfUrl || '';
@@ -2809,7 +2829,8 @@
     if (threshold) threshold.value = s.attendanceThreshold || 75;
   }
 
-  document.getElementById('form-settings').addEventListener('submit', withSubmitGuard(async (e) => {
+  const formSettings = document.getElementById('form-settings');
+  if (formSettings) formSettings.addEventListener('submit', withSubmitGuard(async (e) => {
     e.preventDefault();
     const f = e.target;
     await SSC_API.put('/admin/settings', {
@@ -2824,6 +2845,7 @@
   async function loadStudyMaterials() {
     const list = await SSC_API.get('/admin/study-materials');
     const tb = document.querySelector('#tbl-study-materials tbody');
+    if (!tb) return;
     tb.innerHTML = '';
     list.forEach((m) => {
       const tr = document.createElement('tr');
@@ -3605,17 +3627,21 @@
         document.getElementById('lib-book-form-card').style.display = 'block';
       });
       
-      document.getElementById('lib-book-cancel-btn').addEventListener('click', () => {
-        document.getElementById('lib-book-form-card').style.display = 'none';
+      const libBookCancelBtn = document.getElementById('lib-book-cancel-btn');
+      if (libBookCancelBtn) libBookCancelBtn.addEventListener('click', () => {
+        const libBookFormCard = document.getElementById('lib-book-form-card');
+        if (libBookFormCard) libBookFormCard.style.display = 'none';
       });
       
-      document.getElementById('lib-book-form').addEventListener('submit', saveLibraryBook);
+      const libBookForm = document.getElementById('lib-book-form');
+      if (libBookForm) libBookForm.addEventListener('submit', saveLibraryBook);
     }
   }
 
   async function loadLibraryBooks() {
     const books = await SSC_API.get('/admin/library/books');
     const tbody = document.querySelector('#tbl-lib-books tbody');
+    if (!tbody) return;
     tbody.innerHTML = '';
     
     books.forEach(b => {
@@ -3906,17 +3932,21 @@
         });
       }
 
-      document.getElementById('exam-cancel-btn').addEventListener('click', () => {
-        document.getElementById('exam-form-card').style.display = 'none';
+      const examCancelBtn = document.getElementById('exam-cancel-btn');
+      if (examCancelBtn) examCancelBtn.addEventListener('click', () => {
+        const examFormCard = document.getElementById('exam-form-card');
+        if (examFormCard) examFormCard.style.display = 'none';
       });
 
-      document.getElementById('exam-form').addEventListener('submit', saveExamSchedule);
+      const examFormEl = document.getElementById('exam-form');
+      if (examFormEl) examFormEl.addEventListener('submit', saveExamSchedule);
     }
   }
 
   async function loadExams() {
     const exams = await SSC_API.get('/admin/exams');
     const tbody = document.querySelector('#tbl-exams tbody');
+    if (!tbody) return;
     tbody.innerHTML = '';
     
     exams.forEach(ex => {

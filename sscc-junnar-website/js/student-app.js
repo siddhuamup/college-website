@@ -1692,9 +1692,12 @@
   async function loadEditProfile() {
     try {
       const u = await SSC_API.get('/student/profile');
-      el('student-profile-name').value = u.name || '';
-      el('student-profile-phone').value = u.phone || '';
-      el('student-profile-bio').value = u.bio || '';
+      const nameInput = el('student-profile-name');
+      if (nameInput) nameInput.value = u.name || '';
+      const phoneInput = el('student-profile-phone');
+      if (phoneInput) phoneInput.value = u.phone || '';
+      const bioInput = el('student-profile-bio');
+      if (bioInput) bioInput.value = u.bio || '';
       
       const img = el('student-avatar-img');
       const placeholder = el('student-avatar-placeholder');
@@ -1709,7 +1712,8 @@
           placeholder.textContent = (u.name || 'S').charAt(0).toUpperCase();
         }
       }
-      el('student-avatar-upload').value = '';
+      const avatarUpload = el('student-avatar-upload');
+      if (avatarUpload) avatarUpload.value = '';
       
       const sp = u.studentProfile || {};
       
