@@ -66,10 +66,24 @@
   // Export to window
   window.ThemeManager = ThemeManager;
 
-  // Run updateToggles when DOM is ready
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => ThemeManager.apply());
-  } else {
+  // Run updateToggles and attach delegated click listener when DOM is ready
+  function setupThemeListeners() {
     ThemeManager.apply();
+    if (!document.dataset || !document.dataset.themeBound) {
+      if (document.dataset) document.dataset.themeBound = 'true';
+      document.addEventListener('click', (e) => {
+        const toggleBtn = e.target.closest('.theme-toggle-btn, #theme-toggle, #theme-toggle-sidebar');
+        if (toggleBtn) {
+          e.preventDefault();
+          ThemeManager.toggle();
+        }
+      });
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setupThemeListeners);
+  } else {
+    setupThemeListeners();
   }
 })();
