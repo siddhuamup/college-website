@@ -153,7 +153,9 @@
         <!-- Quick Welcome card -->
         <div class="card student-welcome-card mb-4">
           <div class="student-welcome-left">
-            <div class="faculty-avatar-placeholder" id="db-avatar-placeholder">🎓</div>
+            <div class="faculty-avatar-placeholder" id="db-avatar-placeholder">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+            </div>
             <img id="db-avatar-img" src="" alt="Avatar" class="student-welcome-avatar"/>
             <div>
               <h2 class="student-welcome-title" id="db-welcome-name">Welcome!</h2>
@@ -161,12 +163,16 @@
             </div>
           </div>
           <div class="student-quick-actions" style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-            <button class="btn small" id="qa-view-profile" type="button">👤 View Full Profile</button>
+            <button class="btn small" id="qa-view-profile" type="button" style="display:inline-flex; align-items:center; gap:4px;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> View Full Profile
+            </button>
             <button class="btn secondary small" id="qa-id-card" type="button">Digital ID Card</button>
             <button class="btn secondary small" id="qa-view-results" type="button">View Results</button>
             <button class="btn secondary small" id="qa-view-attendance" type="button">View Attendance</button>
             <button class="btn secondary small" id="qa-edit-profile" type="button">Edit Profile</button>
-            <button class="btn secondary small" id="btn-quick-edit-creds" type="button" style="color:var(--accent,#6366f1); font-weight:600;">🔑 Change Password</button>
+            <button class="btn secondary small" id="btn-quick-edit-creds" type="button" style="color:var(--accent,#6366f1); font-weight:600; display:inline-flex; align-items:center; gap:4px;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Change Password
+            </button>
           </div>
         </div>
 
@@ -462,7 +468,7 @@
 
       <section class="dash-panel" data-panel="attendance">
         <div id="att-warn-banner" class="alert error" style="display:none;margin-bottom:1.25rem;">
-          <strong>⚠️ Low Attendance Warning:</strong> Your overall attendance is currently below the required 75%. Please contact your course coordinator.
+          <strong style="display:inline-flex; align-items:center; gap:4px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Low Attendance Warning:</strong> Your overall attendance is currently below the required 75%. Please contact your course coordinator.
         </div>
 
         <div class="stat-grid" style="margin-bottom:1.5rem;">
@@ -639,111 +645,248 @@
         </div>
       </section>
 
-      <!-- Premium View Profile Panel -->
+      <!-- ══ MODERN 2-COLUMN PROFILE PANEL ══════════════════════════════════ -->
       <section class="dash-panel" data-panel="view-profile">
-        <div class="card" style="padding:0; overflow:hidden; border-radius:12px; border:1px solid var(--border-color,#e2e8f0); position:relative; background:var(--bg-card,#ffffff);">
-          <!-- Premium Cover Gradient -->
-          <div style="height:140px; background: linear-gradient(135deg, var(--primary, #6366f1) 0%, var(--accent, #a855f7) 100%);"></div>
+        <div class="profile-grid-container">
           
-          <!-- Profile Main Details Header -->
-          <div style="padding: 1.5rem; display: flex; gap: 1.5rem; align-items: flex-end; margin-top: -60px; flex-wrap: wrap;">
-            <div style="width:110px; height:110px; border-radius:50%; border:4px solid var(--bg-card,#ffffff); background:var(--muted,#e2e8f0); overflow:hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.15); flex-shrink:0; display:grid; place-items:center;">
-              <img id="vp-avatar-img" src="" alt="Avatar" style="width:100%; height:100%; object-fit:cover; display:none;"/>
-              <span id="vp-avatar-placeholder" style="font-size:2.5rem;">🎓</span>
-            </div>
-            <div style="flex-grow:1;">
-              <h2 id="vp-name" style="margin:0 0 0.25rem 0; font-size:1.6rem; color:var(--text-main);">—</h2>
-              <p id="vp-meta" style="margin:0 0 0.5rem 0; color:var(--text-secondary); font-weight:500;">—</p>
-              <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
-                <span class="badge pending" id="vp-badge-id">ID: —</span>
-                <span class="badge approved" id="vp-badge-roll">Roll: —</span>
+          <!-- LEFT COLUMN: Profile Sidebar -->
+          <div class="profile-card-sidebar">
+            <div class="avatar-wrapper" id="profile-avatar-wrap">
+              <img id="sp-avatar-img" src="https://ui-avatars.com/api/?name=Rahul+Sharma&background=0D8ABC&color=fff&size=150" alt="Avatar" class="avatar-img"/>
+              <div class="avatar-overlay" id="btn-change-photo">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                  <circle cx="12" cy="13" r="4"/>
+                </svg>
+                <span>Change Photo</span>
               </div>
             </div>
-            <button class="btn small" type="button" onclick="window.panel('edit-profile')" style="margin-left:auto;">
-              ✏️ Edit Profile
-            </button>
-          </div>
+            
+            <h3 class="profile-name" id="sp-display-name">Rahul Sharma</h3>
+            <span class="profile-erp" id="sp-display-erp">ERP: 2023CS001</span>
+            <p class="profile-subtext" id="sp-display-course">B.Tech Computer Science &bull; 3rd Year</p>
 
-          <!-- Profile Tabs Header -->
-          <div class="tabs-header" style="border-top:1px solid var(--border-color,#e2e8f0); display:flex; gap:1.5rem; padding:0 1.5rem; background:var(--surface,#f8fafc);">
-            <button type="button" class="tab-btn active vp-tab-btn" data-vp-tab="personal" style="padding:1rem 0; background:none; border:none; font-weight:600; font-size:0.9rem; color:var(--accent,#6366f1); border-bottom:3px solid var(--accent,#6366f1); cursor:pointer;">
-              Personal Details
-            </button>
-            <button type="button" class="tab-btn vp-tab-btn" data-vp-tab="academic" style="padding:1rem 0; background:none; border:none; font-weight:600; font-size:0.9rem; color:var(--muted,#94a3b8); border-bottom:3px solid transparent; cursor:pointer;">
-              Academic Profile
-            </button>
-          </div>
+            <div class="profile-actions-stack">
+              <button type="button" class="btn small" id="btn-trigger-inline-edit" style="display:inline-flex; align-items:center; justify-content:center; gap:6px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                <span>Edit Profile</span>
+              </button>
+              <button type="button" class="btn secondary small" id="btn-open-pvc-card" style="display:inline-flex; align-items:center; justify-content:center; gap:6px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+                <span>Digital PVC ID Card</span>
+              </button>
+              <button type="button" class="btn secondary small" id="btn-trigger-change-pass" style="display:inline-flex; align-items:center; justify-content:center; gap:6px; color:var(--primary);">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                <span>Change Password</span>
+              </button>
+            </div>
 
-          <!-- Tab Content Panel: Personal -->
-          <div class="vp-tab-panel" data-vp-panel="personal" style="padding: 1.5rem;">
-            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem;">
-              <div style="border: 1px solid var(--border-color,#e2e8f0); padding: 0.75rem 1rem; border-radius: 8px;">
-                <div style="font-size:0.75rem; color:var(--text-secondary); font-weight:600; text-transform:uppercase;">Full Name</div>
-                <div id="vp-p-name" style="font-weight:600; margin-top:0.25rem;">—</div>
-              </div>
-              <div style="border: 1px solid var(--border-color,#e2e8f0); padding: 0.75rem 1rem; border-radius: 8px;">
-                <div style="font-size:0.75rem; color:var(--text-secondary); font-weight:600; text-transform:uppercase;">College Email</div>
-                <div id="vp-p-email" style="font-weight:600; margin-top:0.25rem;">—</div>
-              </div>
-              <div style="border: 1px solid var(--border-color,#e2e8f0); padding: 0.75rem 1rem; border-radius: 8px;">
-                <div style="font-size:0.75rem; color:var(--text-secondary); font-weight:600; text-transform:uppercase;">Phone Number</div>
-                <div id="vp-p-phone" style="font-weight:600; margin-top:0.25rem;">—</div>
-              </div>
-              <div style="border: 1px solid var(--border-color,#e2e8f0); padding: 0.75rem 1rem; border-radius: 8px;">
-                <div style="font-size:0.75rem; color:var(--text-secondary); font-weight:600; text-transform:uppercase;">Date of Birth</div>
-                <div id="vp-p-dob" style="font-weight:600; margin-top:0.25rem;">—</div>
-              </div>
-              <div style="border: 1px solid var(--border-color,#e2e8f0); padding: 0.75rem 1rem; border-radius: 8px;">
-                <div style="font-size:0.75rem; color:var(--text-secondary); font-weight:600; text-transform:uppercase;">Gender</div>
-                <div id="vp-p-gender" style="font-weight:600; margin-top:0.25rem;">—</div>
-              </div>
-              <div style="border: 1px solid var(--border-color,#e2e8f0); padding: 0.75rem 1rem; border-radius: 8px;">
-                <div style="font-size:0.75rem; color:var(--text-secondary); font-weight:600; text-transform:uppercase;">Category</div>
-                <div id="vp-p-category" style="font-weight:600; margin-top:0.25rem;">—</div>
-              </div>
-              <div style="border: 1px solid var(--border-color,#e2e8f0); padding: 0.75rem 1rem; border-radius: 8px; grid-column: span 2;">
-                <div style="font-size:0.75rem; color:var(--text-secondary); font-weight:600; text-transform:uppercase;">Residential Address</div>
-                <div id="vp-p-address" style="font-weight:600; margin-top:0.25rem;">—</div>
-              </div>
+            <!-- QR Code Section -->
+            <div class="qr-code-box">
+              <img id="sp-qr-img" src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=SSCC-2023CS001-RAHUL-SHARMA" alt="Student QR Code"/>
+              <span class="small" style="font-size:0.75rem; font-weight:600; color:var(--muted);">SCAN FOR VERIFICATION</span>
+            </div>
+
+            <!-- Social Links -->
+            <div style="display:flex; justify-content:center; gap:12px; margin-top:16px;">
+              <a href="#" id="sp-link-linkedin" style="color:var(--text-secondary); text-decoration:none;" title="LinkedIn Profile">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg>
+              </a>
+              <a href="#" id="sp-link-github" style="color:var(--text-secondary); text-decoration:none;" title="GitHub Profile">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
+              </a>
             </div>
           </div>
 
-          <!-- Tab Content Panel: Academic -->
-          <div class="vp-tab-panel" data-vp-panel="academic" style="padding: 1.5rem; display:none;">
-            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem;">
-              <div style="border: 1px solid var(--border-color,#e2e8f0); padding: 0.75rem 1rem; border-radius: 8px;">
-                <div style="font-size:0.75rem; color:var(--text-secondary); font-weight:600; text-transform:uppercase;">Course / Stream</div>
-                <div id="vp-a-course" style="font-weight:600; margin-top:0.25rem;">—</div>
+          <!-- RIGHT COLUMN: Stats & Accordions -->
+          <div class="profile-main-content">
+            
+            <!-- Quick Stats Grid (4 columns) -->
+            <div class="quick-stats-grid">
+              <div class="stat-card-modern">
+                <div class="stat-ring-container">
+                  <svg class="stat-ring-svg" viewBox="0 0 36 36">
+                    <path class="stat-ring-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none"/>
+                    <path class="stat-ring-val" id="svg-att-ring" stroke-dasharray="88, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none"/>
+                  </svg>
+                  <span class="stat-ring-text" id="stat-att-val">88%</span>
+                </div>
+                <div class="stat-info-modern">
+                  <h4 id="stat-att-num">88%</h4>
+                  <p>Attendance</p>
+                </div>
               </div>
-              <div style="border: 1px solid var(--border-color,#e2e8f0); padding: 0.75rem 1rem; border-radius: 8px;">
-                <div style="font-size:0.75rem; color:var(--text-secondary); font-weight:600; text-transform:uppercase;">Class Name / Division</div>
-                <div id="vp-a-class" style="font-weight:600; margin-top:0.25rem;">—</div>
+
+              <div class="stat-card-modern">
+                <div class="stat-info-modern">
+                  <h4 id="stat-cgpa-val">8.85</h4>
+                  <p>Current CGPA</p>
+                </div>
               </div>
-              <div style="border: 1px solid var(--border-color,#e2e8f0); padding: 0.75rem 1rem; border-radius: 8px;">
-                <div style="font-size:0.75rem; color:var(--text-secondary); font-weight:600; text-transform:uppercase;">Student ID</div>
-                <div id="vp-a-studentid" style="font-weight:600; margin-top:0.25rem;">—</div>
+
+              <div class="stat-card-modern">
+                <div class="stat-info-modern">
+                  <h4 id="stat-rank-val">#3</h4>
+                  <p>Dept Rank</p>
+                </div>
               </div>
-              <div style="border: 1px solid var(--border-color,#e2e8f0); padding: 0.75rem 1rem; border-radius: 8px;">
-                <div style="font-size:0.75rem; color:var(--text-secondary); font-weight:600; text-transform:uppercase;">Roll Number</div>
-                <div id="vp-a-roll" style="font-weight:600; margin-top:0.25rem;">—</div>
-              </div>
-              <div style="border: 1px solid var(--border-color,#e2e8f0); padding: 0.75rem 1rem; border-radius: 8px;">
-                <div style="font-size:0.75rem; color:var(--text-secondary); font-weight:600; text-transform:uppercase;">SSC (10th) Marks</div>
-                <div id="vp-a-ssc" style="font-weight:600; margin-top:0.25rem;">—</div>
-              </div>
-              <div style="border: 1px solid var(--border-color,#e2e8f0); padding: 0.75rem 1rem; border-radius: 8px;">
-                <div style="font-size:0.75rem; color:var(--text-secondary); font-weight:600; text-transform:uppercase;">HSC (12th) Marks</div>
-                <div id="vp-a-hsc" style="font-weight:600; margin-top:0.25rem;">—</div>
-              </div>
-              <div style="border: 1px solid var(--border-color,#e2e8f0); padding: 0.75rem 1rem; border-radius: 8px;">
-                <div style="font-size:0.75rem; color:var(--text-secondary); font-weight:600; text-transform:uppercase;">HSC Board</div>
-                <div id="vp-a-board" style="font-weight:600; margin-top:0.25rem;">—</div>
-              </div>
-              <div style="border: 1px solid var(--border-color,#e2e8f0); padding: 0.75rem 1rem; border-radius: 8px;">
-                <div style="font-size:0.75rem; color:var(--text-secondary); font-weight:600; text-transform:uppercase;">Admission Year</div>
-                <div id="vp-a-year" style="font-weight:600; margin-top:0.25rem;">—</div>
+
+              <div class="stat-card-modern">
+                <div class="stat-info-modern">
+                  <h4 id="stat-credits-val">112/160</h4>
+                  <p>Credits Completed</p>
+                </div>
               </div>
             </div>
+
+            <!-- Accordion Group -->
+            <div class="profile-accordion-group">
+              
+              <!-- Accordion 1: Personal Information -->
+              <div class="profile-accordion-item active">
+                <button type="button" class="profile-accordion-header">
+                  <div class="accordion-header-left">
+                    <div class="accordion-header-icon">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    </div>
+                    <span>Personal Information</span>
+                  </div>
+                  <svg class="accordion-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                <div class="profile-accordion-body">
+                  <div class="info-fields-grid">
+                    <div class="info-field-item"><label>Full Name</label><div class="field-value" id="field-p-name">Rahul Sharma</div></div>
+                    <div class="info-field-item"><label>Date of Birth</label><div class="field-value" id="field-p-dob">15/03/2005</div></div>
+                    <div class="info-field-item"><label>Gender</label><div class="field-value" id="field-p-gender">Male</div></div>
+                    <div class="info-field-item"><label>Category</label><div class="field-value" id="field-p-category">General</div></div>
+                    <div class="info-field-item"><label>Blood Group</label><div class="field-value" id="field-p-blood">B+</div></div>
+                    <div class="info-field-item"><label>Father's Name & Occupation</label><div class="field-value" id="field-p-father">Rajesh Sharma (Businessman)</div></div>
+                    <div class="info-field-item"><label>Mother's Name & Occupation</label><div class="field-value" id="field-p-mother">Sunita Sharma (Teacher)</div></div>
+                    <div class="info-field-item"><label>Residential Address</label><div class="field-value" id="field-p-address">42, Shivaji Nagar, Junnar, Pune, Maharashtra - 410502</div></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Accordion 2: Academic Information -->
+              <div class="profile-accordion-item">
+                <button type="button" class="profile-accordion-header">
+                  <div class="accordion-header-left">
+                    <div class="accordion-header-icon">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+                    </div>
+                    <span>Academic Information</span>
+                  </div>
+                  <svg class="accordion-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                <div class="profile-accordion-body">
+                  <div class="info-fields-grid">
+                    <div class="info-field-item"><label>Course Enrolled</label><div class="field-value" id="field-a-course">B.Tech Computer Science</div></div>
+                    <div class="info-field-item"><label>Current Year / Semester</label><div class="field-value" id="field-a-year">3rd Year (Semester 5)</div></div>
+                    <div class="info-field-item"><label>Class Division</label><div class="field-value" id="field-a-class">TY-BTech-CS-A</div></div>
+                    <div class="info-field-item"><label>ERP Student ID</label><div class="field-value" id="field-a-erpid">2023CS001</div></div>
+                    <div class="info-field-item"><label>Roll Number</label><div class="field-value" id="field-a-roll">2023CS001</div></div>
+                    <div class="info-field-item"><label>Faculty Advisor</label><div class="field-value" id="field-a-advisor">Dr. Anand Joshi</div></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Accordion 3: Contact & Parents Information -->
+              <div class="profile-accordion-item">
+                <button type="button" class="profile-accordion-header">
+                  <div class="accordion-header-left">
+                    <div class="accordion-header-icon">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                    </div>
+                    <span>Contact Information</span>
+                  </div>
+                  <svg class="accordion-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                <div class="profile-accordion-body">
+                  <div class="info-fields-grid">
+                    <div class="info-field-item"><label>College Email</label><div class="field-value" id="field-c-email">rahul.sharma@ssccjunnar.edu</div></div>
+                    <div class="info-field-item"><label>Personal Phone</label><div class="field-value" id="field-c-phone">+91 98765 43210</div></div>
+                    <div class="info-field-item"><label>Parent Contact Phone</label><div class="field-value" id="field-c-parent">+91 98765 43211</div></div>
+                    <div class="info-field-item"><label>Emergency Mobile</label><div class="field-value" id="field-c-emergency">+91 98765 43210</div></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Accordion 4: Documents & Verification -->
+              <div class="profile-accordion-item">
+                <button type="button" class="profile-accordion-header">
+                  <div class="accordion-header-left">
+                    <div class="accordion-header-icon">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M9 15l2 2 4-4"/></svg>
+                    </div>
+                    <span>Documents & Verification Status</span>
+                  </div>
+                  <svg class="accordion-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                <div class="profile-accordion-body">
+                  <div class="info-fields-grid">
+                    <div class="info-field-item">
+                      <label>Aadhar ID Proof</label>
+                      <div class="field-value"><span class="badge-verified"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> Verified</span></div>
+                    </div>
+                    <div class="info-field-item">
+                      <label>12th Marksheet</label>
+                      <div class="field-value"><span class="badge-verified"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> Verified</span></div>
+                    </div>
+                    <div class="info-field-item">
+                      <label>Caste Certificate</label>
+                      <div class="field-value"><span class="badge-pending"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Under Review</span></div>
+                    </div>
+                    <div class="info-field-item">
+                      <label>Passport Photo</label>
+                      <div class="field-value"><span class="badge-verified"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> Verified</span></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- Activity Timeline -->
+            <div class="card mt-4">
+              <h3 style="font-size:1.1rem; font-weight:700; margin-bottom:12px;">Recent Activity Timeline</h3>
+              <div class="activity-timeline">
+                <div class="timeline-item">
+                  <div class="timeline-dot"></div>
+                  <div class="timeline-content">
+                    <p>Successfully logged into Student Portal</p>
+                    <span>Today at 09:30 AM</span>
+                  </div>
+                </div>
+                <div class="timeline-item">
+                  <div class="timeline-dot" style="background:#22c55e;"></div>
+                  <div class="timeline-content">
+                    <p>Tuition Fee Payment of ₹31,500 completed via UPI (REC-2026-00001)</p>
+                    <span>15 June 2026</span>
+                  </div>
+                </div>
+                <div class="timeline-item">
+                  <div class="timeline-dot" style="background:#f59e0b;"></div>
+                  <div class="timeline-content">
+                    <p>Unit Test I Data Structures marks published (18/20)</p>
+                    <span>10 May 2026</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Skills & Electives Badges -->
+            <div class="card mt-4">
+              <h3 style="font-size:1.1rem; font-weight:700; margin-bottom:4px;">Skills & Elective Subjects</h3>
+              <div class="skills-tags-wrap">
+                <span class="skill-chip">Data Structures</span>
+                <span class="skill-chip">Java Programming</span>
+                <span class="skill-chip">DBMS & SQL</span>
+                <span class="skill-chip">Web Technologies</span>
+                <span class="skill-chip">Python</span>
+                <span class="skill-chip">Computer Networks</span>
+              </div>
+            </div>
+
           </div>
         </div>
       </section>
@@ -892,7 +1035,7 @@
             <!-- Tab: Attendance -->
             <div id="profile-sub-attendance" class="profile-sub-content" style="display:none;">
               <div id="prof-att-warn-banner" class="alert error" style="display:none; margin-bottom:1.5rem;">
-                <strong>⚠️ Low Attendance Alert:</strong> Your attendance is currently below 75%. You are at risk of exam debarment.
+                <strong style="display:inline-flex; align-items:center; gap:4px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Low Attendance Alert:</strong> Your attendance is currently below 75%. You are at risk of exam debarment.
               </div>
               <div class="grid grid-2" style="gap: 2rem;">
                 <div>
@@ -1132,7 +1275,9 @@
         <div class="smart-id-body">
           <div class="smart-id-photo-wrap">
             <img src="" alt="Student Photo" id="id-card-photo" class="smart-id-photo"/>
-            <div class="smart-id-photo-placeholder" id="id-card-photo-placeholder">🎓</div>
+            <div class="smart-id-photo-placeholder" id="id-card-photo-placeholder">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+            </div>
           </div>
           <div class="smart-id-info">
             <h2 id="id-card-name">&nbsp;</h2>
@@ -1179,6 +1324,111 @@
       <div class="id-card-actions">
         <button class="btn small" type="button" onclick="window.print()">Print ID</button>
         <button class="btn danger small" type="button" id="btn-close-id">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PVC Digital ID Card Modal -->
+  <div class="modal-overlay" id="modal-pvc-id-card" style="display:none; z-index: 99999;">
+    <div class="modal-container" style="max-width: 720px; background: var(--surface, #111c30); border-radius: 16px; padding: 24px;">
+      <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--card-border, rgba(255,255,255,0.08)); padding-bottom: 16px; margin-bottom: 20px;">
+        <h3 class="modal-title" style="margin: 0; font-size: 1.25rem; font-weight: 800; display: inline-flex; align-items: center; gap: 8px;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+          Digital PVC ID Card
+        </h3>
+        <button type="button" class="btn-close" id="close-pvc-id-modal" style="background:transparent; border:none; color:var(--text-secondary); font-size:1.5rem; cursor:pointer;">&times;</button>
+      </div>
+
+      <div class="id-card-view-wrapper">
+        <div class="id-card-side-by-side" id="pvc-card-render-area">
+          
+          <!-- PVC FRONT SIDE -->
+          <div class="pvc-id-card">
+            <div class="pvc-card-header">
+              <div class="pvc-card-header-top">
+                <img src="/assets/college-logo.png" alt="Logo" class="pvc-card-logo"/>
+                <div>
+                  <div class="pvc-card-title">Shri Shiv Chhatrapati College</div>
+                  <div class="pvc-card-subtitle">JUNNAR, DIST. PUNE &bull; MAHARASHTRA</div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="pvc-card-body">
+              <div class="pvc-photo-frame">
+                <img id="pvc-photo-img" src="https://ui-avatars.com/api/?name=Rahul+Sharma&background=0D8ABC&color=fff&size=150" alt="Student Photo"/>
+              </div>
+
+              <div class="pvc-student-name" id="pvc-name-text">RAHUL SHARMA</div>
+              <div class="pvc-role-badge" id="pvc-role-text">STUDENT</div>
+
+              <table class="pvc-details-table">
+                <tr><td class="lbl">ERP ID:</td><td class="val" id="pvc-erp-text">2023CS001</td></tr>
+                <tr><td class="lbl">Course:</td><td class="val" id="pvc-course-text">B.Tech Computer Science</td></tr>
+                <tr><td class="lbl">Year:</td><td class="val" id="pvc-year-text">3rd Year</td></tr>
+                <tr><td class="lbl">Blood Group:</td><td class="val" id="pvc-blood-text">B+</td></tr>
+                <tr><td class="lbl">Validity:</td><td class="val">2023 – 2027</td></tr>
+              </table>
+
+              <div class="hologram-stamp">SSC<br/>SEAL</div>
+
+              <div class="pvc-barcode-wrap">
+                <img class="pvc-barcode-img" src="https://barcodeapi.org/api/128/2023CS001" alt="Barcode"/>
+                <div class="pvc-barcode-text" id="pvc-barcode-num">2023CS001</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- PVC BACK SIDE -->
+          <div class="pvc-id-card">
+            <div class="pvc-back-header">
+              IMPORTANT INFORMATION & VERIFICATION
+            </div>
+            
+            <div class="pvc-back-body">
+              <div class="pvc-back-section">
+                <div class="pvc-back-title">Emergency Contacts</div>
+                <div class="pvc-back-text" id="pvc-parent-text">Father: Rajesh Sharma (+91 98765 43211)</div>
+                <div class="pvc-back-text" id="pvc-mother-text">Mother: Sunita Sharma (+91 98765 43210)</div>
+              </div>
+
+              <div class="pvc-back-section">
+                <div class="pvc-back-title">Residential Address</div>
+                <div class="pvc-back-text" id="pvc-address-text">
+                  42, Shivaji Nagar, Junnar,<br/>
+                  Pune, Maharashtra - 410502
+                </div>
+              </div>
+
+              <div class="pvc-back-section">
+                <div class="pvc-back-title">If Found Return To</div>
+                <div class="pvc-back-text">
+                  Shri Shiv Chhatrapati College,<br/>
+                  Bodkenagar, Junnar - 410502, Dist. Pune.<br/>
+                  Phone: 02132-222094
+                </div>
+              </div>
+
+              <div class="pvc-signature-area">
+                <div class="sig-box">
+                  <div class="sig-lbl">Card Holder</div>
+                </div>
+                <div class="sig-box">
+                  <div class="sig-lbl" style="border-top: 1px solid #1e293b; padding-top: 2px;">Principal Signature</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <div style="display: flex; gap: 12px; margin-top: 16px;" class="no-print-btn">
+          <button type="button" class="btn" onclick="window.print()" style="display: inline-flex; align-items: center; gap: 6px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+            <span>Print PVC Card</span>
+          </button>
+          <button type="button" class="btn secondary" id="btn-close-pvc-modal">Close</button>
+        </div>
       </div>
     </div>
   </div>

@@ -15,7 +15,7 @@ import { hashPassword } from './utils/auth.js';
 import { Role } from '@prisma/client';
 import { getAcademicYear } from './utils/academicYear.js';
 
-const DEMO_VERSION = 'v3.0';
+const DEMO_VERSION = 'v4.0';
 const DEMO_SENTINEL_KEY = 'demoDataVersion';
 
 // ─── TEACHER DEFINITIONS ────────────────────────────────────────────────────
@@ -507,6 +507,19 @@ export async function performDemoSeed() {
   const teacherRecords = [];
   for (const t of TEACHERS) {
     const existing = await prisma.user.findUnique({ where: { email: t.email } });
+    const teacherAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(t.name)}&background=1E3A8A&color=fff&size=150`;
+    const teacherProfileData = {
+      employeeId: t.employeeId,
+      department: t.department,
+      designation: t.designation,
+      qualifications: t.qualifications,
+      experience: `${randInt(5, 18)} years`,
+      specialization: t.assignments && t.assignments[0] ? t.assignments[0].subject : 'Academic Teaching & Research',
+      address: `${randInt(1,20)}, Teachers Colony, Junnar, Pune, Maharashtra - 410502`,
+      assignments: t.assignments,
+      avatarUrl: teacherAvatar,
+    };
+
     if (existing) {
       // Update existing to make sure assignments are correct
       const updated = await prisma.user.update({
@@ -515,13 +528,8 @@ export async function performDemoSeed() {
           name: t.name,
           phone: t.phone,
           bio: t.bio,
-          teacherProfile: {
-            employeeId: t.employeeId,
-            department: t.department,
-            designation: t.designation,
-            qualifications: t.qualifications,
-            assignments: t.assignments,
-          },
+          avatarUrl: teacherAvatar,
+          teacherProfile: teacherProfileData,
         },
       });
       teacherRecords.push(updated);
@@ -534,13 +542,8 @@ export async function performDemoSeed() {
           name: t.name,
           phone: t.phone,
           bio: t.bio,
-          teacherProfile: {
-            employeeId: t.employeeId,
-            department: t.department,
-            designation: t.designation,
-            qualifications: t.qualifications,
-            assignments: t.assignments,
-          },
+          avatarUrl: teacherAvatar,
+          teacherProfile: teacherProfileData,
         },
       });
       teacherRecords.push(created);
@@ -563,22 +566,53 @@ export async function performDemoSeed() {
     const generatedVerificationId = `SSC-VER-${generatedStudentId}`;
     const personalEmail = s.email.replace('@student.ssccjunnar.edu', '@gmail.com');
 
+    const maharashtraAddresses = [
+      '42, Shivaji Nagar, Junnar, Pune, Maharashtra - 410502',
+      '15, Ganesh Colony, Narayangaon, Pune, Maharashtra - 410504',
+      '8, Market Yard Road, Otur, Pune, Maharashtra - 410506',
+      '27, Chhatrapati Chowk, Rajgurunagar, Pune, Maharashtra - 410505',
+      '9, College Road, Alephata, Pune, Maharashtra - 412411',
+      '14, ST Stand Area, Manchar, Pune, Maharashtra - 410503',
+      '31, Temple Street, Khed, Pune, Maharashtra - 410505',
+      '5, Bypass Road, Shirur, Pune, Maharashtra - 412210'
+    ];
+    const bloodGroups = ['A+', 'B+', 'O+', 'AB+', 'A-', 'B-'];
+    const categories = ['General', 'OBC', 'SC', 'ST', 'EWS'];
+    const fatherOccupations = ['Farmer', 'Businessman', 'Teacher', 'Government Service', 'Engineer', 'Shopkeeper'];
+    const motherOccupations = ['Homemaker', 'Teacher', 'Nurse', 'Bank Employee', 'Tailor'];
+
+    const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(s.name)}&background=0D8ABC&color=fff&size=150`;
+
     const profileData = {
       studentId: generatedStudentId,
       personalEmail: personalEmail,
       collegeEmail: s.email,
-      mobile: s.phone || '',
+      mobile: s.phone || '+91 98765 43210',
       course: s.courseName,
       courseName: s.courseName,
       className: s.className,
-      year: s.year,
+      year: `${s.year}${s.year === '1' ? 'st' : s.year === '2' ? 'nd' : 'rd'} Year`,
       division: 'A',
       rollNumber: s.rollNumber,
-      address: 'Junnar, Pune District, Maharashtra, 410502',
-      parentContact: '9123456789',
-      emergencyContact: '9123456789',
-      admissionYear: 2026,
+      dob: `${randInt(1,28).toString().padStart(2,'0')}/${randInt(1,12).toString().padStart(2,'0')}/2004`,
+      gender: idx % 2 === 0 ? 'Male' : 'Female',
+      category: categories[idx % categories.length],
+      bloodGroup: bloodGroups[idx % bloodGroups.length],
+      address: maharashtraAddresses[idx % maharashtraAddresses.length],
+      fatherName: `Rajesh ${s.name.split(' ')[1] || 'Sharma'}`,
+      fatherOccupation: fatherOccupations[idx % fatherOccupations.length],
+      motherName: `Sunita ${s.name.split(' ')[1] || 'Sharma'}`,
+      motherOccupation: motherOccupations[idx % motherOccupations.length],
+      parentContact: `+91 987${randInt(100,999)}${randInt(1000,9999)}`,
+      emergencyContact: `+91 987${randInt(100,999)}${randInt(1000,9999)}`,
+      avatarUrl: avatarUrl,
+      admissionYear: 2024,
       verificationId: generatedVerificationId,
+      verificationStatus: idx % 4 === 0 ? 'Pending' : 'Verified',
+      cgpa: (7.5 + (idx % 25) * 0.1).toFixed(2),
+      attendancePct: `${s.targetAttendance}%`,
+      rank: `${(idx % 10) + 1}th in Dept`,
+      creditsCompleted: `${80 + (idx % 10) * 8} / 160`,
       demoData: true,
     };
 
@@ -588,6 +622,7 @@ export async function performDemoSeed() {
         data: {
           name: s.name,
           phone: s.phone,
+          avatarUrl: avatarUrl,
           studentProfile: profileData
         }
       });
@@ -600,6 +635,7 @@ export async function performDemoSeed() {
           role: Role.student,
           name: s.name,
           phone: s.phone,
+          avatarUrl: avatarUrl,
           studentProfile: profileData,
         },
       });

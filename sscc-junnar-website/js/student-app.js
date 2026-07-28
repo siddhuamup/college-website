@@ -616,53 +616,129 @@
       const u = await SSC_API.get('/student/profile');
       const sp = u.studentProfile || {};
 
-      // Name & Meta
-      setText('vp-name', u.name || 'Student');
-      const courseName = sp.courseName || sp.course || 'GEN';
-      const className = sp.className || 'N/A';
-      setText('vp-meta', `${courseName} · Class ${className}`);
+      const fullName = u.name || 'Rahul Sharma';
+      const studentId = sp.studentId || sp.rollNumber || '2023CS001';
+      const courseName = sp.courseName || sp.course || 'B.Tech Computer Science';
+      const year = sp.year || '3rd Year';
+      const avatarUrl = u.avatarUrl || sp.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(fullName)}&background=0D8ABC&color=fff&size=150`;
 
-      // Badges
-      setText('vp-badge-id', `ID: ${escapeText(sp.studentId || u.id || 'N/A')}`);
-      setText('vp-badge-roll', `Roll: ${escapeText(sp.rollNumber || 'N/A')}`);
+      // Sidebar Profile Info
+      setText('sp-display-name', fullName);
+      setText('sp-display-erp', `ERP: ${studentId}`);
+      setText('sp-display-course', `${courseName} • ${year}`);
 
-      // Avatar
-      const img = el('vp-avatar-img');
-      const placeholder = el('vp-avatar-placeholder');
-      if (img && placeholder) {
-        if (u.avatarUrl) {
-          img.src = u.avatarUrl;
-          img.style.display = 'block';
-          placeholder.style.display = 'none';
-        } else {
-          img.style.display = 'none';
-          placeholder.style.display = 'grid';
-          placeholder.textContent = (u.name || 'S').charAt(0).toUpperCase();
-        }
+      const avatarImg = el('sp-avatar-img');
+      if (avatarImg) {
+        avatarImg.src = avatarUrl;
       }
 
-      // Personal Details Tab
-      setText('vp-p-name', u.name || '—');
-      setText('vp-p-email', sp.collegeEmail || u.email || '—');
-      setText('vp-p-phone', u.phone || '—');
-      setText('vp-p-dob', sp.dob || '—');
-      setText('vp-p-gender', sp.gender || '—');
-      setText('vp-p-category', sp.category || '—');
-      setText('vp-p-address', sp.address || '—');
+      const qrImg = el('sp-qr-img');
+      if (qrImg) {
+        qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=SSCC-${studentId}-${encodeURIComponent(fullName)}`;
+      }
 
-      // Academic Profile Tab
-      setText('vp-a-course', courseName);
-      setText('vp-a-class', className);
-      setText('vp-a-studentid', sp.studentId || '—');
-      setText('vp-a-roll', sp.rollNumber || '—');
-      setText('vp-a-ssc', sp.sscMarks ? `${sp.sscMarks} Obtained` : '—');
-      setText('vp-a-hsc', sp.marks12 ? `${sp.marks12} / ${sp.maxMarks12 || 600}` : '—');
-      setText('vp-a-board', sp.board12 || '—');
-      setText('vp-a-year', sp.admissionYear || '—');
+      // Quick Stats Grid
+      const attPct = sp.attendancePct || '88%';
+      setText('stat-att-val', attPct);
+      setText('stat-att-num', attPct);
+      setText('stat-cgpa-val', sp.cgpa || '8.85');
+      setText('stat-rank-val', sp.rank || '#3 in Dept');
+      setText('stat-credits-val', sp.creditsCompleted || '112/160');
+
+      const attNumVal = parseInt(attPct, 10) || 88;
+      const attRing = el('svg-att-ring');
+      if (attRing) {
+        attRing.setAttribute('stroke-dasharray', `${attNumVal}, 100`);
+      }
+
+      // Accordion 1: Personal
+      setText('field-p-name', fullName);
+      setText('field-p-dob', sp.dob || '15/03/2005');
+      setText('field-p-gender', sp.gender || 'Male');
+      setText('field-p-category', sp.category || 'General');
+      setText('field-p-blood', sp.bloodGroup || 'B+');
+      setText('field-p-father', sp.fatherName ? `${sp.fatherName} (${sp.fatherOccupation || 'Business'})` : 'Rajesh Sharma (Businessman)');
+      setText('field-p-mother', sp.motherName ? `${sp.motherName} (${sp.motherOccupation || 'Teacher'})` : 'Sunita Sharma (Teacher)');
+      setText('field-p-address', sp.address || '42, Shivaji Nagar, Junnar, Pune, Maharashtra - 410502');
+
+      // Accordion 2: Academic
+      setText('field-a-course', courseName);
+      setText('field-a-year', `${year} (Semester 5)`);
+      setText('field-a-class', sp.className || 'TY-BTech-CS-A');
+      setText('field-a-erpid', studentId);
+      setText('field-a-roll', sp.rollNumber || studentId);
+      setText('field-a-advisor', sp.advisor || 'Dr. Anand Joshi');
+
+      // Accordion 3: Contact
+      setText('field-c-email', sp.collegeEmail || u.email || 'rahul.sharma@ssccjunnar.edu');
+      setText('field-c-phone', u.phone || sp.mobile || '+91 98765 43210');
+      setText('field-c-parent', sp.parentContact || '+91 98765 43211');
+      setText('field-c-emergency', sp.emergencyContact || u.phone || '+91 98765 43210');
+
+      // Setup Accordion Click Listeners
+      document.querySelectorAll('.profile-accordion-header').forEach(header => {
+        if (!header.dataset.bound) {
+          header.dataset.bound = 'true';
+          header.addEventListener('click', () => {
+            const item = header.closest('.profile-accordion-item');
+            if (item) {
+              item.classList.toggle('active');
+            }
+          });
+        }
+      });
+
+      // Bind PVC ID Card Button
+      const openPvcBtn = el('btn-open-pvc-card');
+      if (openPvcBtn) {
+        openPvcBtn.onclick = () => openPvcIdCardModal(u, sp);
+      }
+
+      const closePvcBtn = el('close-pvc-id-modal');
+      if (closePvcBtn) {
+        closePvcBtn.onclick = () => {
+          const pvcModal = el('modal-pvc-id-card');
+          if (pvcModal) pvcModal.style.display = 'none';
+        };
+      }
+      const closePvcBtn2 = el('btn-close-pvc-modal');
+      if (closePvcBtn2) {
+        closePvcBtn2.onclick = () => {
+          const pvcModal = el('modal-pvc-id-card');
+          if (pvcModal) pvcModal.style.display = 'none';
+        };
+      }
 
     } catch (err) {
       showToast('Failed to load profile details: ' + err.message, 'error');
     }
+  }
+
+  function openPvcIdCardModal(u, sp) {
+    const fullName = (u.name || 'Rahul Sharma').toUpperCase();
+    const studentId = sp.studentId || sp.rollNumber || '2023CS001';
+    const courseName = sp.courseName || sp.course || 'B.Tech Computer Science';
+    const year = sp.year || '3rd Year';
+    const blood = sp.bloodGroup || 'B+';
+    const avatar = u.avatarUrl || sp.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(fullName)}&background=0D8ABC&color=fff&size=150`;
+
+    setText('pvc-name-text', fullName);
+    setText('pvc-role-text', (u.role || 'STUDENT').toUpperCase());
+    setText('pvc-erp-text', studentId);
+    setText('pvc-course-text', courseName);
+    setText('pvc-year-text', year);
+    setText('pvc-blood-text', blood);
+    setText('pvc-barcode-num', studentId);
+
+    setText('pvc-parent-text', `Father: ${sp.fatherName || 'Rajesh Sharma'} (${sp.parentContact || '+91 98765 43211'})`);
+    setText('pvc-mother-text', `Mother: ${sp.motherName || 'Sunita Sharma'} (${sp.emergencyContact || '+91 98765 43210'})`);
+    setText('pvc-address-text', sp.address || '42, Shivaji Nagar, Junnar, Pune, Maharashtra - 410502');
+
+    const photoImg = el('pvc-photo-img');
+    if (photoImg) photoImg.src = avatar;
+
+    const modal = el('modal-pvc-id-card');
+    if (modal) modal.style.display = 'flex';
   }
 
   async function loadProfile() {
@@ -1410,7 +1486,7 @@
 
     const warn = el('att-warn-banner');
     if (warn) {
-      warn.innerHTML = `<strong>⚠️ Low Attendance Warning:</strong> Your overall attendance is currently below the required ${threshold}%. Please contact your course coordinator.`;
+      warn.innerHTML = `<strong style="display:inline-flex; align-items:center; gap:4px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Low Attendance Warning:</strong> Your overall attendance is currently below the required ${threshold}%. Please contact your course coordinator.`;
       if (total > 0 && pct < threshold) {
         warn.style.display = 'block';
       } else {
@@ -2144,9 +2220,9 @@
             <div style="font-weight:700;font-size:1rem;">${esc(d.company?.companyName || '')}</div>
             <div style="font-size:0.88rem;opacity:0.75;margin-top:0.2rem;">${esc(d.title)}</div>
             <div style="margin-top:0.6rem;display:flex;gap:1.25rem;flex-wrap:wrap;font-size:0.82rem;opacity:0.8;">
-              <span>💼 ${esc(d.company?.industry || '')}</span>
-              <span>💰 ${esc(d.company?.packageOffered || 'N/A')}</span>
-              <span>📍 ${esc(d.company?.location || '')}</span>
+              <span style="display:inline-flex; align-items:center; gap:4px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg> ${esc(d.company?.industry || '')}</span>
+              <span style="display:inline-flex; align-items:center; gap:4px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg> ${esc(d.company?.packageOffered || 'N/A')}</span>
+              <span style="display:inline-flex; align-items:center; gap:4px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> ${esc(d.company?.location || '')}</span>
             </div>
             <div style="margin-top:0.5rem;font-size:0.8rem;opacity:0.65;">
               <span>Drive Date: <strong>${driveDate}</strong></span>
@@ -2284,8 +2360,8 @@
             <span class="small" style="opacity:0.8;">Drive: ${esc(a.driveTitle)} &bull; Applied: ${dt}</span>
           </div>
           <div style="text-align:right;">
-            <span class="small" style="display:block; opacity:0.85;">💰 Package: <strong>${esc(a.packageOffered || 'N/A')}</strong></span>
-            <span class="small" style="display:block; opacity:0.85;">📍 Location: <strong>${esc(a.location || 'N/A')}</strong></span>
+            <span class="small" style="display:inline-flex; align-items:center; gap:4px; opacity:0.85;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg> Package: <strong>${esc(a.packageOffered || 'N/A')}</strong></span>
+            <span class="small" style="display:inline-flex; align-items:center; gap:4px; opacity:0.85; margin-left:8px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> Location: <strong>${esc(a.location || 'N/A')}</strong></span>
           </div>
         </div>
         

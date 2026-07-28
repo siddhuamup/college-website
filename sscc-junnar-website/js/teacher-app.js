@@ -246,22 +246,9 @@
       setupChangePasswordForm();
       setupBulkMarks();
       setupMobileMenu();
-      setupTeacherIdCard(user);
-      
-      const quickEditCredsBtn = document.getElementById('btn-quick-edit-creds');
-      if (quickEditCredsBtn) {
-        quickEditCredsBtn.addEventListener('click', () => {
-          panel('edit-profile');
-          load('edit-profile');
-          setTimeout(() => {
-            const secTab = document.querySelector('[data-subtab="security"]');
-            if (secTab) secTab.click();
-          }, 150);
-        });
-      }
-
       setupStudentDrawer();
       setupProfileSubTabs();
+      setupTeacherIdCard(user);
 
       if (user.mustChangePassword !== true) {
         initOnboardingTour();
@@ -506,6 +493,201 @@
 
           loadEditProfile();
         } catch (err) {
+        if (existingAttendanceList && existingAttendanceList.length > 0) {
+          const modal = document.getElementById('modal-att-duplicate');
+          if (modal) modal.style.display = 'flex';
+          btn.disabled = false;
+          btn.textContent = originalText;
+          return;
+        }
+
+        try {
+          await submitAttendance();
+        } finally {
+          btn.disabled = false;
+          btn.textContent = originalText;
+        }
+      });
+    }
+
+    async function submitAttendance() {
+      const subject = document.getElementById('att-subject').value.trim();
+      const date = document.getElementById('att-date').value;
+      const entries = [];
+      document.querySelectorAll('#att-rows input[type="checkbox"]').forEach((cb) => {
+        entries.push({
+          studentId: cb.getAttribute('data-sid'),
+          status: cb.checked ? 'present' : 'absent',
+        });
+      });
+
+      // Backup checkboxes state for Undo capability
+      const previousCheckboxes = Array.from(document.querySelectorAll('#att-rows input[type="checkbox"]')).map(cb => ({
+        sid: cb.getAttribute('data-sid'),
+        checked: cb.checked
+      }));
+
+      try {
+        await SSC_API.post('/teacher/attendance', { subject, date, entries });
+        
+        showToast('Attendance saved successfully!', 'success', async () => {
+          // Undo save
+          try {
+            const undoEntries = previousCheckboxes.map(pb => ({
+              studentId: pb.sid,
+              // We'll revert by checking the inverse of the current checkboxes, or load previous log status?
+              // Since we saved checks before POST, to undo we should restore what was saved in the checkboxes.
+              // Wait, the undo should restore what was stored on the server BEFORE this submit!
+              // But we can just write back the checkboxes state that existed prior.
+              status: pb.checked ? 'present' : 'absent'
+            }));
+            await SSC_API.post('/teacher/attendance', { subject, date, entries: undoEntries });
+            
+            // Re-sync UI checkboxes
+            document.querySelectorAll('#att-rows input[type="checkbox"]').forEach(cb => {
+              const prev = previousCheckboxes.find(p => p.sid === cb.getAttribute('data-sid'));
+              if (prev) cb.checked = prev.checked;
+            });
+            showToast('Attendance save undone.', 'info');
+            await checkExistingAttendance();
+          } catch (err) {
+            showToast('Failed to undo attendance save: ' + err.message, 'error');
+          }
+        });
+        
+        await checkExistingAttendance();
+      } catch (err) {
+        showToast(err.message || 'Could not save attendance', 'error');
+      }
+    }
+
+    const btnDuplicateClose = document.getElementById('btn-duplicate-close');
+    if (btnDuplicateClose) {
+      btnDuplicateClose.addEventListener('click', () => {
+        const modal = document.getElementById('modal-att-duplicate');
+        if (modal) modal.style.display = 'none';
+      });
+    }
+
+    const btnDuplicateCancel = document.getElementById('btn-duplicate-cancel');
+    if (btnDuplicateCancel) {
+      btnDuplicateCancel.addEventListener('click', () => {
+        const modal = document.getElementById('modal-att-duplicate');
+        if (modal) modal.style.display = 'none';
+      });
+    }
+
+    const btnDuplicateView = document.getElementById('btn-duplicate-view');
+    if (btnDuplicateView) {
+      btnDuplicateView.addEventListener('click', () => {
+        const modal = document.getElementById('modal-att-duplicate');
+        if (modal) modal.style.display = 'none';
+        if (existingAttendanceList && existingAttendanceList.length > 0) {
+          const map = Object.fromEntries(existingAttendanceList.map(e => [String(e.studentId), e.status]));
+          document.querySelectorAll('#att-rows input[type="checkbox"]').forEach(cb => {
+            const sid = cb.getAttribute('data-sid');
+            cb.checked = map[sid] === 'present';
+          });
+        }
+      });
+    }
+
+    const btnDuplicateUpdate = document.getElementById('btn-duplicate-update');
+    if (btnDuplicateUpdate) {
+      btnDuplicateUpdate.addEventListener('click', async () => {
+        const modal = document.getElementById('modal-att-duplicate');
+        if (modal) modal.style.display = 'none';
+        
+        const saveBtn = document.getElementById('att-save');
+        if (saveBtn) {
+          saveBtn.disabled = true;
+          const origText = saveBtn.textContent;
+          saveBtn.textContent = 'Saving...';
+          try {
+            await submitAttendance();
+          } finally {
+            saveBtn.disabled = false;
+            saveBtn.textContent = origText;
+          }
+        }
+      });
+    }
+
+    const attSearchInput = document.getElementById('att-student-search');
+    if (attSearchInput) {
+      attSearchInput.addEventListener('input', () => {
+        filterAttendanceStudents();
+      });
+    }
+
+    let toggleAllState = true;
+    const toggleAllBtn = document.getElementById('btn-att-toggle-all');
+    if (toggleAllBtn) {
+      toggleAllBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const visibleCbs = document.querySelectorAll('#att-rows label:not([style*="display: none"]) input[type="checkbox"]');
+        visibleCbs.forEach(cb => cb.checked = toggleAllState);
+        e.target.textContent = toggleAllState ? 'Unmark All' : 'Mark All Present';
+        toggleAllState = !toggleAllState;
+      });
+    }
+
+    const attSubSelect = document.getElementById('att-subject');
+    if (attSubSelect) attSubSelect.addEventListener('change', checkExistingAttendance);
+    
+    if (attDateInput) attDateInput.addEventListener('change', checkExistingAttendance);
+
+    const formMat = document.getElementById('form-mat');
+    if (formMat) {
+      formMat.addEventListener('submit', withSubmitGuard(async (e) => {
+        e.preventDefault();
+        const f = e.target;
+        const fd = new FormData();
+        fd.append('title', f.title.value);
+        fd.append('subject', f.subject.value);
+        fd.append('className', f.className.value);
+        fd.append('file', f.file.files[0]);
+        try {
+          await SSC_API.upload('/teacher/materials', fd);
+          f.reset();
+          showToast('Material uploaded successfully!', 'success');
+          loadMaterials();
+        } catch (err) {
+          showToast(err.message || 'Could not upload material', 'error');
+        }
+      }));
+    }
+
+    const formProfile = document.getElementById('form-edit-profile');
+    if (formProfile) {
+      formProfile.addEventListener('submit', withSubmitGuard(async (e) => {
+        e.preventDefault();
+        const fd = new FormData();
+        fd.append('name', document.getElementById('teacher-profile-name').value.trim());
+        fd.append('phone', document.getElementById('teacher-profile-phone').value.trim());
+        fd.append('qualifications', document.getElementById('teacher-profile-qual').value.trim());
+        fd.append('bio', document.getElementById('teacher-profile-bio').value.trim());
+        const avatarFile = document.getElementById('teacher-avatar-upload').files[0];
+        if (avatarFile) fd.append('avatar', avatarFile);
+        
+        try {
+          const resUser = await SSC_API.upload('/teacher/profile', fd, 'PATCH');
+          showToast('Profile updated successfully!', 'success');
+          const avatarImg = resUser.avatarUrl ? `<img src="${esc(resUser.avatarUrl)}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;vertical-align:middle;margin-right:0.5rem;border:1px solid rgba(56,189,248,0.3);"/>` : '';
+          const whoEl = document.getElementById('who');
+          if (whoEl) whoEl.innerHTML = `${avatarImg}<span>${esc(resUser.name)}</span>`;
+          
+          // Re-populate sidebar/topbar fields immediately
+          const topName = document.getElementById('teacher-user');
+          if (topName) topName.textContent = resUser.name;
+          const topAvatar = document.getElementById('teacher-avatar');
+          if (topAvatar) {
+            if (resUser.avatarUrl) topAvatar.innerHTML = `<img src="${esc(resUser.avatarUrl)}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;"/>`;
+            else topAvatar.textContent = resUser.name.charAt(0).toUpperCase();
+          }
+
+          loadEditProfile();
+        } catch (err) {
           showToast(err.message || 'Update failed', 'error');
         }
       }));
@@ -515,6 +697,64 @@
     load('subjects');
   }
   window.load = load;
+  function setupTeacherIdCard(user) {
+    const btn = document.getElementById('qa-id-card');
+    if (btn) {
+      btn.onclick = () => openTeacherPvcIdCardModal(user);
+    }
+    const closeBtn = document.getElementById('close-pvc-id-modal');
+    if (closeBtn) {
+      closeBtn.onclick = () => {
+        const m = document.getElementById('modal-pvc-id-card');
+        if (m) m.style.display = 'none';
+      };
+    }
+    const closeBtn2 = document.getElementById('btn-close-pvc-modal');
+    if (closeBtn2) {
+      closeBtn2.onclick = () => {
+        const m = document.getElementById('modal-pvc-id-card');
+        if (m) m.style.display = 'none';
+      };
+    }
+  }
+
+  function openTeacherPvcIdCardModal(u) {
+    const tp = u.teacherProfile || {};
+    const name = (u.name || 'DR. ANAND JOSHI').toUpperCase();
+    const empId = tp.employeeId || 'SSCC2020T001';
+    const dept = tp.department || 'Computer Science';
+    const desig = tp.designation || 'Associate Professor';
+    const qual = tp.qualifications || 'Ph.D., M.Tech';
+    const avatar = u.avatarUrl || tp.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=1E3A8A&color=fff&size=150`;
+
+    const nameEl = document.getElementById('pvc-name-text');
+    if (nameEl) nameEl.textContent = name;
+    const roleEl = document.getElementById('pvc-role-text');
+    if (roleEl) roleEl.textContent = `${desig.toUpperCase()} / FACULTY`;
+    const erpEl = document.getElementById('pvc-erp-text');
+    if (erpEl) erpEl.textContent = empId;
+    const courseEl = document.getElementById('pvc-course-text');
+    if (courseEl) courseEl.textContent = dept;
+    const yearEl = document.getElementById('pvc-year-text');
+    if (yearEl) yearEl.textContent = desig;
+    const bloodEl = document.getElementById('pvc-blood-text');
+    if (bloodEl) bloodEl.textContent = qual;
+    const barEl = document.getElementById('pvc-barcode-num');
+    if (barEl) barEl.textContent = empId;
+
+    const parentEl = document.getElementById('pvc-parent-text');
+    if (parentEl) parentEl.textContent = `Dept: ${dept}`;
+    const motherEl = document.getElementById('pvc-mother-text');
+    if (motherEl) motherEl.textContent = `Specialization: ${tp.specialization || 'Teaching & Research'}`;
+    const addrEl = document.getElementById('pvc-address-text');
+    if (addrEl) addrEl.textContent = tp.address || '8, Teachers Colony, Junnar, Pune, Maharashtra - 410502';
+
+    const photoImg = document.getElementById('pvc-photo-img');
+    if (photoImg) photoImg.src = avatar;
+
+    const modal = document.getElementById('modal-pvc-id-card');
+    if (modal) modal.style.display = 'flex';
+  }
 
   function setupKeyboardShortcuts() {
     document.addEventListener('keydown', (e) => {

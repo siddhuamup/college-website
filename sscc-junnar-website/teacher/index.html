@@ -134,7 +134,9 @@
         <!-- Quick Welcome card -->
         <div class="card mb-4" style="padding: 1rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; background: linear-gradient(135deg, rgba(56, 189, 248, 0.08) 0%, transparent 100%); border: 1px solid rgba(56, 189, 248, 0.15);">
           <div style="display: flex; align-items: center; gap: 1rem;">
-            <div class="faculty-avatar-placeholder" id="db-teach-avatar-placeholder" style="width: 45px; height: 45px; border-radius: 50%; display: grid; place-items: center; font-size: 1.25rem;">👨‍🏫</div>
+            <div class="faculty-avatar-placeholder" id="db-teach-avatar-placeholder" style="width: 45px; height: 45px; border-radius: 50%; display: grid; place-items: center; font-size: 1.25rem;">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </div>
             <img id="db-teach-avatar-img" src="" alt="Avatar" style="width: 45px; height: 45px; border-radius: 50%; object-fit: cover; display: none; border: 1.5px solid var(--primary);"/>
             <div>
               <h2 style="margin: 0; font-size: 1.1rem; color: var(--text);" id="db-teach-welcome-name">Welcome!</h2>
@@ -146,7 +148,9 @@
             <button type="button" class="btn secondary small" onclick="panel('attendance'); load('attendance');" style="font-size: 0.8rem; color: var(--text);">Mark Attendance</button>
             <button type="button" class="btn secondary small" onclick="panel('leave'); load('leave');" style="font-size: 0.8rem; color: var(--text);">Apply Leave</button>
             <button type="button" class="btn secondary small" id="qa-id-card" style="font-size: 0.8rem; color: var(--text);">Digital ID Card</button>
-            <button type="button" class="btn secondary small" id="btn-quick-edit-creds" style="font-size: 0.8rem; color: var(--accent,#6366f1); font-weight: 600;">🔑 Change Password</button>
+            <button type="button" class="btn secondary small" id="btn-quick-edit-creds" style="font-size: 0.8rem; color: var(--accent,#6366f1); font-weight: 600; display:inline-flex; align-items:center; gap:4px;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Change Password
+            </button>
           </div>
         </div>
 
@@ -740,7 +744,9 @@
         <button type="button" class="modal-close" id="btn-duplicate-close">&times;</button>
       </div>
       <div style="padding: 1rem 0;">
-        <p class="small" style="font-weight: 600; font-size: 0.95rem; margin-bottom: 0.5rem; color: var(--danger);">⚠️ Attendance already exists for this session.</p>
+        <p class="small" style="font-weight: 600; font-size: 0.95rem; margin-bottom: 0.5rem; color: var(--danger); display:flex; align-items:center; gap:4px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Attendance already exists for this session.
+        </p>
         <p class="small" style="opacity: 0.85; line-height: 1.4;">A record for this teacher, date, and subject combination has already been saved. Please choose an action:</p>
       </div>
       <div style="display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 1rem; flex-wrap: wrap;">
@@ -818,7 +824,9 @@
         <div class="smart-id-body">
           <div class="smart-id-photo-wrap">
             <img src="" alt="Faculty Photo" id="id-card-photo" class="smart-id-photo"/>
-            <div class="smart-id-photo-placeholder" id="id-card-photo-placeholder">👨‍🏫</div>
+            <div class="smart-id-photo-placeholder" id="id-card-photo-placeholder">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </div>
           </div>
           <div class="smart-id-info">
             <h2 id="id-card-name">&nbsp;</h2>
