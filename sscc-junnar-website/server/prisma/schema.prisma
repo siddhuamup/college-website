@@ -45,6 +45,7 @@ model User {
   leaveRequests            LeaveRequest[]         @relation("TeacherLeave")
   libraryIssues            LibraryIssue[]         @relation("LibraryIssueStudent")
   resetTokens              PasswordResetToken[]
+  feePayments              FeePayment[]           @relation("FeePaymentStudent")
 
   @@index([role])
   @@index([isDeleted])
@@ -382,3 +383,55 @@ model AuditLog {
   @@index([action])
   @@index([timestamp])
 }
+
+model FeeStructure {
+  id            String       @id @default(cuid())
+  courseName    String
+  academicYear  Int
+  tuitionFee    Float        @default(0)
+  labFee        Float        @default(0)
+  libraryFee    Float        @default(0)
+  examFee       Float        @default(0)
+  otherFee      Float        @default(0)
+  totalFee      Float        @default(0)
+  description   String       @default("")
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  payments      FeePayment[]
+
+  @@unique([courseName, academicYear])
+  @@index([courseName])
+}
+
+model FeePayment {
+  id              String       @id @default(cuid())
+  studentId       String
+  student         User         @relation("FeePaymentStudent", fields: [studentId], references: [id], onDelete: Cascade)
+  feeStructureId  String
+  feeStructure    FeeStructure @relation(fields: [feeStructureId], references: [id], onDelete: Restrict)
+  amountPaid      Float
+  paymentDate     DateTime     @default(now())
+  paymentMode     String       @default("cash")
+  transactionRef  String       @default("")
+  receiptNumber   String       @unique
+  semester        String       @default("")
+  remarks         String       @default("")
+  status          String       @default("completed")
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@index([studentId])
+  @@index([feeStructureId])
+  @@index([receiptNumber])
+}
+
+model TokenBlacklist {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([token])
+  @@index([expiresAt])
+}
+

@@ -19,3 +19,4 @@ build/
 .vscode/
 .lean_ai/
 .agents/
+.agent/

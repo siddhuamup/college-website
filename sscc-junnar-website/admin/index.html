@@ -105,6 +105,10 @@
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
           Placement Cell
         </button>
+        <button type="button" data-panel="fees">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          Fee Management
+        </button>
         <button type="button" data-panel="leaves">
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M16 14h.01"/></svg>
           Teacher Leaves
@@ -792,6 +796,167 @@
 
       </section>
       <!-- ══ END PLACEMENT PANEL ══════════════════════════════════════════ -->
+
+      <!-- ══ FEE MANAGEMENT PANEL ═════════════════════════════════════════ -->
+      <section class="dash-panel" data-panel="fees">
+        <!-- Analytics stat cards -->
+        <div class="stat-grid" id="fee-stat-grid">
+          <div class="stat-card">
+            <div class="stat-card-header">
+              <div><span class="small">Total Collected</span><strong id="fee-stat-collected">₹0</strong></div>
+              <div class="stat-card-icon green">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+              </div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-header">
+              <div><span class="small">Total Transactions</span><strong id="fee-stat-txns">0</strong></div>
+              <div class="stat-card-icon indigo">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/></svg>
+              </div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-header">
+              <div><span class="small">Fee Structures</span><strong id="fee-stat-structures">0</strong></div>
+              <div class="stat-card-icon indigo">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/></svg>
+              </div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-header">
+              <div><span class="small">Fee Defaulters</span><strong id="fee-stat-defaulters" style="color:var(--danger);">0</strong></div>
+              <div class="stat-card-icon amber">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action / Sub-panel Tabs -->
+        <div style="display:flex;gap:0.5rem;margin-top:1.5rem;border-bottom:1px solid var(--border);padding-bottom:0.5rem;">
+          <button type="button" class="btn small fee-tab-btn active" data-fee-tab="structures">Fee Structures</button>
+          <button type="button" class="btn small secondary fee-tab-btn" data-fee-tab="record">Record Payment</button>
+          <button type="button" class="btn small secondary fee-tab-btn" data-fee-tab="payments">Payment Log</button>
+          <button type="button" class="btn small secondary fee-tab-btn" data-fee-tab="defaulters">Defaulters List</button>
+        </div>
+
+        <!-- Tab 1: Fee Structures -->
+        <div id="fee-tab-structures" class="fee-tab-content mt-3">
+          <div class="card">
+            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;">
+              <h3 style="margin:0;">Fee Structures</h3>
+              <button type="button" class="btn small" id="btn-toggle-fee-struct-form">+ Create Fee Structure</button>
+            </div>
+
+            <div id="form-fee-struct-wrap" style="display:none;" class="mt-3">
+              <form id="form-fee-structure" class="form-grid two">
+                <div><label class="field-label">Course Name *</label><input class="input" name="courseName" placeholder="e.g. B.Sc. Computer Science" required/></div>
+                <div><label class="field-label">Academic Year *</label><input class="input" name="academicYear" type="number" value="2026" required/></div>
+                <div><label class="field-label">Tuition Fee (₹)</label><input class="input" name="tuitionFee" type="number" min="0" value="0"/></div>
+                <div><label class="field-label">Lab Fee (₹)</label><input class="input" name="labFee" type="number" min="0" value="0"/></div>
+                <div><label class="field-label">Library Fee (₹)</label><input class="input" name="libraryFee" type="number" min="0" value="0"/></div>
+                <div><label class="field-label">Exam Fee (₹)</label><input class="input" name="examFee" type="number" min="0" value="0"/></div>
+                <div><label class="field-label">Other Charges (₹)</label><input class="input" name="otherFee" type="number" min="0" value="0"/></div>
+                <div><label class="field-label">Description</label><input class="input" name="description" placeholder="Optional notes"/></div>
+                <div style="display:flex;gap:0.75rem;grid-column:1/-1;">
+                  <button class="btn" type="submit">Save Structure</button>
+                  <button class="btn secondary" type="button" id="btn-cancel-fee-struct">Cancel</button>
+                </div>
+              </form>
+            </div>
+
+            <div class="table-wrap mt-3">
+              <table class="table small" id="tbl-fee-structures">
+                <thead><tr><th scope="col">Course</th><th scope="col">Year</th><th scope="col">Tuition</th><th scope="col">Lab</th><th scope="col">Library</th><th scope="col">Exam</th><th scope="col">Other</th><th scope="col">Total Fee</th><th scope="col"></th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 2: Record Payment -->
+        <div id="fee-tab-record" class="fee-tab-content mt-3" style="display:none;">
+          <div class="card">
+            <h3>Record Student Fee Payment</h3>
+            <form id="form-record-fee-payment" class="form-grid two mt-3">
+              <div>
+                <label class="field-label">Select Student *</label>
+                <select class="select input" name="studentId" id="select-fee-student" required>
+                  <option value="">-- Choose Student --</option>
+                </select>
+              </div>
+              <div>
+                <label class="field-label">Select Fee Structure *</label>
+                <select class="select input" name="feeStructureId" id="select-fee-structure" required>
+                  <option value="">-- Choose Fee Structure --</option>
+                </select>
+              </div>
+              <div><label class="field-label">Amount Paid (₹) *</label><input class="input" name="amountPaid" type="number" min="1" step="any" placeholder="e.g. 5000" required/></div>
+              <div>
+                <label class="field-label">Payment Mode</label>
+                <select class="select input" name="paymentMode">
+                  <option value="cash">Cash</option>
+                  <option value="upi">UPI / GPay / PhonePe</option>
+                  <option value="bank_transfer">Bank Transfer (NEFT/IMPS)</option>
+                  <option value="cheque">Cheque</option>
+                  <option value="online">Online Card/NetBanking</option>
+                </select>
+              </div>
+              <div><label class="field-label">Transaction Ref / Cheque No.</label><input class="input" name="transactionRef" placeholder="Optional transaction ID"/></div>
+              <div>
+                <label class="field-label">Semester</label>
+                <select class="select input" name="semester">
+                  <option value="Sem I">Semester I</option>
+                  <option value="Sem II">Semester II</option>
+                  <option value="Sem III">Semester III</option>
+                  <option value="Sem IV">Semester IV</option>
+                  <option value="Sem V">Semester V</option>
+                  <option value="Sem VI">Semester VI</option>
+                </select>
+              </div>
+              <div style="grid-column:1/-1;"><label class="field-label">Remarks</label><input class="input" name="remarks" placeholder="Optional payment remarks"/></div>
+              <div style="display:flex;gap:0.75rem;grid-column:1/-1;">
+                <button class="btn" type="submit">Record Payment & Generate Receipt</button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- Tab 3: Payment Log -->
+        <div id="fee-tab-payments" class="fee-tab-content mt-3" style="display:none;">
+          <div class="card">
+            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;">
+              <h3 style="margin:0;">Payment History & Receipts</h3>
+              <input type="text" class="input small" id="input-search-payments" placeholder="Search receipt or student..." style="max-width:250px;"/>
+            </div>
+            <div class="table-wrap mt-3">
+              <table class="table small" id="tbl-fee-payments">
+                <thead><tr><th scope="col">Receipt No</th><th scope="col">Student</th><th scope="col">Course</th><th scope="col">Amount</th><th scope="col">Mode</th><th scope="col">Date</th><th scope="col"></th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 4: Defaulters List -->
+        <div id="fee-tab-defaulters" class="fee-tab-content mt-3" style="display:none;">
+          <div class="card">
+            <h3>Fee Defaulters List</h3>
+            <p class="small">Students with pending fee balances for the current academic year.</p>
+            <div class="table-wrap mt-3">
+              <table class="table small" id="tbl-fee-defaulters">
+                <thead><tr><th scope="col">Student</th><th scope="col">Roll No</th><th scope="col">Class</th><th scope="col">Course</th><th scope="col">Total Fee</th><th scope="col">Paid</th><th scope="col">Pending Balance</th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </section>
+      <!-- ══ END FEE MANAGEMENT PANEL ═════════════════════════════════════ -->
 
       <!-- ══ TIMETABLE PANEL ════════════════════════════════════════════ -->
       <section class="dash-panel" data-panel="timetable">
@@ -1853,6 +2018,61 @@
             </table>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Receipt Preview Modal -->
+  <div class="modal-overlay" id="modal-receipt-preview" style="display:none; z-index: 9998;">
+    <div class="modal-container" style="max-width: 600px;">
+      <div class="modal-header">
+        <h3 class="modal-title">Fee Receipt</h3>
+        <button type="button" class="modal-close" onclick="document.getElementById('modal-receipt-preview').style.display='none'">&times;</button>
+      </div>
+      <div id="receipt-printable-area" style="padding:1.5rem; background:var(--card-bg); border-radius:8px; font-family:sans-serif;">
+        <div style="text-align:center; border-bottom:2px solid var(--border); padding-bottom:1rem; margin-bottom:1rem;">
+          <h2 style="margin:0; font-size:1.4rem; color:var(--primary);">Shri Shiv Chhatrapati College, Junnar</h2>
+          <p style="margin:0.25rem 0; font-size:0.85rem; color:var(--muted);">Affiliated to Savitribai Phule Pune University | NAAC Accredited</p>
+          <p style="margin:0; font-size:0.85rem; font-weight:600;">FEE RECEIPT</p>
+        </div>
+        <div style="display:flex; justify-content:space-between; font-size:0.85rem; margin-bottom:1rem;">
+          <div>
+            <p style="margin:0.2rem 0;"><strong>Receipt No:</strong> <span id="rec-no">REC-2026-00001</span></p>
+            <p style="margin:0.2rem 0;"><strong>Student Name:</strong> <span id="rec-student">John Doe</span></p>
+            <p style="margin:0.2rem 0;"><strong>Course:</strong> <span id="rec-course">B.Sc. CS</span></p>
+          </div>
+          <div style="text-align:right;">
+            <p style="margin:0.2rem 0;"><strong>Date:</strong> <span id="rec-date">28/07/2026</span></p>
+            <p style="margin:0.2rem 0;"><strong>Semester:</strong> <span id="rec-semester">Sem I</span></p>
+            <p style="margin:0.2rem 0;"><strong>Mode:</strong> <span id="rec-mode">Cash</span></p>
+          </div>
+        </div>
+        <table style="width:100%; border-collapse:collapse; font-size:0.85rem; margin-bottom:1rem;">
+          <thead>
+            <tr style="background:var(--border);">
+              <th style="padding:0.5rem; text-align:left;">Description</th>
+              <th style="padding:0.5rem; text-align:right;">Amount (₹)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="padding:0.5rem; border-bottom:1px solid var(--border);">Fee Payment Amount</td>
+              <td style="padding:0.5rem; text-align:right; border-bottom:1px solid var(--border); font-weight:600;" id="rec-amount">₹5,000</td>
+            </tr>
+          </tbody>
+        </table>
+        <div style="font-size:0.8rem; color:var(--muted); margin-bottom:1.5rem;">
+          <p style="margin:0.2rem 0;"><strong>Txn Ref:</strong> <span id="rec-ref">—</span></p>
+          <p style="margin:0.2rem 0;"><strong>Remarks:</strong> <span id="rec-remarks">—</span></p>
+        </div>
+        <div style="display:flex; justify-content:space-between; font-size:0.75rem; margin-top:2rem; padding-top:1rem; border-top:1px dashed var(--border);">
+          <div>Authorized Signature: __________________</div>
+          <div>Computer Generated Receipt</div>
+        </div>
+      </div>
+      <div style="display:flex; justify-content:flex-end; gap:0.75rem; margin-top:1.5rem;">
+        <button class="btn" type="button" onclick="window.print()">Print Receipt</button>
+        <button class="btn secondary" type="button" onclick="document.getElementById('modal-receipt-preview').style.display='none'">Close</button>
       </div>
     </div>
   </div>

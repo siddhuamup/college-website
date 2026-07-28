@@ -10,6 +10,14 @@
     }
   };
 
+  /* ── Safe DOM helpers (prevent null-pointer crashes) ─────── */
+  function _el(id) { return document.getElementById(id); }
+  function _qs(sel) { return document.querySelector(sel); }
+  function setText(id, v) { const e = _el(id); if (e) e.textContent = (v == null ? '' : String(v)); }
+  function setVal(id, v) { const e = _el(id); if (e) e.value = (v == null ? '' : String(v)); }
+  function setHTML(sel, v) { const e = (sel.charAt(0) === '#' || sel.charAt(0) === '.' || sel.includes(' ')) ? _qs(sel) : _el(sel); if (e) e.innerHTML = v; }
+  function setDisplay(id, v) { const e = _el(id); if (e) e.style.display = v; }
+
   function showModalAlert(message, title = 'Notification') {
     const titleEl = document.getElementById('modal-alert-title');
     const msgEl = document.getElementById('modal-alert-message');
@@ -564,20 +572,6 @@
       btn.addEventListener('click', () => {
         document.querySelectorAll('.dash-nav button[data-panel]').forEach((b) => {
           b.classList.remove('active');
-          b.removeAttribute('aria-current');
-        });
-        btn.classList.add('active');
-        btn.setAttribute('aria-current', 'page');
-        const id = btn.getAttribute('data-panel');
-        document.querySelectorAll('.dash-panel').forEach((p) => {
-          p.classList.toggle('active', p.getAttribute('data-panel') === id);
-        });
-        document.getElementById('dash-title').textContent = btn.textContent.trim();
-        loadPanel(id);
-      });
-    });
-
-    // Quick actions navigation
     document.querySelectorAll('.quick-action-btn[data-goto]').forEach(btn => {
       btn.addEventListener('click', () => navigateToPanel(btn.dataset.goto));
     });
@@ -603,7 +597,6 @@
 
     // Build search index in background
     buildSearchIndex();
-
     const btnExportCsv = document.getElementById('btn-export-csv');
     if (btnExportCsv) btnExportCsv.addEventListener('click', exportCSV);
     const btnExportExcel = document.getElementById('btn-export-excel');
@@ -667,105 +660,7 @@
       if (id === 'overview') await loadStats();
       if (id === 'students') await loadStudents();
       if (id === 'teachers') await loadTeachers();
-      if (id === 'admissions') {
-        await loadAdmissions();
-        // Setup polling every 60 seconds
-        admRefreshInterval = setInterval(async () => {
-          try {
-            // Only auto-refresh if detail / decision / reject modals are NOT open
-            const modalDetail = document.getElementById('modal-admission-detail');
-            const modalDecision = document.getElementById('modal-admission-decision');
-            const modalReject = document.getElementById('modal-admission-reject');
-            const detailsOpen = (modalDetail && modalDetail.style.display === 'flex') ||
-                                (modalDecision && modalDecision.style.display === 'flex') ||
-                                (modalReject && modalReject.style.display === 'flex');
-
-            if (!detailsOpen) {
-              const filters = getAdmFilters();
-              const params = new URLSearchParams({
-                page: String(admCurrentPage),
-                limit: '25',
-              });
-              if (filters.q) params.set('q', filters.q);
-              if (filters.status && filters.status !== 'all') params.set('status', filters.status);
-              if (filters.course) params.set('course', filters.course);
-
-              const result = await SSC_API.get('/admin/admissions?' + params.toString());
-              const rows = result.data || result;
-              const pagination = result.pagination || { page: 1, total: rows.length, totalPages: 1 };
-              admCachedRows = rows;
-              admCurrentPage = pagination.page;
-              admTotalPages = pagination.totalPages;
-
-              const tb = document.querySelector('#tbl-admissions tbody');
-              if (tb) {
-                tb.innerHTML = '';
-                rows.forEach((a) => {
-                  const statusClass = {
-                    approved: 'approved',
-                    rejected: 'rejected',
-                    pending: 'pending',
-                  }[String(a.status).toLowerCase()] || '';
-
-                  const verifiedBadge = a.documentsVerified
-                    ? '<span style="color:var(--accent,#22c55e);font-weight:600;">✓ Yes</span>'
-                    : '<span style="color:var(--muted,#94a3b8);">✗ No</span>';
-
-                  const isProcessed = ['approved', 'rejected'].includes(String(a.status).toLowerCase());
-
-                  const tr = document.createElement('tr');
-                  tr.innerHTML = `
-                    <td data-label="App No">${esc(a.applicationNumber)}</td>
-                    <td data-label="Name">${esc(a.fullName)}</td>
-                    <td data-label="Course">${esc(a.courseApplied)}</td>
-                    <td data-label="12th Marks">${a.marks12}/${a.maxMarks12}</td>
-                    <td data-label="Verified">${verifiedBadge}</td>
-                    <td data-label="Status"><span class="badge ${statusClass}">${esc(a.status)}</span></td>
-                    <td data-label="Actions">
-                      <button class="btn small" data-view-adm="${a._id}" title="View Details">View</button>
-                      <button class="btn small secondary" data-approve-adm="${a._id}" title="Approve" ${isProcessed ? 'disabled' : ''}>Approve</button>
-                      <button class="btn small danger" data-del-adm="${a._id}" title="Delete" style="color:var(--danger,#ef4444);" ${isProcessed ? 'disabled' : ''}>
-                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                      </button>
-                    </td>`;
-                  tb.appendChild(tr);
-                });
-
-                // Wire View buttons
-                tb.querySelectorAll('[data-view-adm]').forEach(b =>
-                  b.addEventListener('click', () => openAdmissionDetail(b.getAttribute('data-view-adm')))
-                );
-
-                // Wire inline Approve buttons
-                tb.querySelectorAll('[data-approve-adm]').forEach(b =>
-                  b.addEventListener('click', () => {
-                    openApproveModal(b.getAttribute('data-approve-adm'));
-                  })
-                );
-
-                // Wire inline Delete buttons (soft delete)
-                tb.querySelectorAll('[data-del-adm]').forEach(b =>
-                  b.addEventListener('click', async () => {
-                    const id = b.getAttribute('data-del-adm');
-                    const ok = await window.showConfirm('Are you sure you want to delete this application? This action can be reversed by an admin.', 'Delete Application', 'Delete', 'btn danger');
-                    if (!ok) return;
-                    try {
-                      await SSC_API.delete('/admin/admissions/' + id);
-                      msg('Application deleted');
-                      await loadAdmissions();
-                      await loadStats();
-                    } catch (err) {
-                      showModalAlert(err.message || 'Delete failed', 'Error');
-                    }
-                  })
-                );
-              }
-            }
-          } catch (pollingErr) {
-            console.warn('Auto-refresh polling failed:', pollingErr);
-          }
-        }, 60000);
-      }
+      if (id === 'admissions') await loadAdmissions();
       if (id === 'notices') await loadNotices();
       if (id === 'departments') await loadDepartments();
       if (id === 'courses') await loadCourses();
@@ -774,6 +669,7 @@
       if (id === 'study-materials') await loadStudyMaterials();
       if (id === 'attendance-analytics') await loadAttendanceAnalytics();
       if (id === 'placement') await loadPlacementPanel();
+      if (id === 'fees') await loadFeesPanel();
       if (id === 'timetable') await loadTimetablePanel();
       if (id === 'library') await loadLibraryPanel();
       if (id === 'exams') await loadExamsPanel();
@@ -787,15 +683,17 @@
   }
 
   async function loadStats() {
-    const s = await SSC_API.get('/admin/dashboard/stats');
     const grid = document.getElementById('stat-grid');
-    const accepted = s.totalAdmissions - s.pendingAdmissions;
-    const acceptRate = s.totalAdmissions > 0 ? Math.round((accepted / s.totalAdmissions) * 100) : 0;
+    if (!grid) return;
+    const s = await SSC_API.get('/admin/dashboard/stats').catch(() => ({}));
+    const totalAdm = s.totalAdmissions || 0;
+    const pendingAdm = s.pendingAdmissions || 0;
+    const accepted = totalAdm - pendingAdm;
 
     grid.innerHTML = `
       <div class="stat-card">
         <div class="stat-card-header">
-          <div><span class="small">Total Students</span><strong>${s.students}</strong></div>
+          <div><span class="small">Total Students</span><strong>${s.students || 0}</strong></div>
           <div class="stat-card-icon indigo">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
           </div>
@@ -803,7 +701,7 @@
       </div>
       <div class="stat-card">
         <div class="stat-card-header">
-          <div><span class="small">Faculty Members</span><strong>${s.teachers}</strong></div>
+          <div><span class="small">Faculty Members</span><strong>${s.teachers || 0}</strong></div>
           <div class="stat-card-icon green">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
           </div>
@@ -811,7 +709,7 @@
       </div>
       <div class="stat-card">
         <div class="stat-card-header">
-          <div><span class="small">Total Admissions</span><strong>${s.totalAdmissions}</strong></div>
+          <div><span class="small">Total Admissions</span><strong>${totalAdm}</strong></div>
           <div class="stat-card-icon indigo">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
           </div>
@@ -819,15 +717,15 @@
       </div>
       <div class="stat-card">
         <div class="stat-card-header">
-          <div><span class="small">Pending</span><strong>${s.pendingAdmissions}</strong></div>
-          <div class="stat-card-icon ${s.pendingAdmissions > 0 ? 'amber' : 'green'}">
+          <div><span class="small">Pending</span><strong>${pendingAdm}</strong></div>
+          <div class="stat-card-icon ${pendingAdm > 0 ? 'amber' : 'green'}">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
           </div>
         </div>
       </div>
       <div class="stat-card">
         <div class="stat-card-header">
-          <div><span class="small">Published Notices</span><strong>${s.noticesCount}</strong></div>
+          <div><span class="small">Published Notices</span><strong>${s.noticesCount || 0}</strong></div>
           <div class="stat-card-icon indigo">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
           </div>
@@ -835,7 +733,7 @@
       </div>
       <div class="stat-card">
         <div class="stat-card-header">
-          <div><span class="small">Feedback</span><strong>${s.feedbackCount}</strong></div>
+          <div><span class="small">Feedback</span><strong>${s.feedbackCount || 0}</strong></div>
           <div class="stat-card-icon green">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
           </div>
@@ -843,7 +741,6 @@
       </div>
     `;
 
-    // ── Load dashboard widgets with real data ──────────────
     loadAdmissionsTrend(s);
     loadCourseDistribution();
     loadRecentNotices();

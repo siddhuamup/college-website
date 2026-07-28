@@ -2386,3 +2386,38 @@ textarea:focus-visible,
   }
 }
 
+/* ══════════════════════════════════════════════════════════════
+   FEE MANAGEMENT MODULE STYLES
+   ══════════════════════════════════════════════════════════════ */
+.fee-tab-btn {
+  transition: all 0.2s ease;
+  font-weight: 600;
+}
+.fee-tab-btn.active {
+  background: var(--primary, #6366f1) !important;
+  color: #ffffff !important;
+}
+#receipt-printable-area {
+  color: var(--text, #1e293b);
+}
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #modal-receipt-preview, #modal-receipt-preview * {
+    visibility: visible;
+  }
+  #modal-receipt-preview {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    background: #fff !important;
+  }
+  #modal-receipt-preview .modal-header,
+  #modal-receipt-preview button {
+    display: none !important;
+  }
+}
+
+

@@ -28,7 +28,22 @@
 
   function setText(id, text) {
     const node = el(id);
-    if (node) node.textContent = text;
+    if (node) node.textContent = text == null ? '' : String(text);
+  }
+
+  function setVal(id, v) {
+    const node = el(id);
+    if (node) node.value = v == null ? '' : String(v);
+  }
+
+  function setHTML(sel, v) {
+    const node = (typeof sel === 'string' && (sel.startsWith('#') || sel.startsWith('.') || sel.includes(' '))) ? document.querySelector(sel) : el(sel);
+    if (node) node.innerHTML = v == null ? '' : String(v);
+  }
+
+  function setDisplay(id, v) {
+    const node = el(id);
+    if (node) node.style.display = v;
   }
 
   function asArray(v) {
@@ -586,6 +601,7 @@
       if (id === 'exams') await loadExamsPanel();
       if (id === 'attendance') await loadAttendance();
       if (id === 'materials') await loadMaterials();
+      if (id === 'fees') await loadMyFees();
       if (id === 'notices') await loadNotices();
       if (id === 'placement') await loadPlacementPanel();
       if (id === 'edit-profile') await loadEditProfile();
@@ -2798,6 +2814,61 @@
 
     createTourElements();
   }
+
+  async function loadMyFees() {
+    try {
+      const data = await SSC_API.get('/student/fees/my-fees');
+      setText('stu-fee-total', `₹${(data.totalFee || 0).toLocaleString('en-IN')}`);
+      setText('stu-fee-paid', `₹${(data.totalPaid || 0).toLocaleString('en-IN')}`);
+      setText('stu-fee-balance', `₹${(data.pendingBalance || 0).toLocaleString('en-IN')}`);
+
+      const infoEl = el('stu-fee-course-info');
+      if (infoEl) {
+        infoEl.textContent = `Course: ${data.courseName || '—'} | Academic Year: ${data.feeStructure ? data.feeStructure.academicYear : 2026}`;
+      }
+
+      const breakdownTbody = document.querySelector('#tbl-stu-fee-breakdown tbody');
+      if (breakdownTbody) {
+        const fs = data.feeStructure;
+        if (!fs) {
+          breakdownTbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No fee structure assigned for your course yet</td></tr>';
+        } else {
+          breakdownTbody.innerHTML = `
+            <tr>
+              <td>₹${(fs.tuitionFee || 0).toLocaleString('en-IN')}</td>
+              <td>₹${(fs.labFee || 0).toLocaleString('en-IN')}</td>
+              <td>₹${(fs.libraryFee || 0).toLocaleString('en-IN')}</td>
+              <td>₹${(fs.examFee || 0).toLocaleString('en-IN')}</td>
+              <td>₹${(fs.otherFee || 0).toLocaleString('en-IN')}</td>
+              <td><strong>₹${(fs.totalFee || 0).toLocaleString('en-IN')}</strong></td>
+            </tr>
+          `;
+        }
+      }
+
+      const paymentsTbody = document.querySelector('#tbl-stu-fee-payments tbody');
+      if (paymentsTbody) {
+        const payments = data.payments || [];
+        if (!payments.length) {
+          paymentsTbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No fee payment records found</td></tr>';
+        } else {
+          paymentsTbody.innerHTML = payments.map(p => `
+            <tr>
+              <td><strong>${esc(p.receiptNumber)}</strong></td>
+              <td>${p.paymentDate ? new Date(p.paymentDate).toLocaleDateString() : '—'}</td>
+              <td>${esc(p.semester || 'Sem I')}</td>
+              <td><strong>₹${(p.amountPaid || 0).toLocaleString('en-IN')}</strong></td>
+              <td><span class="badge active">${esc(p.paymentMode.toUpperCase())}</span></td>
+              <td><span class="badge approved">COMPLETED</span></td>
+            </tr>
+          `).join('');
+        }
+      }
+    } catch (e) {
+      showToast(e.message || 'Failed to load fee information', 'error');
+    }
+  }
+  window.loadMyFees = loadMyFees;
 
   document.addEventListener('DOMContentLoaded', boot);
 })();

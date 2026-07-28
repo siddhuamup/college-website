@@ -15,6 +15,7 @@ import { adminPlacementRouter, studentPlacementRouter } from './routes/placement
 import { adminTimetableRouter, teacherTimetableRouter, studentTimetableRouter } from './routes/timetable.js';
 import { adminLibraryRouter, studentLibraryRouter } from './routes/library.js';
 import { adminExamRouter, teacherExamRouter, studentExamRouter } from './routes/exam.js';
+import { adminFeeRouter, studentFeeRouter } from './routes/fees.js';
 import cookieParser from 'cookie-parser';
 import { errorHandler } from './middleware/errorHandler.js';
 import { globalApiLimiter } from './middleware/rateLimit.js';
@@ -172,6 +173,7 @@ app.use('/api/admin/placement', adminPlacementRouter({ jwtSecret: JWT_SECRET }))
 app.use('/api/admin/timetable', adminTimetableRouter({ jwtSecret: JWT_SECRET }));
 app.use('/api/admin/library', adminLibraryRouter({ jwtSecret: JWT_SECRET }));
 app.use('/api/admin/exams', adminExamRouter({ jwtSecret: JWT_SECRET }));
+app.use('/api/admin/fees', adminFeeRouter({ jwtSecret: JWT_SECRET }));
 app.use('/api/teacher', teacherRouter({ jwtSecret: JWT_SECRET, jwtExpiresIn: JWT_EXPIRES_IN }));
 app.use('/api/teacher/timetable', teacherTimetableRouter({ jwtSecret: JWT_SECRET }));
 app.use('/api/teacher/exams', teacherExamRouter({ jwtSecret: JWT_SECRET }));
@@ -180,6 +182,7 @@ app.use('/api/student/placement', studentPlacementRouter({ jwtSecret: JWT_SECRET
 app.use('/api/student/timetable', studentTimetableRouter({ jwtSecret: JWT_SECRET }));
 app.use('/api/student/library', studentLibraryRouter({ jwtSecret: JWT_SECRET }));
 app.use('/api/student/exams', studentExamRouter({ jwtSecret: JWT_SECRET }));
+app.use('/api/student/fees', studentFeeRouter({ jwtSecret: JWT_SECRET }));
 
 app.use((req, res, next) => {
   if (req.originalUrl.startsWith('/api')) {

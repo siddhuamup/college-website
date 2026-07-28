@@ -6,6 +6,11 @@
   let searchIndex = { students: [], subjects: [] };
   let activeNotifications = [];
   let readNotifications = [];
+  function el(id) { return document.getElementById(id); }
+  function setText(id, text) { const n = el(id); if (n) n.textContent = text == null ? '' : String(text); }
+  function setVal(id, v) { const n = el(id); if (n) n.value = v == null ? '' : String(v); }
+  function setHTML(sel, v) { const n = (typeof sel === 'string' && (sel.startsWith('#') || sel.startsWith('.') || sel.includes(' '))) ? document.querySelector(sel) : el(sel); if (n) n.innerHTML = v == null ? '' : String(v); }
+  function setDisplay(id, v) { const n = el(id); if (n) n.style.display = v; }
 
   // Toast Notification System
   function showToast(message, type = 'info', undoCallback = null) {
