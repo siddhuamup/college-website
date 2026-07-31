@@ -152,29 +152,46 @@
     const msgEl = document.getElementById('admin-gate-msg');
     if (!form || form.dataset.bound) return;
     form.dataset.bound = '1';
-    form.addEventListener('submit', withSubmitGuard(async (e) => {
+
+    const handler = async (e) => {
       e.preventDefault();
-      msgEl.textContent = '';
-      msgEl.className = 'small mt-3';
+      if (msgEl) {
+        msgEl.textContent = 'Verifying access key...';
+        msgEl.className = 'small mt-3';
+      }
       const accessKeyEl = document.getElementById('admin-access-key');
       const accessKey = accessKeyEl ? accessKeyEl.value.trim() : '';
 
       if (!accessKey) {
-        msgEl.textContent = 'Please enter your access key.';
-        msgEl.className = 'small mt-3 alert error';
+        if (msgEl) {
+          msgEl.textContent = 'Please enter your access key.';
+          msgEl.className = 'small mt-3 alert error';
+        }
         return;
       }
 
       try {
         const data = await SSC_API.post('/auth/admin-access', { accessKey });
-        SSC_API.setToken(data.token);
-        await boot();
+        if (data && data.token) {
+          SSC_API.setToken(data.token);
+          await boot();
+        } else {
+          throw new Error('Invalid response from server');
+        }
       } catch (err) {
         const detail = err.data && err.data.error ? err.data.error : err.message;
-        msgEl.textContent = detail || 'Access denied';
-        msgEl.className = 'small mt-3 alert error';
+        if (msgEl) {
+          msgEl.textContent = detail || 'Access denied. Please check your admin access key.';
+          msgEl.className = 'small mt-3 alert error';
+        }
       }
-    }));
+    };
+
+    if (typeof withSubmitGuard === 'function') {
+      form.addEventListener('submit', withSubmitGuard(handler));
+    } else {
+      form.addEventListener('submit', handler);
+    }
   }
 
   /* ── Search index cache ──────────────────────────────────── */
@@ -572,8 +589,14 @@
       btn.addEventListener('click', () => {
         document.querySelectorAll('.dash-nav button[data-panel]').forEach((b) => {
           b.classList.remove('active');
+        });
+        btn.classList.add('active');
+        loadPanel(btn.getAttribute('data-panel'));
+      });
+    });
+
     document.querySelectorAll('.quick-action-btn[data-goto]').forEach(btn => {
-      btn.addEventListener('click', () => navigateToPanel(btn.dataset.goto));
+      btn.addEventListener('click', () => loadPanel(btn.dataset.goto));
     });
 
     // Mobile menu toggle
@@ -652,6 +675,19 @@
 
   async function loadPanel(id) {
     msg('');
+    document.querySelectorAll('.dash-panel').forEach(p => {
+      p.classList.toggle('active', p.getAttribute('data-panel') === id);
+    });
+    document.querySelectorAll('.dash-nav button[data-panel]').forEach(b => {
+      b.classList.toggle('active', b.getAttribute('data-panel') === id);
+    });
+    
+    const topbarTitle = document.getElementById('dash-title');
+    if (topbarTitle) {
+      const activeBtn = document.querySelector(`.dash-nav button[data-panel="${id}"]`);
+      if (activeBtn) topbarTitle.textContent = activeBtn.textContent.trim();
+    }
+
     if (admRefreshInterval) {
       clearInterval(admRefreshInterval);
       admRefreshInterval = null;
@@ -2684,6 +2720,42 @@
         loadGalleryAdmin();
       })
     );
+  if (formCourse) formCourse.addEventListener('submit', withSubmitGuard(async (e) => {
+    e.preventDefault();
+    const f = e.target;
+    await SSC_API.post('/admin/courses', {
+      name: f.name.value.trim(),
+      level: f.level.value,
+      duration: f.duration.value.trim(),
+      eligibility: f.eligibility.value.trim(),
+      seatsApprox: Number(f.seatsApprox.value) || 0,
+      departmentId: f.departmentId.value || null,
+      description: f.description.value.trim(),
+    });
+    f.reset();
+    loadCourses();
+  }));
+
+  async function loadGalleryAdmin() {
+    const items = await SSC_API.get('/admin/gallery');
+    const grid = document.getElementById('gallery-admin');
+    grid.innerHTML = '';
+    items.forEach((g) => {
+      const wrap = document.createElement('div');
+      wrap.className = 'card';
+      wrap.innerHTML = g.imageUrl
+        ? `<img src="${g.imageUrl}" alt="" style="width:100%;height:140px;object-fit:cover;border-radius:12px"/>
+           <p class="small mt-2">${esc(g.caption || '')}</p>
+           <button class="btn small danger mt-2" data-del-gal="${g._id}">Delete</button>`
+        : '';
+      grid.appendChild(wrap);
+    });
+    grid.querySelectorAll('[data-del-gal]').forEach((b) =>
+      b.addEventListener('click', async () => {
+        await SSC_API.delete('/admin/gallery/' + b.getAttribute('data-del-gal'));
+        loadGalleryAdmin();
+      })
+    );
   }
 
   const formGallery = document.getElementById('form-gallery');
@@ -2714,12 +2786,49 @@
       .join('');
   }
 
+  async function loadFeesPanel() {
+    try {
+      const [structures, summary] = await Promise.all([
+        SSC_API.get('/admin/fees/structures').catch(() => []),
+        SSC_API.get('/admin/fees/summary').catch(() => ({}))
+      ]);
+
+      const colEl = document.getElementById('fee-stat-collected');
+      if (colEl) colEl.textContent = `₹${(summary.totalCollected || 0).toLocaleString('en-IN')}`;
+
+      const txnEl = document.getElementById('fee-stat-txns');
+      if (txnEl) txnEl.textContent = String(summary.totalTransactions || 0);
+
+      const structEl = document.getElementById('fee-stat-structures');
+      if (structEl) structEl.textContent = String(structures.length || 0);
+
+      const tbody = document.querySelector('#tbl-fee-structures tbody');
+      if (tbody) {
+        if (!structures.length) {
+          tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted">No fee structures created yet</td></tr>';
+        } else {
+          tbody.innerHTML = structures.map(s => `
+            <tr>
+              <td><strong>${esc(s.courseName)}</strong></td>
+              <td>${s.academicYear}</td>
+              <td>₹${(s.tuitionFee || 0).toLocaleString('en-IN')}</td>
+              <td>₹${(s.labFee || 0).toLocaleString('en-IN')}</td>
+              <td>₹${(s.libraryFee || 0).toLocaleString('en-IN')}</td>
+              <td>₹${(s.examFee || 0).toLocaleString('en-IN')}</td>
+              <td>₹${(s.otherFee || 0).toLocaleString('en-IN')}</td>
+              <td><strong>₹${(s.totalFee || 0).toLocaleString('en-IN')}</strong></td>
+            </tr>
+          `).join('');
+        }
+      }
+    } catch (e) {
+      msg(e.message || 'Could not load fee panel', true);
+    }
+  }
+
   async function loadSettings() {
     const s = await SSC_API.get('/admin/settings');
     const setTag = document.getElementById('set-tag');
-    if (setTag) setTag.value = s.siteTagline || '';
-    const syllabus = document.getElementById('set-syllabus');
-    const prospectus = document.getElementById('set-prospectus');
     if (syllabus) syllabus.value = s.syllabusPdfUrl || '';
     if (prospectus) prospectus.value = s.prospectusPdfUrl || '';
     const threshold = document.getElementById('set-threshold');

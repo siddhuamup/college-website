@@ -493,206 +493,10 @@
 
           loadEditProfile();
         } catch (err) {
-        if (existingAttendanceList && existingAttendanceList.length > 0) {
-          const modal = document.getElementById('modal-att-duplicate');
-          if (modal) modal.style.display = 'flex';
-          btn.disabled = false;
-          btn.textContent = originalText;
-          return;
-        }
-
-        try {
-          await submitAttendance();
-        } finally {
-          btn.disabled = false;
-          btn.textContent = originalText;
-        }
-      });
-    }
-
-    async function submitAttendance() {
-      const subject = document.getElementById('att-subject').value.trim();
-      const date = document.getElementById('att-date').value;
-      const entries = [];
-      document.querySelectorAll('#att-rows input[type="checkbox"]').forEach((cb) => {
-        entries.push({
-          studentId: cb.getAttribute('data-sid'),
-          status: cb.checked ? 'present' : 'absent',
-        });
-      });
-
-      // Backup checkboxes state for Undo capability
-      const previousCheckboxes = Array.from(document.querySelectorAll('#att-rows input[type="checkbox"]')).map(cb => ({
-        sid: cb.getAttribute('data-sid'),
-        checked: cb.checked
-      }));
-
-      try {
-        await SSC_API.post('/teacher/attendance', { subject, date, entries });
-        
-        showToast('Attendance saved successfully!', 'success', async () => {
-          // Undo save
-          try {
-            const undoEntries = previousCheckboxes.map(pb => ({
-              studentId: pb.sid,
-              // We'll revert by checking the inverse of the current checkboxes, or load previous log status?
-              // Since we saved checks before POST, to undo we should restore what was saved in the checkboxes.
-              // Wait, the undo should restore what was stored on the server BEFORE this submit!
-              // But we can just write back the checkboxes state that existed prior.
-              status: pb.checked ? 'present' : 'absent'
-            }));
-            await SSC_API.post('/teacher/attendance', { subject, date, entries: undoEntries });
-            
-            // Re-sync UI checkboxes
-            document.querySelectorAll('#att-rows input[type="checkbox"]').forEach(cb => {
-              const prev = previousCheckboxes.find(p => p.sid === cb.getAttribute('data-sid'));
-              if (prev) cb.checked = prev.checked;
-            });
-            showToast('Attendance save undone.', 'info');
-            await checkExistingAttendance();
-          } catch (err) {
-            showToast('Failed to undo attendance save: ' + err.message, 'error');
-          }
-        });
-        
-        await checkExistingAttendance();
-      } catch (err) {
-        showToast(err.message || 'Could not save attendance', 'error');
-      }
-    }
-
-    const btnDuplicateClose = document.getElementById('btn-duplicate-close');
-    if (btnDuplicateClose) {
-      btnDuplicateClose.addEventListener('click', () => {
-        const modal = document.getElementById('modal-att-duplicate');
-        if (modal) modal.style.display = 'none';
-      });
-    }
-
-    const btnDuplicateCancel = document.getElementById('btn-duplicate-cancel');
-    if (btnDuplicateCancel) {
-      btnDuplicateCancel.addEventListener('click', () => {
-        const modal = document.getElementById('modal-att-duplicate');
-        if (modal) modal.style.display = 'none';
-      });
-    }
-
-    const btnDuplicateView = document.getElementById('btn-duplicate-view');
-    if (btnDuplicateView) {
-      btnDuplicateView.addEventListener('click', () => {
-        const modal = document.getElementById('modal-att-duplicate');
-        if (modal) modal.style.display = 'none';
-        if (existingAttendanceList && existingAttendanceList.length > 0) {
-          const map = Object.fromEntries(existingAttendanceList.map(e => [String(e.studentId), e.status]));
-          document.querySelectorAll('#att-rows input[type="checkbox"]').forEach(cb => {
-            const sid = cb.getAttribute('data-sid');
-            cb.checked = map[sid] === 'present';
-          });
-        }
-      });
-    }
-
-    const btnDuplicateUpdate = document.getElementById('btn-duplicate-update');
-    if (btnDuplicateUpdate) {
-      btnDuplicateUpdate.addEventListener('click', async () => {
-        const modal = document.getElementById('modal-att-duplicate');
-        if (modal) modal.style.display = 'none';
-        
-        const saveBtn = document.getElementById('att-save');
-        if (saveBtn) {
-          saveBtn.disabled = true;
-          const origText = saveBtn.textContent;
-          saveBtn.textContent = 'Saving...';
-          try {
-            await submitAttendance();
-          } finally {
-            saveBtn.disabled = false;
-            saveBtn.textContent = origText;
-          }
-        }
-      });
-    }
-
-    const attSearchInput = document.getElementById('att-student-search');
-    if (attSearchInput) {
-      attSearchInput.addEventListener('input', () => {
-        filterAttendanceStudents();
-      });
-    }
-
-    let toggleAllState = true;
-    const toggleAllBtn = document.getElementById('btn-att-toggle-all');
-    if (toggleAllBtn) {
-      toggleAllBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        const visibleCbs = document.querySelectorAll('#att-rows label:not([style*="display: none"]) input[type="checkbox"]');
-        visibleCbs.forEach(cb => cb.checked = toggleAllState);
-        e.target.textContent = toggleAllState ? 'Unmark All' : 'Mark All Present';
-        toggleAllState = !toggleAllState;
-      });
-    }
-
-    const attSubSelect = document.getElementById('att-subject');
-    if (attSubSelect) attSubSelect.addEventListener('change', checkExistingAttendance);
-    
-    if (attDateInput) attDateInput.addEventListener('change', checkExistingAttendance);
-
-    const formMat = document.getElementById('form-mat');
-    if (formMat) {
-      formMat.addEventListener('submit', withSubmitGuard(async (e) => {
-        e.preventDefault();
-        const f = e.target;
-        const fd = new FormData();
-        fd.append('title', f.title.value);
-        fd.append('subject', f.subject.value);
-        fd.append('className', f.className.value);
-        fd.append('file', f.file.files[0]);
-        try {
-          await SSC_API.upload('/teacher/materials', fd);
-          f.reset();
-          showToast('Material uploaded successfully!', 'success');
-          loadMaterials();
-        } catch (err) {
-          showToast(err.message || 'Could not upload material', 'error');
+          showToast(err.message || 'Could not update profile', 'error');
         }
       }));
     }
-
-    const formProfile = document.getElementById('form-edit-profile');
-    if (formProfile) {
-      formProfile.addEventListener('submit', withSubmitGuard(async (e) => {
-        e.preventDefault();
-        const fd = new FormData();
-        fd.append('name', document.getElementById('teacher-profile-name').value.trim());
-        fd.append('phone', document.getElementById('teacher-profile-phone').value.trim());
-        fd.append('qualifications', document.getElementById('teacher-profile-qual').value.trim());
-        fd.append('bio', document.getElementById('teacher-profile-bio').value.trim());
-        const avatarFile = document.getElementById('teacher-avatar-upload').files[0];
-        if (avatarFile) fd.append('avatar', avatarFile);
-        
-        try {
-          const resUser = await SSC_API.upload('/teacher/profile', fd, 'PATCH');
-          showToast('Profile updated successfully!', 'success');
-          const avatarImg = resUser.avatarUrl ? `<img src="${esc(resUser.avatarUrl)}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;vertical-align:middle;margin-right:0.5rem;border:1px solid rgba(56,189,248,0.3);"/>` : '';
-          const whoEl = document.getElementById('who');
-          if (whoEl) whoEl.innerHTML = `${avatarImg}<span>${esc(resUser.name)}</span>`;
-          
-          // Re-populate sidebar/topbar fields immediately
-          const topName = document.getElementById('teacher-user');
-          if (topName) topName.textContent = resUser.name;
-          const topAvatar = document.getElementById('teacher-avatar');
-          if (topAvatar) {
-            if (resUser.avatarUrl) topAvatar.innerHTML = `<img src="${esc(resUser.avatarUrl)}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;"/>`;
-            else topAvatar.textContent = resUser.name.charAt(0).toUpperCase();
-          }
-
-          loadEditProfile();
-        } catch (err) {
-          showToast(err.message || 'Update failed', 'error');
-        }
-      }));
-    }
-
     setupKeyboardShortcuts();
     load('subjects');
   }
@@ -748,7 +552,6 @@
     if (motherEl) motherEl.textContent = `Specialization: ${tp.specialization || 'Teaching & Research'}`;
     const addrEl = document.getElementById('pvc-address-text');
     if (addrEl) addrEl.textContent = tp.address || '8, Teachers Colony, Junnar, Pune, Maharashtra - 410502';
-
     const photoImg = document.getElementById('pvc-photo-img');
     if (photoImg) photoImg.src = avatar;
 
@@ -758,7 +561,6 @@
 
   function setupKeyboardShortcuts() {
     document.addEventListener('keydown', (e) => {
-      // Ctrl+K: Global search focus
       if (e.ctrlKey && e.key.toLowerCase() === 'k') {
         const searchInput = document.getElementById('global-search');
         if (searchInput) {
@@ -766,8 +568,6 @@
           searchInput.focus();
         }
       }
-      
-      // Escape: Close all active modals
       if (e.key === 'Escape') {
         const activeModals = document.querySelectorAll('.modal-overlay');
         activeModals.forEach(m => {
@@ -775,18 +575,6 @@
             m.style.display = 'none';
           }
         });
-      }
-      
-      // Ctrl+S: Save active form (submit form)
-      if (e.ctrlKey && e.key.toLowerCase() === 's') {
-        const activePanel = document.querySelector('.dash-panel.active');
-        if (activePanel) {
-          const form = activePanel.querySelector('form');
-          if (form) {
-            e.preventDefault();
-            form.requestSubmit();
-          }
-        }
       }
     });
   }
@@ -803,8 +591,112 @@
       if (id === 'materials') await loadMaterials();
       if (id === 'notices') await loadNotices();
       if (id === 'edit-profile') await loadEditProfile();
+      if (id === 'teacher-attendance') await loadTeacherAttendance();
     } catch (e) {
       showToast(e.message || 'Error loading data', 'error');
+    }
+  }
+
+  async function loadTeacherAttendance() {
+    const btnMark = document.getElementById('btn-mark-teacher-self-att');
+    const statusMsg = document.getElementById('teacher-self-att-status');
+
+    if (btnMark && !btnMark.dataset.bound) {
+      btnMark.dataset.bound = '1';
+      btnMark.addEventListener('click', async () => {
+        if (!navigator.geolocation) {
+          showToast('Geolocation is not supported by your browser.', 'error');
+          return;
+        }
+        if (statusMsg) {
+          statusMsg.style.display = 'block';
+          statusMsg.className = 'small mt-3 alert info';
+          statusMsg.textContent = 'Verifying GPS location with SSCC Junnar Campus...';
+        }
+        btnMark.disabled = true;
+
+        navigator.geolocation.getCurrentPosition(
+          async (pos) => {
+            try {
+              const res = await SSC_API.post('/teacher/self-attendance', {
+                latitude: pos.coords.latitude,
+                longitude: pos.coords.longitude
+              });
+              if (statusMsg) {
+                statusMsg.className = 'small mt-3 alert success';
+                statusMsg.textContent = res.message || 'Campus attendance verified & marked!';
+              }
+              showToast('Attendance marked successfully!', 'success');
+              await fetchAndRenderTeacherSelfAttendance();
+            } catch (err) {
+              const errMsg = err.data?.error || err.message || 'Geolocation verification failed';
+              if (statusMsg) {
+                statusMsg.className = 'small mt-3 alert error';
+                statusMsg.textContent = errMsg;
+              }
+              showToast(errMsg, 'error');
+            } finally {
+              btnMark.disabled = false;
+            }
+          },
+          (geoErr) => {
+            btnMark.disabled = false;
+            let errText = 'Unable to get location.';
+            if (geoErr.code === 1) errText = 'GPS Permission Denied. Access required for attendance.';
+            else if (geoErr.code === 2) errText = 'Position Unavailable. Ensure GPS is active.';
+            else if (geoErr.code === 3) errText = 'Location Request Timed Out.';
+            
+            if (statusMsg) {
+              statusMsg.style.display = 'block';
+              statusMsg.className = 'small mt-3 alert error';
+              statusMsg.textContent = `Anti-Fraud Check Failed: ${errText}`;
+            }
+            showToast(errText, 'error');
+          },
+          { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+        );
+      });
+    }
+
+    await fetchAndRenderTeacherSelfAttendance();
+  }
+
+  async function fetchAndRenderTeacherSelfAttendance() {
+    const tbody = document.getElementById('tbody-teacher-self-att');
+    if (!tbody) return;
+    try {
+      const logs = await SSC_API.get('/teacher/self-attendance');
+      const list = Array.isArray(logs) ? logs : [];
+
+      const statTotal = document.getElementById('t-att-stat-total');
+      const statDist = document.getElementById('t-att-stat-dist');
+      
+      if (statTotal) statTotal.textContent = `${list.length} Days`;
+      if (list.length > 0 && statDist) {
+        statDist.textContent = `${list[0].distance || 0}m`;
+      }
+
+      if (list.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No attendance logs found for this month.</td></tr>';
+        return;
+      }
+
+      let html = '';
+      list.forEach(l => {
+        const dt = new Date(l.date || l.createdAt);
+        const dateStr = dt.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+        html += `
+          <tr>
+            <td><strong>${dateStr}</strong></td>
+            <td><span class="badge success">On-Campus Verified</span></td>
+            <td>${escapeText(l.address || 'SSCC Campus')}</td>
+            <td><strong>${l.distance || 0}m</strong> from campus center</td>
+          </tr>
+        `;
+      });
+      tbody.innerHTML = html;
+    } catch (e) {
+      tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">Failed to load attendance logs.</td></tr>';
     }
   }
 
@@ -813,7 +705,6 @@
     const u = userRes.user || userRes;
     const tp = u.teacherProfile || {};
 
-    // Populate top welcome
     const welcomeEl = document.getElementById('db-teach-welcome-name');
     if (welcomeEl) welcomeEl.textContent = `Welcome, ${escapeText(u.name)}!`;
     
@@ -833,7 +724,6 @@
       }
     }
 
-    // Fetch Assigned Subjects
     let subjectCount = 0;
     let assignments = [];
     try {
@@ -844,13 +734,7 @@
 
     const statSubjectsEl = document.getElementById('db-teach-stat-subjects');
     if (statSubjectsEl) statSubjectsEl.textContent = subjectCount;
-    
-    const statSubjectsDescEl = document.getElementById('db-teach-stat-subjects-desc');
-    if (statSubjectsDescEl) {
-      statSubjectsDescEl.textContent = subjectCount ? `${subjectCount} active courses` : 'No assignments';
-    }
 
-    // Populate Row 2 Assigned Subjects Table
     const tblSubjects = document.querySelector('#tbl-db-teach-subjects tbody');
     if (tblSubjects) {
       tblSubjects.innerHTML = '';
@@ -865,7 +749,6 @@
       }
     }
 
-    // Fetch Students Count
     let studentCount = 0;
     try {
       const students = await SSC_API.get('/teacher/students');
@@ -874,16 +757,10 @@
         studentCount = students.length;
       }
     } catch { /* fallback */ }
-    
+
     const statStudentsEl = document.getElementById('db-teach-stat-students');
     if (statStudentsEl) statStudentsEl.textContent = studentCount;
-    
-    const statStudentsDescEl = document.getElementById('db-teach-stat-students-desc');
-    if (statStudentsDescEl) {
-      statStudentsDescEl.textContent = studentCount ? `${studentCount} registered students` : 'No students found';
-    }
 
-    // Fetch Timetable & Today's Classes
     let todayClassesCount = 0;
     try {
       const slots = await SSC_API.get('/teacher/timetable');
@@ -894,10 +771,10 @@
         todayClassesCount = slots.filter(s => s.day === todayDay).length;
       }
     } catch { /* fallback */ }
-    
+
     const statTimetableEl = document.getElementById('db-teach-stat-timetable');
     if (statTimetableEl) statTimetableEl.textContent = todayClassesCount;
-    
+
     const statTimetableDescEl = document.getElementById('db-teach-stat-timetable-desc');
     if (statTimetableDescEl) statTimetableDescEl.textContent = `Classes scheduled today`;
 
@@ -1776,6 +1653,11 @@
         return;
       }
       
+        });
+        
+        return;
+      }
+      
       const filteredStudents = studentsCache.filter(s => s.name.toLowerCase().includes(q) || (s.studentProfile?.rollNumber || '').toLowerCase().includes(q));
       
       resultsDiv.innerHTML = '';
@@ -1838,12 +1720,14 @@
       }
     });
     
-    clearBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      readNotifications = activeNotifications.map(n => n.id);
-      localStorage.setItem('ssc_read_notifs_teacher', JSON.stringify(readNotifications));
-      renderNotifications();
-    });
+    if (clearBtn) {
+      clearBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        readNotifications = activeNotifications.map(n => n.id);
+        localStorage.setItem('ssc_read_notifs_teacher', JSON.stringify(readNotifications));
+        renderNotifications();
+      });
+    }
     
     // Load read array from localStorage
     try {
@@ -1885,7 +1769,7 @@
               title: isApproved ? 'Leave Request Approved' : 'Leave Request Rejected',
               desc: `Your leave application from ${new Date(l.fromDate).toLocaleDateString()} was ${l.status}.`,
               time: l.updatedAt ? new Date(l.updatedAt) : new Date(),
-              icon: isApproved ? 'green' : 'red',
+              icon: 'green',
               svg: isApproved 
                 ? '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 8 8 12 12 16"/><line x1="16" y1="12" x2="8" y2="12"/></svg>'
                 : '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>'
@@ -1897,19 +1781,18 @@
         activeNotifications.sort((a, b) => b.time - a.time);
         
         renderNotifications();
-        
       } catch (err) {
         console.error('Error fetching notifications:', err);
       }
     }
-    
+
     function renderNotifications() {
       notifList.innerHTML = '';
       let unreadCount = 0;
       
       if (activeNotifications.length === 0) {
         notifList.innerHTML = '<div class="notif-empty">No notifications</div>';
-        badge.style.display = 'none';
+        if (badge) badge.style.display = 'none';
         return;
       }
       
@@ -1919,6 +1802,7 @@
         
         const item = document.createElement('div');
         item.className = `notif-item ${isRead ? '' : 'notif-item-unread'}`;
+        item.style.cursor = 'pointer';
         item.innerHTML = `
           <div class="notif-item-icon ${n.icon}">${n.svg}</div>
           <div style="flex:1;">
@@ -1927,86 +1811,33 @@
             <span class="notif-item-time">${n.time.toLocaleDateString()}</span>
           </div>
         `;
+        item.addEventListener('click', () => {
+          if (n.id && n.id.startsWith('notice') && typeof load === 'function') {
+            load('teacher-notices');
+          } else if (n.id && n.id.startsWith('leave') && typeof load === 'function') {
+            load('leave-applications');
+          }
+          const dropdown = el('notif-dropdown');
+          if (dropdown) dropdown.style.display = 'none';
+        });
         notifList.appendChild(item);
       });
       
-      if (unreadCount > 0) {
-        badge.textContent = unreadCount;
-        badge.style.display = 'grid';
-      } else {
-        badge.style.display = 'none';
+      if (badge) {
+        if (unreadCount > 0) {
+          badge.textContent = unreadCount;
+          badge.style.display = 'grid';
+        } else {
+          badge.style.display = 'none';
+        }
       }
     }
-    
+
     function markAllNotificationsRead() {
       readNotifications = activeNotifications.map(n => n.id);
       localStorage.setItem('ssc_read_notifs_teacher', JSON.stringify(readNotifications));
-      badge.style.display = 'none';
+      if (badge) badge.style.display = 'none';
       setTimeout(renderNotifications, 1000);
-    }
-  }
-
-  function checkPasswordForcedChange(user) {
-    if (user.mustChangePassword === true) {
-      const modal = document.getElementById('modal-must-change-pwd');
-      if (modal) modal.style.display = 'flex';
-      
-      const form = document.getElementById('form-must-change-pwd');
-      if (form) {
-        const curInput = document.getElementById('must-current-pwd');
-        const newInput = document.getElementById('must-new-pwd');
-        const confirmInput = document.getElementById('must-confirm-pwd');
-        
-        newInput.addEventListener('input', () => {
-          validatePasswordStrength(newInput.value, 'must-criteria-');
-        });
-        
-        form.addEventListener('submit', withSubmitGuard(async (e) => {
-          e.preventDefault();
-          if (newInput.value !== confirmInput.value) {
-            showToast('New passwords do not match', 'error');
-            return;
-          }
-          if (!validatePasswordStrength(newInput.value, 'must-criteria-')) {
-            showToast('Password strength criteria not met', 'error');
-            return;
-          }
-          try {
-            await SSC_API.post('/auth/change-password', {
-              currentPassword: curInput.value,
-              newPassword: newInput.value
-            });
-            showToast('Password changed successfully!', 'success');
-            modal.style.display = 'none';
-            user.mustChangePassword = false;
-          } catch (err) {
-            showToast(err.message || 'Failed to change password', 'error');
-          }
-        }));
-      }
-    }
-  }
-
-  function validatePasswordStrength(pwd, prefix) {
-    const hasLength = pwd.length >= 8;
-    const hasUpper = /[A-Z]/.test(pwd);
-    const hasLower = /[a-z]/.test(pwd);
-    const hasDigit = /[0-9]/.test(pwd);
-    const hasSpecial = /[!@#$%^&*()_+\-=\[\]{};':"|,.<>\/?]/.test(pwd);
-    
-    toggleCriteriaClass(prefix + 'length', hasLength);
-    toggleCriteriaClass(prefix + 'upper', hasUpper);
-    toggleCriteriaClass(prefix + 'lower', hasLower);
-    toggleCriteriaClass(prefix + 'digit', hasDigit);
-    toggleCriteriaClass(prefix + 'special', hasSpecial);
-    
-    return hasLength && hasUpper && hasLower && hasDigit && hasSpecial;
-  }
-
-  function toggleCriteriaClass(id, isValid) {
-    const el = document.getElementById(id);
-    if (el) {
-      el.classList.toggle('valid', isValid);
     }
   }
 
@@ -2017,9 +1848,11 @@
       const newInput = document.getElementById('profile-new-pwd');
       const confirmInput = document.getElementById('profile-confirm-pwd');
       
-      newInput.addEventListener('input', () => {
-        validatePasswordStrength(newInput.value, 'criteria-');
-      });
+      if (newInput) {
+        newInput.addEventListener('input', () => {
+          validatePasswordStrength(newInput.value, 'criteria-');
+        });
+      }
       
       form.addEventListener('submit', withSubmitGuard(async (e) => {
         e.preventDefault();

@@ -370,5 +370,87 @@ export function teacherRouter({ jwtSecret, jwtExpiresIn }) {
     res.json(leaves.map(withMongoId));
   });
 
+  // Haversine Distance helper (in meters)
+  function getDistanceMeters(lat1, lon1, lat2, lon2) {
+    const R = 6371e3;
+    const rad = Math.PI / 180;
+    const dLat = (lat2 - lat1) * rad;
+    const dLon = (lon2 - lon1) * rad;
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+              Math.cos(lat1 * rad) * Math.cos(lat2 * rad) *
+              Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  }
+
+  // College Campus Coordinates (SSCC Junnar Campus)
+  const COLLEGE_LAT = 19.2085;
+  const COLLEGE_LON = 73.8777;
+  const MAX_ALLOWED_DISTANCE_METERS = 500; // 500 meters campus boundary
+
+  // Teacher Self Attendance — Anti-Fraud Geolocation Verified
+  r.post('/self-attendance', async (req, res) => {
+    const { latitude, longitude } = req.body || {};
+    const lat = Number(latitude);
+    const lon = Number(longitude);
+
+    if (isNaN(lat) || isNaN(lon)) {
+      return res.status(400).json({ error: 'GPS coordinates required. Please enable location services.' });
+    }
+
+    const distance = getDistanceMeters(lat, lon, COLLEGE_LAT, COLLEGE_LON);
+
+    if (distance > MAX_ALLOWED_DISTANCE_METERS) {
+      const kmAway = (distance / 1000).toFixed(2);
+      return res.status(403).json({
+        error: `Anti-Fraud Violation: You are ${kmAway} km away from college campus. Attendance cannot be marked from home or off-campus. Allowed boundary is within 500m.`
+      });
+    }
+
+    // Check if already marked today
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const existing = await prisma.teacherAttendance.findFirst({
+      where: {
+        teacherId: req.user.id,
+        date: { gte: today }
+      }
+    });
+
+    if (existing) {
+      return res.status(400).json({ error: 'Your attendance for today is already logged.' });
+    }
+
+    const log = await prisma.teacherAttendance.create({
+      data: {
+        teacherId: req.user.id,
+        date: new Date(),
+        status: 'present',
+        latitude: lat,
+        longitude: lon,
+        distance: Math.round(distance),
+        address: 'SSCC Junnar Campus (Verified GPS)'
+      }
+    });
+
+    res.status(201).json({
+      ok: true,
+      message: `Verified! Campus attendance marked. Distance from center: ${Math.round(distance)}m.`,
+      attendance: withMongoId(log)
+    });
+  });
+
+  // Get teacher's self-attendance logs
+  r.get('/self-attendance', async (req, res) => {
+    const logs = await prisma.teacherAttendance.findMany({
+      where: { teacherId: req.user.id },
+      orderBy: { date: 'desc' },
+      take: 60
+    });
+    res.json(logs.map(withMongoId));
+  });
+
   return r;
 }
+

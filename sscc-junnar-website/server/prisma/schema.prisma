@@ -435,3 +435,19 @@ model TokenBlacklist {
   @@index([expiresAt])
 }
 
+model TeacherAttendance {
+  id        String   @id @default(cuid())
+  teacherId String
+  date      DateTime
+  status    String   @default("present")
+  latitude  Float
+  longitude Float
+  distance  Float    @default(0)
+  address   String   @default("")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([teacherId])
+}
+
+

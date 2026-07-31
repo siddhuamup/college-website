@@ -534,7 +534,11 @@
               <h4>Attendance Calendar Heatmap</h4>
               <p class="small text-secondary" style="margin-top:-0.5rem; margin-bottom: 1rem;">Visual calendar showing your daily attendance for the current month.</p>
               <div id="attendance-heatmap-wrap" style="padding: 1rem; border-radius: 8px; background: rgba(0,0,0,0.15); border: 1px solid var(--card-border);">
-                <div id="attendance-heatmap-month-label" class="small mb-2" style="font-weight: 600; text-align: center;"></div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                  <button type="button" class="btn small secondary" id="btn-att-prev-month" style="padding: 2px 8px; font-size: 0.8rem; border-radius: 6px;">‹ Prev</button>
+                  <span id="attendance-heatmap-month-label" class="small" style="font-weight: 600; text-align: center;"></span>
+                  <button type="button" class="btn small secondary" id="btn-att-next-month" style="padding: 2px 8px; font-size: 0.8rem; border-radius: 6px;">Next ›</button>
+                </div>
                 <div class="heatmap-weekdays" style="display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-size: 0.7rem; color: var(--muted); margin-bottom: 0.5rem;">
                   <div>M</div><div>T</div><div>W</div><div>T</div><div>F</div><div>S</div><div>S</div>
                 </div>
@@ -901,7 +905,7 @@
                 <div class="faculty-avatar-placeholder" id="student-avatar-placeholder">S</div>
                 <img id="student-avatar-img" src="" alt="Profile picture" style="display:none;"/>
               </div>
-              <div class="profile-meta-info">
+              <div class="profile-meta-info" style="flex:1;">
                 <h2 id="profile-display-name" class="profile-meta-name">Student Name</h2>
                 <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.4rem; align-items: center;">
                   <span class="profile-meta-role" id="profile-hdr-role">Student</span>
@@ -910,6 +914,10 @@
                   <span class="profile-meta-role" id="profile-hdr-class" style="background: rgba(245,158,11,0.25);">Class: —</span>
                   <span class="profile-meta-role" id="profile-hdr-status" style="background: rgba(16,185,129,0.25);">Active</span>
                 </div>
+              </div>
+              <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; margin-top: 0.5rem;">
+                <button type="button" class="btn small" id="btn-trigger-inline-edit" style="color: #000; display:flex; align-items:center; gap:0.4rem; padding:0.4rem 0.8rem; font-size:0.85rem; font-weight:600;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Edit Profile</button>
+                <button type="button" class="btn secondary small" id="btn-trigger-change-pass" style="display:flex; align-items:center; gap:0.4rem; padding:0.4rem 0.8rem; font-size:0.85rem; border: 1px solid rgba(255,255,255,0.3); color: #fff; background: rgba(255,255,255,0.1);"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Credentials & Security</button>
               </div>
             </div>
           </div>
@@ -920,10 +928,9 @@
             <button type="button" class="id-tab" data-sub-tab="academics">Academics</button>
             <button type="button" class="id-tab" data-sub-tab="attendance">Attendance</button>
             <button type="button" class="id-tab" data-sub-tab="placement">Placement</button>
-            <button type="button" class="id-tab" data-sub-tab="creds">Credentials</button>
+            <button type="button" class="id-tab" data-sub-tab="creds">Credentials & Security</button>
             <button type="button" class="id-tab" data-sub-tab="activity">Activity History</button>
             <button type="button" class="id-tab" data-sub-tab="edit-info">Edit Profile</button>
-            <button type="button" class="id-tab" data-sub-tab="security">Change Password</button>
           </div>
           
           <!-- Tab Contents -->
@@ -1095,9 +1102,9 @@
               </div>
             </div>
 
-            <!-- Tab: Credentials -->
+            <!-- Tab: Credentials & Security -->
             <div id="profile-sub-creds" class="profile-sub-content" style="display:none;">
-              <div style="max-width: 600px; margin: 0 auto;">
+              <div style="max-width: 900px; margin: 0 auto; display: flex; flex-direction: column; gap: 2rem;">
                 <div class="profile-cred-card">
                   <div class="profile-cred-chip"></div>
                   <h3 style="margin: 0 0 0.5rem 0; font-size: 1.3rem;">SSC ERP Access Card</h3>
@@ -1129,92 +1136,53 @@
                     </div>
                   </div>
                 </div>
-              </div>
-            </div>
 
-            <!-- Tab: Activity History -->
-            <div id="profile-sub-activity" class="profile-sub-content" style="display:none;">
-              <h3 style="margin-top:0; border-bottom: 2px solid var(--primary-muted); padding-bottom: 0.5rem; color: var(--text);">ERP Audit Trail</h3>
-              <p class="small text-secondary" style="margin-top: -0.25rem; margin-bottom: 1.5rem;">Audit logs of account actions and timestamps.</p>
-              <div class="activity-logs-list" id="profile-activity-logs">
-                <div class="activity-log-item">
-                  <span class="activity-log-time">Now</span>
-                  <span class="activity-log-text">Viewing profile audit logs...</span>
-                </div>
-              </div>
-            </div>
-            
-            <!-- Tab: Edit Info (Form) -->
-            <div id="profile-sub-edit-info" class="profile-sub-content" style="display:none;">
-              <form id="form-edit-profile" class="form-grid">
-                <div>
-                  <label class="field-label" style="font-weight:600;">Update Profile Avatar</label>
-                  <div style="display: flex; align-items: center; gap: 1rem; margin-top: 0.5rem; flex-wrap: wrap;">
-                    <input type="file" id="student-avatar-upload" name="avatar" accept="image/*" class="input" style="max-width: 300px; padding: 0.25rem;" />
-                    <span class="small text-secondary">Only JPEG, PNG formats under 2MB.</span>
-                  </div>
-                </div>
-                <div>
-                  <label class="field-label" for="student-profile-name">Full Name</label>
-                  <input class="input" id="student-profile-name" name="name" required placeholder="Enter full name"/>
-                </div>
-                <div>
-                  <label class="field-label" for="student-profile-phone">Phone number</label>
-                  <input class="input" id="student-profile-phone" name="phone" placeholder="Enter phone number"/>
-                </div>
-                <div>
-                  <label class="field-label" for="student-profile-bio">Bio / Statement</label>
-                  <textarea class="input" id="student-profile-bio" name="bio" rows="3" placeholder="Tell us about yourself..."></textarea>
-                </div>
-                <div style="margin-top: 1rem;">
-                  <button class="btn" type="submit" style="color: #000; min-width: 140px;">Save Changes</button>
-                </div>
-              </form>
-            </div>
-            
-            <!-- Tab: Security -->
-            <div id="profile-sub-security" class="profile-sub-content" style="display:none;">
-              <div class="grid grid-2" style="gap: 2rem; align-items: start;">
-                <form id="form-change-password" class="form-grid">
-                  <div>
-                    <label class="field-label" for="profile-current-pwd">Current Password</label>
-                    <input type="password" id="profile-current-pwd" class="input" required autocomplete="current-password"/>
-                  </div>
-                  <div>
-                    <label class="field-label" for="profile-new-pwd">New Password</label>
-                    <input type="password" id="profile-new-pwd" class="input" required autocomplete="new-password"/>
-                  </div>
-                  <div>
-                    <label class="field-label" for="profile-confirm-pwd">Confirm New Password</label>
-                    <input type="password" id="profile-confirm-pwd" class="input" required autocomplete="new-password"/>
-                  </div>
-                  <div style="margin-top: 1rem;">
-                    <button type="submit" class="btn" style="color: #000;">Change Password</button>
-                  </div>
-                </form>
-                
-                <div class="card" style="background: var(--surface); border: 1px solid var(--card-border); padding: 1.25rem;">
-                  <h4 style="margin-top:0; color: var(--text);">Password Strength Guidelines</h4>
-                  <div class="password-strength-checklist small mt-2" style="display: flex; flex-direction: column; gap: 0.4rem;">
-                    <div id="criteria-length" class="criteria text-secondary" style="display: flex; align-items: center; gap: 0.4rem;">
-                      <span class="dot" style="width: 6px; height: 6px; border-radius: 50%; background: var(--muted); display: inline-block;"></span>
-                      At least 8 characters
-                    </div>
-                    <div id="criteria-upper" class="criteria text-secondary" style="display: flex; align-items: center; gap: 0.4rem;">
-                      <span class="dot" style="width: 6px; height: 6px; border-radius: 50%; background: var(--muted); display: inline-block;"></span>
-                      At least one uppercase letter (A-Z)
-                    </div>
-                    <div id="criteria-lower" class="criteria text-secondary" style="display: flex; align-items: center; gap: 0.4rem;">
-                      <span class="dot" style="width: 6px; height: 6px; border-radius: 50%; background: var(--muted); display: inline-block;"></span>
-                      At least one lowercase letter (a-z)
-                    </div>
-                    <div id="criteria-digit" class="criteria text-secondary" style="display: flex; align-items: center; gap: 0.4rem;">
-                      <span class="dot" style="width: 6px; height: 6px; border-radius: 50%; background: var(--muted); display: inline-block;"></span>
-                      At least one number (0-9)
-                    </div>
-                    <div id="criteria-special" class="criteria text-secondary" style="display: flex; align-items: center; gap: 0.4rem;">
-                      <span class="dot" style="width: 6px; height: 6px; border-radius: 50%; background: var(--muted); display: inline-block;"></span>
-                      At least one special character (!@#$%^&*()_+-=)
+                <!-- Password Change Block -->
+                <div class="card" style="background: var(--surface); border: 1px solid var(--card-border); padding: 1.5rem;">
+                  <h3 style="margin-top:0; border-bottom: 2px solid var(--primary-muted); padding-bottom: 0.5rem; color: var(--text);">Security & Password Management</h3>
+                  <div class="grid grid-2" style="gap: 2rem; align-items: start; margin-top: 1rem;">
+                    <form id="form-change-password" class="form-grid">
+                      <div>
+                        <label class="field-label" for="profile-current-pwd">Current Password</label>
+                        <input type="password" id="profile-current-pwd" class="input" required autocomplete="current-password"/>
+                      </div>
+                      <div>
+                        <label class="field-label" for="profile-new-pwd">New Password</label>
+                        <input type="password" id="profile-new-pwd" class="input" required autocomplete="new-password"/>
+                      </div>
+                      <div>
+                        <label class="field-label" for="profile-confirm-pwd">Confirm New Password</label>
+                        <input type="password" id="profile-confirm-pwd" class="input" required autocomplete="new-password"/>
+                      </div>
+                      <div style="margin-top: 1rem;">
+                        <button type="submit" class="btn" style="color: #000;">Change Password</button>
+                      </div>
+                    </form>
+                    
+                    <div style="background: rgba(0,0,0,0.15); border: 1px solid var(--card-border); padding: 1.25rem; border-radius: 8px;">
+                      <h4 style="margin-top:0; color: var(--text);">Password Strength Guidelines</h4>
+                      <div class="password-strength-checklist small mt-2" style="display: flex; flex-direction: column; gap: 0.4rem;">
+                        <div id="criteria-length" class="criteria text-secondary" style="display: flex; align-items: center; gap: 0.4rem;">
+                          <span class="dot" style="width: 6px; height: 6px; border-radius: 50%; background: var(--muted); display: inline-block;"></span>
+                          At least 8 characters
+                        </div>
+                        <div id="criteria-upper" class="criteria text-secondary" style="display: flex; align-items: center; gap: 0.4rem;">
+                          <span class="dot" style="width: 6px; height: 6px; border-radius: 50%; background: var(--muted); display: inline-block;"></span>
+                          At least one uppercase letter (A-Z)
+                        </div>
+                        <div id="criteria-lower" class="criteria text-secondary" style="display: flex; align-items: center; gap: 0.4rem;">
+                          <span class="dot" style="width: 6px; height: 6px; border-radius: 50%; background: var(--muted); display: inline-block;"></span>
+                          At least one lowercase letter (a-z)
+                        </div>
+                        <div id="criteria-digit" class="criteria text-secondary" style="display: flex; align-items: center; gap: 0.4rem;">
+                          <span class="dot" style="width: 6px; height: 6px; border-radius: 50%; background: var(--muted); display: inline-block;"></span>
+                          At least one number (0-9)
+                        </div>
+                        <div id="criteria-special" class="criteria text-secondary" style="display: flex; align-items: center; gap: 0.4rem;">
+                          <span class="dot" style="width: 6px; height: 6px; border-radius: 50%; background: var(--muted); display: inline-block;"></span>
+                          At least one special character (!@#$%^&*()_+-=)
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
