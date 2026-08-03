@@ -1,0 +1,114 @@
+/* ============================================
+   SSCC Component: Forms & Form Controls
+   ============================================ */
+
+.form-group { margin-bottom: var(--space-4); }
+.form-label {
+  display: block;
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  color: var(--text-primary);
+  margin-bottom: 0.375rem;
+}
+.form-label--required::after {
+  content: ' *';
+  color: var(--error-500);
+}
+.form-hint {
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+  margin-top: var(--space-1);
+}
+.form-error {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--text-xs);
+  color: var(--error-600);
+  margin-top: var(--space-1);
+  animation: shake 0.3s ease-in-out;
+}
+
+.input {
+  display: block;
+  width: 100%;
+  padding: 0.625rem var(--space-3);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+  background: var(--surface-primary);
+  border: 1.5px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  transition: all var(--transition-fast);
+}
+.input::placeholder { color: var(--text-tertiary); }
+.input:hover { border-color: var(--border-strong); }
+.input:focus {
+  border-color: var(--brand-500);
+  box-shadow: 0 0 0 3px var(--brand-100);
+  outline: none;
+}
+.input--error {
+  border-color: var(--error-500);
+  background: var(--error-50);
+}
+.input--error:focus { box-shadow: 0 0 0 3px var(--error-50); }
+.input--success { border-color: var(--success-500); }
+
+.input-wrapper { position: relative; }
+.input-wrapper .input { padding-left: var(--space-10); }
+.input-wrapper__icon {
+  position: absolute;
+  left: var(--space-3);
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-tertiary);
+  pointer-events: none;
+  transition: color var(--transition-fast);
+  display: flex;
+  align-items: center;
+}
+.input:focus ~ .input-wrapper__icon,
+.input-wrapper:focus-within .input-wrapper__icon {
+  color: var(--brand-500);
+}
+.input-wrapper__action {
+  position: absolute;
+  right: var(--space-2);
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  padding: var(--space-1);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+}
+.input-wrapper__action:hover {
+  background: var(--surface-tertiary);
+  color: var(--text-primary);
+}
+
+.select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right var(--space-3) center;
+  padding-right: var(--space-10);
+}
+
+.checkbox, .radio {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  cursor: pointer;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+.checkbox input, .radio input {
+  width: 1.125rem;
+  height: 1.125rem;
+  accent-color: var(--brand-600);
+  cursor: pointer;
+}

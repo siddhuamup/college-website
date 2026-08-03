@@ -1,0 +1,97 @@
+/* ============================================
+   SSCC Layout: Dashboard & Navigation System
+   ============================================ */
+
+.dashboard {
+  display: grid;
+  grid-template-columns: var(--sidebar-width) 1fr;
+  grid-template-rows: var(--header-height) 1fr;
+  grid-template-areas:
+    "sidebar header"
+    "sidebar main";
+  min-height: 100vh;
+  transition: grid-template-columns var(--transition-normal);
+}
+
+.dashboard--collapsed {
+  grid-template-columns: var(--sidebar-collapsed) 1fr;
+}
+
+@media (max-width: 1024px) {
+  .dashboard {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "header"
+      "main";
+  }
+  .dashboard__sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    z-index: var(--z-modal);
+    transform: translateX(-100%);
+    transition: transform var(--transition-normal);
+  }
+  .dashboard--sidebar-open .dashboard__sidebar {
+    transform: translateX(0);
+  }
+  .dashboard__overlay { display: block; }
+}
+
+.dashboard__header {
+  grid-area: header;
+}
+
+.dashboard__sidebar {
+  grid-area: sidebar;
+  background: var(--surface-primary);
+  border-right: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.dashboard__main {
+  grid-area: main;
+  padding: var(--space-6);
+  overflow-y: auto;
+  background: var(--surface-secondary);
+}
+
+.dashboard__page-header { margin-bottom: var(--space-6); }
+.dashboard__page-title {
+  font-size: var(--text-2xl);
+  font-weight: var(--font-bold);
+  color: var(--text-primary);
+}
+.dashboard__page-subtitle {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  margin-top: var(--space-1);
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+}
+
+.content-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: var(--space-6);
+}
+.content-grid__col-8 { grid-column: span 8; }
+.content-grid__col-6 { grid-column: span 6; }
+.content-grid__col-4 { grid-column: span 4; }
+.content-grid__col-3 { grid-column: span 3; }
+
+@media (max-width: 1024px) {
+  .content-grid__col-8,
+  .content-grid__col-6,
+  .content-grid__col-4,
+  .content-grid__col-3 { grid-column: span 12; }
+}

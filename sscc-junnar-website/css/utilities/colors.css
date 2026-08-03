@@ -1,0 +1,15 @@
+/* ============================================
+   SSCC Utility: Colors
+   ============================================ */
+
+.text-primary { color: var(--text-primary); }
+.text-secondary { color: var(--text-secondary); }
+.text-tertiary { color: var(--text-tertiary); }
+.text-brand { color: var(--brand-600); }
+.text-success { color: var(--success-600); }
+.text-warning { color: var(--warning-600); }
+.text-danger { color: var(--error-600); }
+
+.bg-primary { background-color: var(--surface-primary); }
+.bg-secondary { background-color: var(--surface-secondary); }
+.bg-tertiary { background-color: var(--surface-tertiary); }

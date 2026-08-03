@@ -2720,42 +2720,6 @@
         loadGalleryAdmin();
       })
     );
-  if (formCourse) formCourse.addEventListener('submit', withSubmitGuard(async (e) => {
-    e.preventDefault();
-    const f = e.target;
-    await SSC_API.post('/admin/courses', {
-      name: f.name.value.trim(),
-      level: f.level.value,
-      duration: f.duration.value.trim(),
-      eligibility: f.eligibility.value.trim(),
-      seatsApprox: Number(f.seatsApprox.value) || 0,
-      departmentId: f.departmentId.value || null,
-      description: f.description.value.trim(),
-    });
-    f.reset();
-    loadCourses();
-  }));
-
-  async function loadGalleryAdmin() {
-    const items = await SSC_API.get('/admin/gallery');
-    const grid = document.getElementById('gallery-admin');
-    grid.innerHTML = '';
-    items.forEach((g) => {
-      const wrap = document.createElement('div');
-      wrap.className = 'card';
-      wrap.innerHTML = g.imageUrl
-        ? `<img src="${g.imageUrl}" alt="" style="width:100%;height:140px;object-fit:cover;border-radius:12px"/>
-           <p class="small mt-2">${esc(g.caption || '')}</p>
-           <button class="btn small danger mt-2" data-del-gal="${g._id}">Delete</button>`
-        : '';
-      grid.appendChild(wrap);
-    });
-    grid.querySelectorAll('[data-del-gal]').forEach((b) =>
-      b.addEventListener('click', async () => {
-        await SSC_API.delete('/admin/gallery/' + b.getAttribute('data-del-gal'));
-        loadGalleryAdmin();
-      })
-    );
   }
 
   const formGallery = document.getElementById('form-gallery');

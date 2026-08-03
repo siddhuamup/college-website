@@ -1,0 +1,28 @@
+/* ============================================
+   SSCC Page: Homepage
+   ============================================ */
+
+.hero {
+  padding: var(--space-12) 0;
+  text-align: center;
+}
+.hero h2 {
+  font-size: var(--text-3xl);
+  font-weight: var(--font-extrabold);
+  color: var(--text-primary);
+  margin-top: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+.hero p {
+  font-size: var(--text-lg);
+  color: var(--text-secondary);
+  max-width: 680px;
+  margin: 0 auto var(--space-6);
+}
+.cta-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}

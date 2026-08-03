@@ -1,0 +1,21 @@
+/* ============================================
+   SSCC Utility: Keyframe Animations
+   ============================================ */
+
+.fade-in {
+  animation: fadeIn var(--transition-normal);
+}
+
+.slide-up {
+  animation: slideUp var(--transition-normal);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}

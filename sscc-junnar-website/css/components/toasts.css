@@ -1,0 +1,78 @@
+/* ============================================
+   SSCC Component: Toast Notifications
+   ============================================ */
+
+.toast-container {
+  position: fixed;
+  top: var(--space-4);
+  right: var(--space-4);
+  z-index: var(--z-toast);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  max-width: 400px;
+  pointer-events: none;
+}
+.toast-container--bottom { top: auto; bottom: var(--space-4); }
+.toast-container--left { right: auto; left: var(--space-4); }
+
+.toast {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: var(--surface-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
+  pointer-events: all;
+  animation: toast-in var(--transition-bounce);
+  position: relative;
+  overflow: hidden;
+}
+.toast--out { animation: toast-out var(--transition-normal) forwards; }
+
+.toast__icon { flex-shrink: 0; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; }
+.toast--success .toast__icon { color: var(--success-600); }
+.toast--error .toast__icon { color: var(--error-600); }
+.toast--warning .toast__icon { color: var(--warning-600); }
+.toast--info .toast__icon { color: var(--info-600); }
+
+.toast__content { flex: 1; min-width: 0; }
+.toast__title {
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+  color: var(--text-primary);
+  margin-bottom: 0.125rem;
+}
+.toast__message {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  line-height: var(--leading-snug);
+}
+
+.toast__close {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  padding: var(--space-1);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+}
+.toast__close:hover {
+  background: var(--surface-tertiary);
+  color: var(--text-primary);
+}
+
+.toast__progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  background: currentColor;
+  opacity: 0.2;
+  border-radius: 0 0 0 var(--radius-xl);
+  animation: toast-progress linear forwards;
+}

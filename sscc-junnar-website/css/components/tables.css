@@ -1,0 +1,66 @@
+/* ============================================
+   SSCC Component: Data Tables & Rosters
+   ============================================ */
+
+.data-table-container {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  background: var(--surface-primary);
+}
+
+.data-table,
+table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: var(--text-sm);
+}
+
+.data-table th,
+table th {
+  padding: var(--space-3) var(--space-4);
+  background: var(--surface-tertiary);
+  color: var(--text-secondary);
+  font-weight: var(--font-semibold);
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--border-subtle);
+  white-space: nowrap;
+}
+
+.data-table td,
+table td {
+  padding: var(--space-3.5) var(--space-4);
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  vertical-align: middle;
+}
+
+.data-table tr:last-child td,
+table tr:last-child td {
+  border-bottom: none;
+}
+
+.data-table tbody tr,
+table tbody tr {
+  transition: background-color var(--transition-fast);
+}
+
+.data-table tbody tr:hover,
+table tbody tr:hover {
+  background-color: var(--surface-secondary);
+}
+
+.table-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--border-subtle);
+  background: var(--surface-primary);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
