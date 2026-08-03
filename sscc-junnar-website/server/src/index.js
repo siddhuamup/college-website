@@ -16,6 +16,8 @@ import { adminTimetableRouter, teacherTimetableRouter, studentTimetableRouter } 
 import { adminLibraryRouter, studentLibraryRouter } from './routes/library.js';
 import { adminExamRouter, teacherExamRouter, studentExamRouter } from './routes/exam.js';
 import { adminFeeRouter, studentFeeRouter } from './routes/fees.js';
+import { messengerRouter } from './routes/messenger.js';
+import { notificationsRouter } from './routes/notifications.js';
 import cookieParser from 'cookie-parser';
 import { errorHandler } from './middleware/errorHandler.js';
 import { globalApiLimiter } from './middleware/rateLimit.js';
@@ -185,6 +187,8 @@ app.use('/api/student/timetable', studentTimetableRouter({ jwtSecret: JWT_SECRET
 app.use('/api/student/library', studentLibraryRouter({ jwtSecret: JWT_SECRET }));
 app.use('/api/student/exams', studentExamRouter({ jwtSecret: JWT_SECRET }));
 app.use('/api/student/fees', studentFeeRouter({ jwtSecret: JWT_SECRET }));
+app.use('/api/messenger', messengerRouter({ jwtSecret: JWT_SECRET }));
+app.use('/api/notifications', notificationsRouter({ jwtSecret: JWT_SECRET }));
 
 app.use((req, res, next) => {
   if (req.originalUrl.startsWith('/api')) {

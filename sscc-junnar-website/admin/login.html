@@ -2,13 +2,52 @@
 <html lang="en">
 <head>
   <meta charset="utf-8"/>
-  <meta http-equiv="refresh" content="0;url=/admin"/>
-  <title>Redirecting to Admin Portal…</title>
-  <script>
-    location.href = '/admin';
-  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Admin Login — SSC College, Junnar</title>
+  <script src="/js/theme.js"></script>
+  <link rel="stylesheet" href="../css/main.css"/>
+  <link rel="stylesheet" href="../css/styles.css"/>
+  <link rel="manifest" href="/manifest.json"/>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
 </head>
-<body>
-  <p class="small">Opening admin portal… <a href="/admin">Click here if not redirected automatically</a></p>
+<body class="auth-page">
+  <div class="auth-card-wrapper">
+    <div class="card card--elevated auth-card">
+      <div class="text-center mb-4">
+        <h1 class="brand-title">SSC College Junnar</h1>
+        <p class="text-muted">Admin Access Authentication</p>
+      </div>
+      <form id="admin-login-page-form" class="form-grid">
+        <div class="form-group">
+          <label class="field-label" for="admin-key">Server Access Key</label>
+          <input class="input" id="admin-key" name="accessKey" type="password" placeholder="Enter configured key" autocomplete="off" required autofocus/>
+        </div>
+        <button class="btn btn--primary w-full" type="submit" id="btn-login-submit">Authenticate</button>
+      </form>
+      <p id="admin-login-msg" class="small mt-3 text-center" role="status"></p>
+      <div class="text-center mt-4">
+        <a href="/index.html" class="text-muted small">← Return to Public Website</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('admin-login-page-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const key = document.getElementById('admin-key').value.trim();
+      const msgEl = document.getElementById('admin-login-msg');
+      const btn = document.getElementById('btn-login-submit');
+      if (!key) return;
+      
+      btn.classList.add('btn--loading');
+      msgEl.textContent = 'Verifying access key...';
+      msgEl.className = 'small mt-3 text-center text-muted';
+      
+      sessionStorage.setItem('ssc_admin_key', key);
+      setTimeout(() => {
+        window.location.href = '/admin';
+      }, 400);
+    });
+  </script>
 </body>
 </html>

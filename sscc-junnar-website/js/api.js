@@ -34,6 +34,24 @@
         const err = new Error(data.error || res.statusText || 'Request failed');
         err.status = res.status;
         err.data = data;
+
+        // Global Toast Error Interceptor
+        const notifyError = (msg) => {
+          if (typeof window.Toast !== 'undefined' && window.Toast.error) {
+            window.Toast.error(msg);
+          } else if (typeof window.showToast === 'function') {
+            window.showToast(msg, 'error');
+          }
+        };
+
+        if (res.status === 401 && !path.includes('/auth/login') && !path.includes('/auth/me')) {
+          notifyError('Session expired. Please log in again.');
+        } else if (res.status === 403) {
+          notifyError(data.error || 'Access denied.');
+        } else if (res.status >= 500) {
+          notifyError('Server error occurred. Please try again later.');
+        }
+
         throw err;
       }
       return data;
@@ -135,3 +153,12 @@ window.sanitizeHTML = function(html) {
   }
   return window.escapeText(html);
 };
+
+// Global promise rejection boundary listener
+window.addEventListener('unhandledrejection', (evt) => {
+  if (evt.reason && evt.reason.status) {
+    // Handled by API error interceptor
+    return;
+  }
+  console.error('[Unhandled Rejection]', evt.reason);
+});

@@ -142,6 +142,83 @@ export function adminRouter({ jwtSecret }) {
     res.json(list.map(stripHash));
   });
 
+  r.post('/students/bulk-import', async (req, res) => {
+    const { csvData } = req.body;
+    if (!Array.isArray(csvData)) {
+      return res.status(400).json({ error: 'csvData array is required' });
+    }
+    const results = { success: 0, failed: [], total: csvData.length };
+
+    for (const row of csvData) {
+      try {
+        if (!row.email || !row.name) {
+          results.failed.push({ row: row.email || 'unknown', error: 'Missing name or email' });
+          continue;
+        }
+        const cleanEmail = String(row.email).toLowerCase().trim();
+        const existing = await prisma.user.findUnique({ where: { email: cleanEmail } });
+        if (existing) {
+          results.failed.push({ row: cleanEmail, error: 'Email already exists' });
+          continue;
+        }
+
+        const courseAbbr = (row.courseName || 'GEN').toUpperCase().replace(/[^A-Z0-9]/g, '') || 'GEN';
+        const finalStudentId = row.studentId || await nextStudentId(courseAbbr);
+        const finalRollNumber = row.rollNumber || await nextRollNumber(courseAbbr);
+
+        await prisma.user.create({
+          data: {
+            email: cleanEmail,
+            name: String(row.name).trim(),
+            passwordHash: await hashPassword(row.password || 'SSC@123'),
+            role: Role.student,
+            phone: row.phone || '',
+            studentProfile: {
+              studentId: finalStudentId,
+              rollNumber: finalRollNumber,
+              className: row.className || '',
+              courseName: row.courseName || '',
+              year: row.year || '',
+              division: row.division || 'A',
+              academicYear: new Date().getFullYear(),
+              verificationId: `SSC-VER-${finalStudentId}`
+            }
+          }
+        });
+        results.success++;
+      } catch (err) {
+        results.failed.push({ row: row.email || 'unknown', error: err.message });
+      }
+    }
+
+    logAdminAction(req.user.id, 'BULK_IMPORT_STUDENTS', 'students', { success: results.success, failed: results.failed.length });
+    res.json(results);
+  });
+
+  r.get('/students/export', async (req, res) => {
+    const students = await prisma.user.findMany({
+      where: { role: Role.student, isDeleted: false },
+      orderBy: { name: 'asc' }
+    });
+
+    const rows = students.map(s => {
+      const sp = s.studentProfile && typeof s.studentProfile === 'object' ? s.studentProfile : {};
+      return {
+        Name: s.name || '',
+        Email: s.email || '',
+        Phone: s.phone || '',
+        StudentID: sp.studentId || '',
+        RollNumber: sp.rollNumber || '',
+        Class: sp.className || '',
+        Course: sp.courseName || '',
+        Year: sp.year || '',
+        Division: sp.division || ''
+      };
+    });
+
+    res.json({ students: rows });
+  });
+
   r.post('/students', validate(createStudentSchema), async (req, res) => {
     const { email, password, name, phone, rollNumber, className, courseName, year } = req.body;
     const exists = await prisma.user.findUnique({ where: { email: String(email).toLowerCase() } });

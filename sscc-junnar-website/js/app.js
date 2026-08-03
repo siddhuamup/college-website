@@ -30,6 +30,19 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  // Automatic form submit button loading states
+  document.addEventListener('submit', (e) => {
+    const form = e.target;
+    if (!form || typeof form.querySelector !== 'function') return;
+    const submitBtn = form.querySelector('button[type="submit"], input[type="submit"]');
+    if (submitBtn && !submitBtn.classList.contains('btn--loading')) {
+      submitBtn.classList.add('btn--loading');
+      setTimeout(() => {
+        submitBtn.classList.remove('btn--loading');
+      }, 5000);
+    }
+  });
+
   // Export global instances for legacy script compatibility
   window.SSCC = {
     store,

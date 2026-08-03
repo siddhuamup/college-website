@@ -46,6 +46,9 @@ model User {
   libraryIssues            LibraryIssue[]         @relation("LibraryIssueStudent")
   resetTokens              PasswordResetToken[]
   feePayments              FeePayment[]           @relation("FeePaymentStudent")
+  chatMembers              ChatMember[]
+  chatMessages             ChatMessage[]
+  userKeyPair              UserKeyPair?
 
   @@index([role])
   @@index([isDeleted])
@@ -448,6 +451,77 @@ model TeacherAttendance {
   updatedAt DateTime @updatedAt
 
   @@index([teacherId])
+}
+
+model ChatRoom {
+  id          String   @id @default(uuid())
+  name        String?
+  type        String   @default("direct") // 'direct' | 'group'
+  createdBy   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  isActive    Boolean  @default(true)
+
+  members     ChatMember[]
+  messages    ChatMessage[]
+
+  @@index([type])
+  @@index([updatedAt])
+}
+
+model ChatMember {
+  id                String   @id @default(uuid())
+  roomId            String
+  room              ChatRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role              String   @default("member") // 'admin' | 'member'
+  joinedAt          DateTime @default(now())
+  lastReadAt        DateTime @default(now())
+
+  encryptedGroupKey String?
+  iv                String?
+
+  @@unique([roomId, userId])
+  @@index([userId])
+}
+
+model ChatMessage {
+  id               String   @id @default(uuid())
+  roomId           String
+  room             ChatRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  senderId         String
+  sender           User     @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  encryptedContent String
+  iv               String
+  authTag          String   @default("")
+
+  messageType      String   @default("text") // 'text' | 'file' | 'image'
+  fileUrl          String?
+  fileName         String?
+  fileSize         Int?
+
+  replyToId        String?
+  isEdited         Boolean  @default(false)
+  editedAt         DateTime?
+
+  createdAt        DateTime @default(now())
+
+  @@index([roomId, createdAt])
+  @@index([senderId])
+}
+
+model UserKeyPair {
+  userId              String   @id
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  publicKey           String
+  encryptedPrivateKey String
+  iv                  String
+  salt                String
+
+  createdAt           DateTime @default(now())
 }
 
 
