@@ -20,7 +20,7 @@ export function createAuthMiddleware(jwtSecret) {
     }
 
     // Check token blacklist (logout invalidation)
-    if (isBlacklisted(token)) {
+    if (await isBlacklisted(token)) {
       return res.status(401).json({ error: 'Token has been invalidated. Please log in again.' });
     }
 

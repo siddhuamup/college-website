@@ -10,14 +10,26 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (window.ThemeManager) {
           window.ThemeManager.apply();
         }
+      } else if (!header.innerHTML.trim()) {
+        header.innerHTML = '<nav class="site-nav"><div class="container"><a href="/" class="brand-link">SSC College Junnar</a></div></nav>';
       }
     }
     if (footer) {
       const res = await fetch('/partials/footer.html');
-      if (res.ok) footer.innerHTML = await res.text();
+      if (res.ok) {
+        footer.innerHTML = await res.text();
+      } else if (!footer.innerHTML.trim()) {
+        footer.innerHTML = `<footer class="site-footer"><div class="container"><p>&copy; ${new Date().getFullYear()} SSC College Junnar. All rights reserved.</p></div></footer>`;
+      }
     }
   } catch {
-    /* offline or file:// */
+    /* offline or file:// fallback */
+    if (header && !header.innerHTML.trim()) {
+      header.innerHTML = '<nav class="site-nav"><div class="container"><a href="/" class="brand-link">SSC College Junnar</a></div></nav>';
+    }
+    if (footer && !footer.innerHTML.trim()) {
+      footer.innerHTML = `<footer class="site-footer"><div class="container"><p>&copy; ${new Date().getFullYear()} SSC College Junnar. All rights reserved.</p></div></footer>`;
+    }
   }
   document.dispatchEvent(new CustomEvent('layout-loaded'));
 });
@@ -110,15 +122,21 @@ window.showConfirm = function(message, title = 'Are you sure?', confirmText = 'C
     const actions = document.createElement('div');
     actions.className = 'confirm-dialog-actions';
 
+    const cleanup = () => {
+      backdrop.remove();
+      document.removeEventListener('keydown', onKey);
+      document.removeEventListener('focusin', onFocusIn);
+    };
+
     const cancelBtn = document.createElement('button');
     cancelBtn.className = 'btn secondary';
     cancelBtn.textContent = 'Cancel';
-    cancelBtn.addEventListener('click', () => { backdrop.remove(); resolve(false); });
+    cancelBtn.addEventListener('click', () => { cleanup(); resolve(false); });
 
     const confirmBtn = document.createElement('button');
     confirmBtn.className = confirmClass;
     confirmBtn.textContent = confirmText;
-    confirmBtn.addEventListener('click', () => { backdrop.remove(); resolve(true); });
+    confirmBtn.addEventListener('click', () => { cleanup(); resolve(true); });
 
     actions.appendChild(cancelBtn);
     actions.appendChild(confirmBtn);
@@ -128,11 +146,17 @@ window.showConfirm = function(message, title = 'Are you sure?', confirmText = 'C
     backdrop.appendChild(dialog);
     document.body.appendChild(backdrop);
 
-    // Close on Escape
+    // Close on Escape & trap focus
     const onKey = (e) => {
-      if (e.key === 'Escape') { backdrop.remove(); resolve(false); document.removeEventListener('keydown', onKey); }
+      if (e.key === 'Escape') { cleanup(); resolve(false); }
+    };
+    const onFocusIn = (e) => {
+      if (!backdrop.contains(e.target)) {
+        cancelBtn.focus();
+      }
     };
     document.addEventListener('keydown', onKey);
+    document.addEventListener('focusin', onFocusIn);
 
     // Focus the cancel button for keyboard accessibility
     cancelBtn.focus();

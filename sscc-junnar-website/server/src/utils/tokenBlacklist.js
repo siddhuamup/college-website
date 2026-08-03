@@ -38,10 +38,24 @@ export async function blacklistToken(token, expiresAt) {
 /**
  * Check if a token is blacklisted.
  * @param {string} token
- * @returns {boolean}
+ * @returns {Promise<boolean>}
  */
-export function isBlacklisted(token) {
+export async function isBlacklisted(token) {
   if (!token) return false;
-  return blacklist.has(token);
+  if (blacklist.has(token)) return true;
+  try {
+    const record = await prisma.tokenBlacklist.findUnique({
+      where: { token }
+    });
+    if (record) {
+      if (record.expiresAt > new Date()) {
+        blacklist.set(token, record.expiresAt.getTime());
+        return true;
+      }
+    }
+  } catch (err) {
+    console.warn('Failed to query token blacklist DB:', err.message);
+  }
+  return false;
 }
 

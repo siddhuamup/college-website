@@ -61,7 +61,7 @@ export const createCourseSchema = z.object({
   duration: z.string().optional(),
   eligibility: z.string().optional(),
   description: z.string().optional(),
-  seatsApprox: z.union([z.number(), z.string()]).transform(val => Number(val) || 0).optional(),
+  seatsApprox: z.coerce.number().min(0).optional(),
   departmentId: z.string().optional()
 });
 
@@ -90,7 +90,7 @@ export const createTeacherSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
   email: z.string().email('Invalid email address'),
   phone: z.string().optional(),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
+  password: strongPassword,
   employeeId: z.string().optional(),
   department: z.string().optional(),
   designation: z.string().optional(),

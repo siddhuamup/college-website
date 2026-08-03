@@ -96,7 +96,7 @@ export function uploadsPath() {
   return uploadsRoot;
 }
 
-export function verifyMagicBytes(req, res, next) {
+export async function verifyMagicBytes(req, res, next) {
   const files = [];
   if (req.file) {
     files.push(req.file);
@@ -121,15 +121,19 @@ export function verifyMagicBytes(req, res, next) {
 
   for (const file of files) {
     const filePath = file.path;
-    if (!fs.existsSync(filePath)) {
+    try {
+      await fs.promises.access(filePath);
+    } catch {
       return next(new Error(`Uploaded file not found on disk: ${file.originalname}`));
     }
 
+    let fileHandle;
     try {
-      const fd = fs.openSync(filePath, 'r');
+      fileHandle = await fs.promises.open(filePath, 'r');
       const buffer = Buffer.alloc(12);
-      fs.readSync(fd, buffer, 0, 12, 0);
-      fs.closeSync(fd);
+      await fileHandle.read(buffer, 0, 12, 0);
+      await fileHandle.close();
+      fileHandle = null;
 
       const hex = buffer.toString('hex').toUpperCase();
       const ext = path.extname(file.originalname).toLowerCase();
@@ -152,6 +156,9 @@ export function verifyMagicBytes(req, res, next) {
         return res.status(400).json({ error: `File verification failed for '${file.originalname}'. Magic bytes mismatch or unsupported file type.` });
       }
     } catch (err) {
+      if (fileHandle) {
+        await fileHandle.close().catch(() => {});
+      }
       console.error('Magic bytes read error:', err);
       cleanupFiles(files);
       return res.status(500).json({ error: 'Internal server error during file validation.' });

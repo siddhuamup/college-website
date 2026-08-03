@@ -1653,11 +1653,6 @@
         return;
       }
       
-        });
-        
-        return;
-      }
-      
       const filteredStudents = studentsCache.filter(s => s.name.toLowerCase().includes(q) || (s.studentProfile?.rollNumber || '').toLowerCase().includes(q));
       
       resultsDiv.innerHTML = '';

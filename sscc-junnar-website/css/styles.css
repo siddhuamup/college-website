@@ -57,6 +57,10 @@
   --z-tooltip: 700;
 }
 
+[aria-hidden="true"] {
+  display: none !important;
+}
+
 /* ── Light Theme ──────────────────────────────────────────── */
 html[data-theme="light"] {
   --bg: #f8fafc;

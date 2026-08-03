@@ -153,27 +153,33 @@ export function adminFeeRouter({ jwtSecret }) {
       return res.status(400).json({ error: 'Amount paid must be a positive number' });
     }
 
-    // Generate receipt number e.g. REC-2026-00001
-    const count = await prisma.feePayment.count();
+    // Generate receipt number atomically e.g. REC-2026-00001
     const year = new Date().getFullYear();
-    const receiptNumber = `REC-${year}-${String(count + 1).padStart(5, '0')}`;
+    const payment = await prisma.$transaction(async (tx) => {
+      const counter = await tx.counter.upsert({
+        where: { name: `receipt_${year}` },
+        update: { value: { increment: 1 } },
+        create: { name: `receipt_${year}`, value: 1 }
+      });
+      const receiptNumber = `REC-${year}-${String(counter.value).padStart(5, '0')}`;
 
-    const payment = await prisma.feePayment.create({
-      data: {
-        studentId,
-        feeStructureId,
-        amountPaid: amt,
-        paymentMode: paymentMode || 'cash',
-        transactionRef: transactionRef || '',
-        receiptNumber,
-        semester: semester || 'Sem I',
-        remarks: remarks || '',
-        status: 'completed'
-      },
-      include: {
-        student: { select: { id: true, name: true, email: true, studentProfile: true } },
-        feeStructure: true
-      }
+      return tx.feePayment.create({
+        data: {
+          studentId,
+          feeStructureId,
+          amountPaid: amt,
+          paymentMode: paymentMode || 'cash',
+          transactionRef: transactionRef || '',
+          receiptNumber,
+          semester: semester || 'Sem I',
+          remarks: remarks || '',
+          status: 'completed'
+        },
+        include: {
+          student: { select: { id: true, name: true, email: true, studentProfile: true } },
+          feeStructure: true
+        }
+      });
     });
 
     res.status(201).json(withMongoId(payment));

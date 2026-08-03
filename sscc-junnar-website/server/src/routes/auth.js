@@ -29,9 +29,27 @@ import {
   resetPasswordSchema
 } from '../middleware/validation.js';
 
+function parseJwtExpiresInToMs(val) {
+  if (typeof val === 'number') return val * 1000;
+  if (!val || typeof val !== 'string') return 7 * 24 * 60 * 60 * 1000;
+  const match = val.trim().match(/^(\d+)\s*([smhdw])?$/i);
+  if (!match) return 7 * 24 * 60 * 60 * 1000;
+  const num = parseInt(match[1], 10);
+  const unit = (match[2] || 's').toLowerCase();
+  switch (unit) {
+    case 's': return num * 1000;
+    case 'm': return num * 60 * 1000;
+    case 'h': return num * 60 * 60 * 1000;
+    case 'd': return num * 24 * 60 * 60 * 1000;
+    case 'w': return num * 7 * 24 * 60 * 60 * 1000;
+    default: return num * 1000;
+  }
+}
+
 export function authRouter({ jwtSecret, jwtExpiresIn }) {
   const r = Router();
   const auth = createAuthMiddleware(jwtSecret);
+  const maxAgeMs = parseJwtExpiresInToMs(jwtExpiresIn);
 
   /** Unlock admin UI with server-side key from .env; issues JWT for existing admin user. */
   r.post('/admin-access', adminAccessLimiter, validate(adminAccessSchema), async (req, res) => {
@@ -54,7 +72,7 @@ export function authRouter({ jwtSecret, jwtExpiresIn }) {
       return res.status(503).json({ error: 'No admin user in database. Run npm run seed in server/ once.' });
     }
     const token = signToken({ _id: admin.id, role: admin.role, email: admin.email }, jwtSecret, jwtExpiresIn);
-    res.cookie(COOKIE_NAME, token, cookieOpts(7 * 24 * 60 * 60 * 1000));
+    res.cookie(COOKIE_NAME, token, cookieOpts(maxAgeMs));
     res.json({
       token,
       user: withMongoId({
@@ -101,7 +119,7 @@ export function authRouter({ jwtSecret, jwtExpiresIn }) {
     clearFailedLogins(searchId);
 
     const token = signToken({ _id: user.id, role: user.role, email: user.email }, jwtSecret, jwtExpiresIn);
-    res.cookie(COOKIE_NAME, token, cookieOpts(7 * 24 * 60 * 60 * 1000));
+    res.cookie(COOKIE_NAME, token, cookieOpts(maxAgeMs));
     res.json({
       token,
       mustChangePassword: user.mustChangePassword || false,
@@ -123,7 +141,7 @@ export function authRouter({ jwtSecret, jwtExpiresIn }) {
     if (token) {
       try {
         const payload = verifyToken(token, jwtSecret);
-        const exp = payload.exp ? payload.exp * 1000 : Date.now() + 7 * 24 * 60 * 60 * 1000;
+        const exp = payload.exp ? payload.exp * 1000 : Date.now() + maxAgeMs;
         blacklistToken(token, exp);
       } catch {
         // Token is already invalid — just clear the cookie
@@ -198,14 +216,9 @@ export function authRouter({ jwtSecret, jwtExpiresIn }) {
       return res.json({ message: 'If the email exists, a reset link has been sent.' });
     }
 
-    // Clean up expired tokens for this user first
+    // Clean up previous tokens for this user first
     await prisma.passwordResetToken.deleteMany({
-      where: {
-        OR: [
-          { userId: user.id },
-          { expiresAt: { lt: new Date() } }
-        ]
-      }
+      where: { userId: user.id }
     });
 
     // Generate a random secure raw token & store SHA-256 hash in DB
@@ -262,16 +275,19 @@ export function authRouter({ jwtSecret, jwtExpiresIn }) {
     const user = record.user;
     if (!user) return res.status(404).json({ error: 'User not found' });
     
-    // Update password hash and turn off forced password change
-    await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        passwordHash: await hashPassword(String(newPassword)),
-        mustChangePassword: false,
-      },
-    });
-    
-    await prisma.passwordResetToken.delete({ where: { id: record.id } }).catch(() => {});
+    // Update password hash and turn off forced password change atomically
+    const newHash = await hashPassword(String(newPassword));
+    await prisma.$transaction([
+      prisma.user.update({
+        where: { id: user.id },
+        data: {
+          passwordHash: newHash,
+          mustChangePassword: false,
+        },
+      }),
+      prisma.passwordResetToken.delete({ where: { id: record.id } }),
+    ]);
+
     res.json({ ok: true, message: 'Password has been reset successfully.' });
   });
 
