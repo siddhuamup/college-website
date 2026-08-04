@@ -23,11 +23,11 @@ function storage(subdir) {
       cb(null, path.join(uploadsRoot, subdir));
     },
     filename: (_req, file, cb) => {
-      const baseExt = path.extname(file.originalname) || '';
-      // Strip any path-traversal sequences or dangerous chars from extension
-      const ext = baseExt.replace(/[^a-zA-Z0-9.]/g, '');
-      const rand = crypto.randomBytes(4).toString('hex');
-      cb(null, `${Date.now()}-${rand}${ext}`);
+      const safeBasename = path.basename(file.originalname).replace(/[^a-zA-Z0-9._-]/g, '_');
+      const ext = path.extname(safeBasename) || '';
+      const nameWithoutExt = path.basename(safeBasename, ext);
+      const rand = crypto.randomBytes(6).toString('hex');
+      cb(null, `${Date.now()}_${rand}_${nameWithoutExt.slice(0, 50)}${ext}`);
     },
   });
 }

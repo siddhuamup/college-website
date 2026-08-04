@@ -27,6 +27,7 @@ import { createAuthMiddleware } from './middleware/auth.js';
 import { correlationId } from './middleware/correlationId.js';
 import { logger, requestLogger } from './utils/logger.js';
 import { initRedis, disconnectRedis } from './utils/redis.js';
+import { openApiSpec } from './docs/openapi.js';
 
 // ... existing code ...
 
@@ -136,8 +137,6 @@ app.use('/uploads/admissions', authGuardForUploads, express.static(path.join(upl
 // Fallback: any other uploads subdirectory (e.g. future ones) requires auth
 app.use('/uploads', authGuardForUploads, express.static(uploadsRoot));
 
-// ─── API ROUTES ─────────────────────────────────────────────────────────────
-
 app.get('/api/health', async (_req, res) => {
   let dbOk = false;
   try {
@@ -171,6 +170,10 @@ app.get('/api/health', async (_req, res) => {
     uptimeSec: Math.round(process.uptime()),
     timestamp: new Date().toISOString(),
   });
+});
+
+app.get('/api/docs', (_req, res) => {
+  res.json(openApiSpec);
 });
 
 app.use('/api/auth', authRouter({ jwtSecret: JWT_SECRET, jwtExpiresIn: JWT_EXPIRES_IN }));

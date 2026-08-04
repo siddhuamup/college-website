@@ -151,7 +151,7 @@ export function authRouter({ jwtSecret, jwtExpiresIn }) {
         // Token is already invalid — just clear the cookie
       }
     }
-    res.clearCookie(COOKIE_NAME, { httpOnly: true, sameSite: 'lax', path: '/' });
+    res.clearCookie(COOKIE_NAME, cookieOpts(0));
     res.json({ ok: true, message: 'Logged out successfully' });
   });
 
