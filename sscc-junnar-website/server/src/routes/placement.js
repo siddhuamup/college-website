@@ -182,6 +182,53 @@ export function adminPlacementRouter({ jwtSecret }) {
     );
   });
 
+  // GET /api/admin/placement/applications/export-csv — Download CSV with UTF-8 BOM and formula injection protection
+  r.get('/applications/export-csv', async (_req, res) => {
+    const list = await prisma.placementApplication.findMany({
+      include: {
+        student: { select: { name: true, email: true, studentProfile: true } },
+        drive: {
+          include: {
+            company: { select: { companyName: true } },
+          },
+        },
+      },
+      orderBy: { appliedAt: 'desc' },
+      take: 1000,
+    });
+
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename="placement_applications.csv"');
+    res.write('\xEF\xBB\xBF'); // UTF-8 BOM
+
+    // Sanitize CSV cell values against formula injection
+    const sanitizeCell = (val) => {
+      const s = String(val ?? '').replace(/"/g, '""');
+      const clean = /^[=+\-@\t\r]/.test(s) ? `\t${s}` : s;
+      return `"${clean}"`;
+    };
+
+    const headers = ['Application ID', 'Student Name', 'Email', 'Roll Number', 'Class', 'Company', 'Drive Title', 'Status', 'Applied At'];
+    res.write(headers.map(sanitizeCell).join(',') + '\n');
+
+    for (const app of list) {
+      const row = [
+        app.id,
+        app.student.name,
+        app.student.email,
+        app.student.studentProfile?.rollNumber || '',
+        app.student.studentProfile?.className || '',
+        app.drive.company.companyName,
+        app.drive.title,
+        app.applicationStatus,
+        app.appliedAt.toISOString(),
+      ];
+      res.write(row.map(sanitizeCell).join(',') + '\n');
+    }
+
+    res.end();
+  });
+
   r.patch('/applications/:id/status', async (req, res) => {
     const a = await prisma.placementApplication.findUnique({ where: { id: req.params.id } });
     if (!a) return res.status(404).json({ error: 'Application not found' });
