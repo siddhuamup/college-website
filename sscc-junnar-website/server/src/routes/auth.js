@@ -15,7 +15,7 @@ function cookieOpts(maxAgeMs) {
   return {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    sameSite: 'lax',
     path: '/',
     maxAge: maxAgeMs,
   };
@@ -94,16 +94,20 @@ export function authRouter({ jwtSecret, jwtExpiresIn }) {
       where: { email: searchId },
     });
     if (!user) {
-      // O(1) performance using SQLite JSON extraction function (avoid loading entire database into memory)
-      const rawUsers = await prisma.$queryRaw`
-        SELECT * FROM User 
-        WHERE role = 'student' AND isDeleted = 0 AND (
-          lower(json_extract(studentProfile, '$.studentId')) = ${searchId} OR 
-          lower(json_extract(studentProfile, '$.personalEmail')) = ${searchId} OR 
-          lower(json_extract(studentProfile, '$.collegeEmail')) = ${searchId}
-        ) LIMIT 1
-      `;
-      user = rawUsers[0] || null;
+      // Search by studentProfile JSON fields (cross-database compatible)
+      const candidates = await prisma.user.findMany({
+        where: { role: 'student', isDeleted: false, isActive: true },
+        select: { id: true, email: true, passwordHash: true, role: true, name: true, phone: true, isActive: true, isDeleted: true, mustChangePassword: true, teacherProfile: true, studentProfile: true },
+        take: 50,
+      });
+      user = candidates.find(u => {
+        const sp = typeof u.studentProfile === 'string' ? safeJsonParse(u.studentProfile, {}) : (u.studentProfile || {});
+        return (
+          String(sp.studentId || '').toLowerCase() === searchId ||
+          String(sp.personalEmail || '').toLowerCase() === searchId ||
+          String(sp.collegeEmail || '').toLowerCase() === searchId
+        );
+      }) || null;
     }
     if (!user || !user.isActive || user.isDeleted) {
       recordFailedLogin(searchId);
@@ -147,7 +151,7 @@ export function authRouter({ jwtSecret, jwtExpiresIn }) {
         // Token is already invalid — just clear the cookie
       }
     }
-    res.clearCookie(COOKIE_NAME, { httpOnly: true, sameSite: 'strict', path: '/' });
+    res.clearCookie(COOKIE_NAME, { httpOnly: true, sameSite: 'lax', path: '/' });
     res.json({ ok: true, message: 'Logged out successfully' });
   });
 

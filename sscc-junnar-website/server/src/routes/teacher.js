@@ -10,6 +10,7 @@ import { filterNotices } from '../utils/notices.js';
 import { noticeDto as buildNoticeDto } from '../utils/noticeDto.js';
 import { loginLimiter } from '../middleware/rateLimit.js';
 import { validate, markAttendanceSchema, saveMarkSchema } from '../middleware/validation.js';
+import { parsePagination, paginatedResponse } from '../utils/pagination.js';
 
 function noticeDto(n) {
   return withMongoId(buildNoticeDto(n));
@@ -136,11 +137,20 @@ export function teacherRouter({ jwtSecret, jwtExpiresIn }) {
     const raw = user?.teacherProfile;
     const assignments = raw && typeof raw === 'object' && Array.isArray(raw.assignments) ? raw.assignments : [];
     const subjects = [...new Set(assignments.map((a) => a.subject).filter(Boolean))];
+    const where = {
+      teacherId: req.user.id,
+      ...(subjects.length ? { subject: { in: subjects } } : {}),
+    };
+    if (req.query.page || req.query.limit) {
+      const pag = parsePagination(req.query, 50, 200);
+      const [list, total] = await Promise.all([
+        prisma.mark.findMany({ where, orderBy: { createdAt: 'desc' }, skip: pag.skip, take: pag.take }),
+        prisma.mark.count({ where })
+      ]);
+      return res.json(paginatedResponse(list.map(withMongoId), total, pag));
+    }
     const list = await prisma.mark.findMany({
-      where: {
-        teacherId: req.user.id,
-        ...(subjects.length ? { subject: { in: subjects } } : {}),
-      },
+      where,
       orderBy: { createdAt: 'desc' },
       take: 500,
     });
@@ -445,12 +455,72 @@ export function teacherRouter({ jwtSecret, jwtExpiresIn }) {
   r.get('/self-attendance', async (req, res) => {
     const logs = await prisma.teacherAttendance.findMany({
       where: { teacherId: req.user.id },
-      orderBy: { date: 'desc' },
+      orderBy: { createdAt: 'desc' },
       take: 60
     });
     res.json(logs.map(withMongoId));
   });
 
+  // POST /marks/bulk — Excel-like batch marks entry
+  r.post('/marks/bulk', async (req, res) => {
+    const { entries } = req.body || {};
+    if (!Array.isArray(entries) || entries.length === 0) {
+      return res.status(400).json({ error: 'At least one mark entry required in array' });
+    }
+
+    const teacher = await prisma.user.findUnique({ where: { id: req.user.id } });
+    const raw = teacher?.teacherProfile;
+    const assignments = raw && typeof raw === 'object' && Array.isArray(raw.assignments) ? raw.assignments : [];
+
+    const results = await prisma.$transaction(async (tx) => {
+      const created = [];
+      for (const entry of entries) {
+        const { studentId, subject, examName, marksObtained, maxMarks, term } = entry;
+        if (!studentId || !subject || !examName || marksObtained == null || maxMarks == null) {
+          throw new Error('Each entry must contain studentId, subject, examName, marksObtained, maxMarks');
+        }
+        if (!assignments.some((a) => a.subject === String(subject))) {
+          throw new Error(`Subject "${subject}" is not in your teaching assignments`);
+        }
+
+        const mark = await tx.mark.create({
+          data: {
+            studentId,
+            teacherId: req.user.id,
+            subject: String(subject),
+            examName: String(examName),
+            marksObtained: Number(marksObtained),
+            maxMarks: Number(maxMarks),
+            term: term ? String(term) : '',
+          }
+        });
+        created.push(mark);
+      }
+
+      await tx.auditLog.create({
+        data: {
+          userId: req.user.id,
+          userRole: 'teacher',
+          action: 'BULK_MARKS_ENTRY',
+          target: `${created.length} mark entries`,
+          entityType: 'Mark',
+          entityId: req.user.id,
+          details: JSON.stringify({ count: created.length, subject: entries[0]?.subject }),
+          ipAddress: req.ip || '',
+          userAgent: req.headers['user-agent'] || '',
+        }
+      });
+
+      return created;
+    });
+
+    res.status(201).json({
+      ok: true,
+      message: `Successfully saved ${results.length} mark entries`,
+      count: results.length,
+      data: results.map(withMongoId)
+    });
+  });
+
   return r;
 }
-

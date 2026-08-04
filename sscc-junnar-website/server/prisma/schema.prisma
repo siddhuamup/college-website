@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -199,6 +199,7 @@ model Mark {
   updatedAt     DateTime @updatedAt
 
   @@index([studentId, subject, examName])
+  @@index([examName])
 }
 
 model Attendance {
@@ -214,6 +215,7 @@ model Attendance {
   updatedAt DateTime @updatedAt
 
   @@unique([studentId, subject, date])
+  @@index([date])
 }
 
 model CollegeSettings {
@@ -372,19 +374,22 @@ model PasswordResetToken {
 }
 
 model AuditLog {
-  id        String   @id @default(cuid())
-  userId    String
-  userRole  String   @default("")
-  action    String
-  target    String
-  details   String   @default("{}")
-  ipAddress String   @default("")
-  userAgent String   @default("")
-  timestamp DateTime @default(now())
+  id         String   @id @default(cuid())
+  userId     String
+  userRole   String   @default("")
+  action     String
+  target     String
+  entityType String   @default("")
+  entityId   String   @default("")
+  details    String   @default("{}")
+  ipAddress  String   @default("")
+  userAgent  String   @default("")
+  timestamp  DateTime @default(now())
 
   @@index([userId])
   @@index([action])
   @@index([timestamp])
+  @@index([entityType, entityId])
 }
 
 model FeeStructure {
@@ -426,6 +431,7 @@ model FeePayment {
   @@index([studentId])
   @@index([feeStructureId])
   @@index([receiptNumber])
+  @@index([paymentDate])
 }
 
 model TokenBlacklist {
@@ -525,3 +531,19 @@ model UserKeyPair {
 }
 
 
+model RequestLog {
+  id            String   @id @default(cuid())
+  correlationId String   @unique
+  method        String
+  path          String
+  statusCode    Int      @default(0)
+  durationMs    Int      @default(0)
+  userId        String   @default("")
+  ipAddress     String   @default("")
+  userAgent     String   @default("")
+  createdAt     DateTime @default(now())
+
+  @@index([correlationId])
+  @@index([createdAt])
+  @@index([userId])
+}

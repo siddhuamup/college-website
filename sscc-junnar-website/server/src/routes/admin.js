@@ -9,6 +9,7 @@ import { sendEmail } from '../utils/email.js';
 import { uploadNoticePdf, uploadGalleryImage, uploadAvatarImage, uploadsPath, verifyMagicBytes } from '../multer/configure.js';
 import { Role } from '@prisma/client';
 import { nextStudentId, nextRollNumber } from '../lib/studentIdGenerator.js';
+import { parsePagination, paginatedResponse } from '../utils/pagination.js';
 import {
   validate,
   createStudentSchema,
@@ -1249,7 +1250,15 @@ export function adminRouter({ jwtSecret }) {
     res.json({ ok: true });
   });
 
-  r.get('/feedback', async (_req, res) => {
+  r.get('/feedback', async (req, res) => {
+    if (req.query.page || req.query.limit) {
+      const pag = parsePagination(req.query, 25, 100);
+      const [list, total] = await Promise.all([
+        prisma.feedback.findMany({ orderBy: { createdAt: 'desc' }, skip: pag.skip, take: pag.take }),
+        prisma.feedback.count()
+      ]);
+      return res.json(paginatedResponse(list.map(withMongoId), total, pag));
+    }
     const list = await prisma.feedback.findMany({
       orderBy: { createdAt: 'desc' },
       take: 500,
@@ -1960,6 +1969,58 @@ export function adminRouter({ jwtSecret }) {
       });
     } catch (err) {
       res.status(500).json({ error: 'Failed to fetch audit logs: ' + err.message });
+    }
+  });
+
+  // GET /admin/dashboard/stats — Aggregated metrics for dashboard charts
+  r.get('/dashboard/stats', async (_req, res) => {
+    try {
+      const [
+        totalStudents,
+        totalTeachers,
+        totalNotices,
+        totalAdmissions,
+        feeCollectionRaw,
+        attendanceRaw,
+        recentLogs
+      ] = await Promise.all([
+        prisma.user.count({ where: { role: Role.student, isDeleted: false, isActive: true } }),
+        prisma.user.count({ where: { role: Role.teacher, isDeleted: false, isActive: true } }),
+        prisma.notice.count({ where: { isPublished: true, isDeleted: false } }),
+        prisma.admissionApplication.count({ where: { isDeleted: false } }),
+        prisma.feePayment.aggregate({ _sum: { amountPaid: true } }),
+        prisma.attendance.groupBy({
+          by: ['status'],
+          _count: { status: true },
+        }),
+        prisma.auditLog.findMany({
+          orderBy: { timestamp: 'desc' },
+          take: 10,
+        })
+      ]);
+
+      let presentCount = 0;
+      let totalAttCount = 0;
+      attendanceRaw.forEach(a => {
+        totalAttCount += a._count.status;
+        if (a.status === 'present') presentCount += a._count.status;
+      });
+      const attendanceRate = totalAttCount > 0 ? Math.round((presentCount / totalAttCount) * 100) : 0;
+
+      res.json({
+        ok: true,
+        stats: {
+          totalStudents,
+          totalTeachers,
+          totalNotices,
+          totalAdmissions,
+          totalFeeCollected: feeCollectionRaw._sum.amountPaid || 0,
+          attendanceRate,
+        },
+        recentActivities: recentLogs.map(withMongoId),
+      });
+    } catch (err) {
+      res.status(500).json({ error: 'Failed to generate dashboard statistics: ' + err.message });
     }
   });
 

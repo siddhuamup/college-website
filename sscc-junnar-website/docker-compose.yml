@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: sscc_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: sscc_user
+      POSTGRES_PASSWORD: sscc_password
+      POSTGRES_DB: sscc_junnar
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sscc_user -d sscc_junnar"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: sscc_redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sscc_app
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: "postgresql://sscc_user:sscc_password@postgres:5432/sscc_junnar?schema=public"
+      REDIS_URL: "redis://redis:6379"
+      JWT_SECRET: "sscc-junnar-production-jwt-secret-min-64-chars-long-security-key-2026"
+      ADMIN_ACCESS_KEY: "sscc-junnar-admin-access-key-2026"
+      ENCRYPTION_KEY: "sscc-junnar-32-char-encryption-key!!"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+  redisdata:

@@ -17,10 +17,10 @@ export function validate(schema, source = 'body') {
 }
 
 // Common validators
-const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#_\-])[A-Za-z\d@$!%*?&#_\-]{8,}$/;
 const strongPassword = z.string()
   .min(8, 'Password must be at least 8 characters long')
-  .regex(passwordRegex, 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character');
+  .regex(passwordRegex, 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character (@$!%*?&#_-)');
 
 // Auth Schemas
 export const adminAccessSchema = z.object({

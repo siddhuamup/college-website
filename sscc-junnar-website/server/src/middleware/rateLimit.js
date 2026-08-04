@@ -7,11 +7,31 @@
  *   publicFormLimiter   — 20 req / 15 min per IP (admissions, feedback)
  *   globalApiLimiter    — 100 req / 1 min per IP (all /api/* routes)
  *
- * When a 429 is triggered, the attempt is logged with IP, route, and timestamp
- * so brute-force attempts can be traced.
+ * Uses Redis store when REDIS_URL is set (persists across restarts/cluster instances).
+ * Falls back to in-memory store when Redis is unavailable.
  */
 import rateLimit from 'express-rate-limit';
 import { prisma } from '../db/client.js';
+
+// Build Redis store if available, otherwise use default in-memory
+let redisStore = undefined;
+try {
+  if (process.env.REDIS_URL) {
+    const { default: RedisStore } = await import('rate-limit-redis');
+    const { default: Redis } = await import('ioredis');
+    const redisClient = new Redis(process.env.REDIS_URL, {
+      maxRetriesPerRequest: 3,
+      lazyConnect: false,
+    });
+    redisStore = new RedisStore({
+      sendCommand: (...args) => redisClient.call(...args),
+      prefix: 'rl:',
+    });
+    console.log('[RATE-LIMIT] Using Redis store');
+  }
+} catch {
+  console.warn('[RATE-LIMIT] Redis store unavailable, using in-memory fallback');
+}
 
 function rateLimitAuditLog(req, _res, _next) {
   const ip = req.ip || req.connection?.remoteAddress || 'unknown';
@@ -38,6 +58,7 @@ export const loginLimiter = skipInTest(rateLimit({
   max: 10,
   standardHeaders: true,
   legacyHeaders: false,
+  store: redisStore,
   message: { error: 'Too many login attempts. Please try again after 15 minutes.' },
   handler: (req, res, next, options) => {
     rateLimitAuditLog(req, res, next);
@@ -50,6 +71,7 @@ export const adminAccessLimiter = skipInTest(rateLimit({
   max: 5,
   standardHeaders: true,
   legacyHeaders: false,
+  store: redisStore,
   message: { error: 'Too many admin access attempts. Please try again after 15 minutes.' },
   handler: (req, res, next, options) => {
     rateLimitAuditLog(req, res, next);
@@ -62,6 +84,7 @@ export const meLimiter = skipInTest(rateLimit({
   max: 120,
   standardHeaders: true,
   legacyHeaders: false,
+  store: redisStore,
   message: { error: 'Too many identity verification attempts. Please slow down.' },
   handler: (req, res, next, options) => {
     rateLimitAuditLog(req, res, next);
@@ -74,6 +97,7 @@ export const publicFormLimiter = skipInTest(rateLimit({
   max: 20,
   standardHeaders: true,
   legacyHeaders: false,
+  store: redisStore,
   message: { error: 'Too many submissions. Please try again later.' },
   handler: (req, res, next, options) => {
     rateLimitAuditLog(req, res, next);
@@ -86,6 +110,7 @@ export const globalApiLimiter = skipInTest(rateLimit({
   max: 300,
   standardHeaders: true,
   legacyHeaders: false,
+  store: redisStore,
   message: { error: 'Too many requests. Please slow down.' },
   handler: (req, res, next, options) => {
     rateLimitAuditLog(req, res, next);

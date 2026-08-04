@@ -7,6 +7,7 @@ import { filterNotices } from '../utils/notices.js';
 import { noticeDto as buildNoticeDto } from '../utils/noticeDto.js';
 import { publicFormLimiter } from '../middleware/rateLimit.js';
 import { getAcademicYear } from '../utils/academicYear.js';
+import { parsePagination, paginatedResponse } from '../utils/pagination.js';
 
 function normalizePhoneIN(phone) {
   let p = String(phone || '').replace(/[\s-]/g, '');
@@ -25,9 +26,19 @@ function isPlausibleINPhone(phone) {
 export function publicRouter() {
   const r = Router();
 
-  r.get('/notices', async (_req, res) => {
+  r.get('/notices', async (req, res) => {
+    const where = { isDeleted: false };
+    if (req.query.page || req.query.limit) {
+      const pag = parsePagination(req.query, 20, 100);
+      const [items, total] = await Promise.all([
+        prisma.notice.findMany({ where, orderBy: { createdAt: 'desc' }, skip: pag.skip, take: pag.take }),
+        prisma.notice.count({ where })
+      ]);
+      const filtered = filterNotices(items, { surface: 'public' });
+      return res.json(paginatedResponse(filtered.map((n) => withMongoId(buildNoticeDto(n))), total, pag));
+    }
     const items = await prisma.notice.findMany({
-      where: { isDeleted: false },
+      where,
       orderBy: { createdAt: 'desc' },
       take: 100,
     });

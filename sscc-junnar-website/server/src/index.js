@@ -18,38 +18,17 @@ import { adminExamRouter, teacherExamRouter, studentExamRouter } from './routes/
 import { adminFeeRouter, studentFeeRouter } from './routes/fees.js';
 import { messengerRouter } from './routes/messenger.js';
 import { notificationsRouter } from './routes/notifications.js';
+import { paymentsRouter } from './routes/payments.js';
 import cookieParser from 'cookie-parser';
 import { errorHandler } from './middleware/errorHandler.js';
 import { globalApiLimiter } from './middleware/rateLimit.js';
 import { prisma } from './db/client.js';
 import { createAuthMiddleware } from './middleware/auth.js';
+import { correlationId } from './middleware/correlationId.js';
+import { logger, requestLogger } from './utils/logger.js';
+import { initRedis, disconnectRedis } from './utils/redis.js';
 
-// ─── .ENV VALIDATION ────────────────────────────────────────────────────────
-// Crash immediately on missing/weak critical env vars — never silently fallback.
-
-const JWT_SECRET = process.env.JWT_SECRET;
-if (!JWT_SECRET || JWT_SECRET.length < 64) {
-  console.error('═══════════════════════════════════════════════════════════');
-  console.error('  FATAL: JWT_SECRET is missing or too short.');
-  console.error('  It must be set in server/.env and be at least 64 characters.');
-  console.error('  Generate one: node -e "console.log(require(\'crypto\').randomBytes(64).toString(\'hex\'))"');
-  console.error('═══════════════════════════════════════════════════════════');
-  process.exit(1);
-}
-
-const ADMIN_ACCESS_KEY = process.env.ADMIN_ACCESS_KEY;
-if (!ADMIN_ACCESS_KEY || ADMIN_ACCESS_KEY.length < 16) {
-  console.error('═══════════════════════════════════════════════════════════');
-  console.error('  FATAL: ADMIN_ACCESS_KEY is missing or too short (min 16 chars).');
-  console.error('  Set a strong, unique key in server/.env');
-  console.error('═══════════════════════════════════════════════════════════');
-  process.exit(1);
-}
-
-if (!process.env.DATABASE_URL) {
-  console.error('FATAL: DATABASE_URL not set in .env');
-  process.exit(1);
-}
+// ... existing code ...
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const siteRoot = path.join(__dirname, '..', '..');
@@ -60,6 +39,10 @@ ensureUploadDirs();
 const uploadsRoot = uploadsPath();
 
 const app = express();
+
+// ─── CORRELATION & REQUEST LOGGING ──────────────────────────────────────────
+app.use(correlationId);
+app.use(requestLogger);
 
 // ─── SECURITY MIDDLEWARE ────────────────────────────────────────────────────
 
@@ -163,10 +146,30 @@ app.get('/api/health', async (_req, res) => {
   } catch {
     dbOk = false;
   }
+
+  let redisOk = false;
+  try {
+    const redis = await initRedis();
+    if (redis) {
+      const ping = await redis.ping();
+      redisOk = ping === 'PONG';
+    }
+  } catch {
+    redisOk = false;
+  }
+
+  const mem = process.memoryUsage();
   res.json({
-    ok: true,
+    ok: dbOk,
     database: dbOk ? 'connected' : 'error',
+    redis: process.env.REDIS_URL ? (redisOk ? 'connected' : 'error') : 'disabled',
+    memory: {
+      heapUsedMb: Math.round(mem.heapUsed / 1024 / 1024),
+      heapTotalMb: Math.round(mem.heapTotal / 1024 / 1024),
+      rssMb: Math.round(mem.rss / 1024 / 1024),
+    },
     uptimeSec: Math.round(process.uptime()),
+    timestamp: new Date().toISOString(),
   });
 });
 
@@ -189,6 +192,7 @@ app.use('/api/student/exams', studentExamRouter({ jwtSecret: JWT_SECRET }));
 app.use('/api/student/fees', studentFeeRouter({ jwtSecret: JWT_SECRET }));
 app.use('/api/messenger', messengerRouter({ jwtSecret: JWT_SECRET }));
 app.use('/api/notifications', notificationsRouter({ jwtSecret: JWT_SECRET }));
+app.use('/api/payments', paymentsRouter({ jwtSecret: JWT_SECRET }));
 
 app.use((req, res, next) => {
   if (req.originalUrl.startsWith('/api')) {
@@ -228,11 +232,12 @@ async function boot() {
       server.close(async () => {
         console.log('HTTP server closed.');
         try {
+          await disconnectRedis();
           await prisma.$disconnect();
-          console.log('Prisma disconnected.');
+          console.log('Database and Redis disconnected.');
           process.exit(0);
         } catch (err) {
-          console.error('Error during Prisma disconnect:', err);
+          console.error('Error during shutdown cleanup:', err);
           process.exit(1);
         }
       });
