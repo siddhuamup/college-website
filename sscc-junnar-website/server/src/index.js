@@ -28,6 +28,9 @@ import { correlationId } from './middleware/correlationId.js';
 import { logger, requestLogger } from './utils/logger.js';
 import { initRedis, disconnectRedis } from './utils/redis.js';
 import { openApiSpec } from './docs/openapi.js';
+import { createAuditLogger } from './middleware/audit.js';
+
+const auditLog = createAuditLogger(prisma);
 
 // ... existing code ...
 
@@ -176,26 +179,26 @@ app.get('/api/docs', (_req, res) => {
   res.json(openApiSpec);
 });
 
-app.use('/api/auth', authRouter({ jwtSecret: JWT_SECRET, jwtExpiresIn: JWT_EXPIRES_IN }));
-app.use('/api/public', publicRouter());
-app.use('/api/admin', adminRouter({ jwtSecret: JWT_SECRET }));
-app.use('/api/admin/placement', adminPlacementRouter({ jwtSecret: JWT_SECRET }));
-app.use('/api/admin/timetable', adminTimetableRouter({ jwtSecret: JWT_SECRET }));
-app.use('/api/admin/library', adminLibraryRouter({ jwtSecret: JWT_SECRET }));
-app.use('/api/admin/exams', adminExamRouter({ jwtSecret: JWT_SECRET }));
-app.use('/api/admin/fees', adminFeeRouter({ jwtSecret: JWT_SECRET }));
-app.use('/api/teacher', teacherRouter({ jwtSecret: JWT_SECRET, jwtExpiresIn: JWT_EXPIRES_IN }));
-app.use('/api/teacher/timetable', teacherTimetableRouter({ jwtSecret: JWT_SECRET }));
-app.use('/api/teacher/exams', teacherExamRouter({ jwtSecret: JWT_SECRET }));
-app.use('/api/student', studentRouter({ jwtSecret: JWT_SECRET, jwtExpiresIn: JWT_EXPIRES_IN }));
-app.use('/api/student/placement', studentPlacementRouter({ jwtSecret: JWT_SECRET, jwtExpiresIn: JWT_EXPIRES_IN }));
-app.use('/api/student/timetable', studentTimetableRouter({ jwtSecret: JWT_SECRET }));
-app.use('/api/student/library', studentLibraryRouter({ jwtSecret: JWT_SECRET }));
-app.use('/api/student/exams', studentExamRouter({ jwtSecret: JWT_SECRET }));
-app.use('/api/student/fees', studentFeeRouter({ jwtSecret: JWT_SECRET }));
-app.use('/api/messenger', messengerRouter({ jwtSecret: JWT_SECRET }));
+app.use('/api/auth', authRouter({ jwtSecret: JWT_SECRET, jwtExpiresIn: JWT_EXPIRES_IN, auditLog }));
+app.use('/api/public', publicRouter({ jwtSecret: JWT_SECRET, auditLog }));
+app.use('/api/admin', adminRouter({ jwtSecret: JWT_SECRET, auditLog }));
+app.use('/api/admin/placement', adminPlacementRouter({ jwtSecret: JWT_SECRET, auditLog }));
+app.use('/api/admin/timetable', adminTimetableRouter({ jwtSecret: JWT_SECRET, auditLog }));
+app.use('/api/admin/library', adminLibraryRouter({ jwtSecret: JWT_SECRET, auditLog }));
+app.use('/api/admin/exams', adminExamRouter({ jwtSecret: JWT_SECRET, auditLog }));
+app.use('/api/admin/fees', adminFeeRouter({ jwtSecret: JWT_SECRET, auditLog }));
+app.use('/api/teacher', teacherRouter({ jwtSecret: JWT_SECRET, jwtExpiresIn: JWT_EXPIRES_IN, auditLog }));
+app.use('/api/teacher/timetable', teacherTimetableRouter({ jwtSecret: JWT_SECRET, auditLog }));
+app.use('/api/teacher/exams', teacherExamRouter({ jwtSecret: JWT_SECRET, auditLog }));
+app.use('/api/student', studentRouter({ jwtSecret: JWT_SECRET, jwtExpiresIn: JWT_EXPIRES_IN, auditLog }));
+app.use('/api/student/placement', studentPlacementRouter({ jwtSecret: JWT_SECRET, jwtExpiresIn: JWT_EXPIRES_IN, auditLog }));
+app.use('/api/student/timetable', studentTimetableRouter({ jwtSecret: JWT_SECRET, auditLog }));
+app.use('/api/student/library', studentLibraryRouter({ jwtSecret: JWT_SECRET, auditLog }));
+app.use('/api/student/exams', studentExamRouter({ jwtSecret: JWT_SECRET, auditLog }));
+app.use('/api/student/fees', studentFeeRouter({ jwtSecret: JWT_SECRET, auditLog }));
+app.use('/api/messenger', messengerRouter({ jwtSecret: JWT_SECRET, auditLog }));
 app.use('/api/notifications', notificationsRouter({ jwtSecret: JWT_SECRET }));
-app.use('/api/payments', paymentsRouter({ jwtSecret: JWT_SECRET }));
+app.use('/api/payments', paymentsRouter({ jwtSecret: JWT_SECRET, auditLog }));
 
 app.use((req, res, next) => {
   if (req.originalUrl.startsWith('/api')) {

@@ -78,6 +78,10 @@ export function adminPlacementRouter({ jwtSecret }) {
   r.delete('/companies/:id', async (req, res) => {
     const c = await prisma.company.findUnique({ where: { id: req.params.id } });
     if (!c) return res.status(404).json({ error: 'Company not found' });
+    const drivesCount = await prisma.placementDrive.count({ where: { companyId: c.id } });
+    if (drivesCount > 0) {
+      return res.status(400).json({ error: `Cannot delete company: ${drivesCount} active placement drive(s) exist` });
+    }
     await prisma.company.delete({ where: { id: c.id } });
     res.json({ ok: true });
   });

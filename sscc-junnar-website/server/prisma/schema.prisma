@@ -24,6 +24,10 @@ model User {
   bio            String   @default("")
   teacherProfile Json?
   studentProfile Json?
+  studentId      String?
+  className      String?
+  personalEmail  String?
+  collegeEmail   String?
   isActive           Boolean  @default(true)
   isDeleted          Boolean  @default(false)
   deletedAt          DateTime?
@@ -53,6 +57,8 @@ model User {
   @@index([role])
   @@index([isDeleted])
   @@index([email])
+  @@index([studentId])
+  @@index([className])
 }
 
 model AdmissionApplication {
@@ -116,6 +122,7 @@ model Notice {
 
   @@index([isPublished])
   @@index([isDeleted])
+  @@index([createdAt])
 }
 
 model Department {
@@ -182,6 +189,9 @@ model StudyMaterial {
   file      Json
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([teacherId])
+  @@index([createdAt])
 }
 
 model Mark {
