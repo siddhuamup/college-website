@@ -1479,10 +1479,10 @@
       const pass = document.getElementById('creds-temp-password').value;
       const roll = document.getElementById('creds-roll-number').value;
       const win = window.open('', '_blank');
-      win.document.write(`
+      win.document.documentElement.innerHTML = `
         <html>
         <head><title>New Student Credentials</title></head>
-        <body style="font-family:sans-serif;padding:2rem;" onload="window.print();window.close();">
+        <body style="font-family:sans-serif;padding:2rem;">
           <h2>SSC College Junnar — Student Admission Account Created</h2>
           <hr/>
           <p><strong>Generated Student ID:</strong> ${sid}</p>
@@ -1492,8 +1492,8 @@
           <p style="font-size:0.9rem;color:#555;margin-top:2rem;">Keep these credentials secure. Please change your password upon first login.</p>
         </body>
         </html>
-      `);
-      win.document.close();
+      `;
+      setTimeout(() => { win.print(); win.close(); }, 250);
     });
   }
 
@@ -1606,10 +1606,10 @@
       const roll = document.getElementById('edit-student-roll').value;
       const pass = document.getElementById('edit-student-password').value || '(Keep existing)';
       const win = window.open('', '_blank');
-      win.document.write(`
+      win.document.documentElement.innerHTML = `
         <html>
         <head><title>Student Credentials</title></head>
-        <body style="font-family:sans-serif;padding:2rem;" onload="window.print();window.close();">
+        <body style="font-family:sans-serif;padding:2rem;">
           <h2>SSC College Junnar — Student Credentials</h2>
           <hr/>
           <p><strong>Name:</strong> ${name}</p>
@@ -1620,8 +1620,8 @@
           <p style="font-size:0.9rem;color:#555;margin-top:2rem;">Note: Keep these credentials secure. Please change your password upon first login.</p>
         </body>
         </html>
-      `);
-      win.document.close();
+      `;
+      setTimeout(() => { win.print(); win.close(); }, 250);
     });
 
     const resendBtn = document.getElementById('btn-student-resend-creds');
@@ -1938,10 +1938,10 @@
       const name = document.getElementById('edit-teacher-name').value;
       const pass = document.getElementById('edit-teacher-password').value || '(Keep existing)';
       const win = window.open('', '_blank');
-      win.document.write(`
+      win.document.documentElement.innerHTML = `
         <html>
         <head><title>Faculty Credentials</title></head>
-        <body style="font-family:sans-serif;padding:2rem;" onload="window.print();window.close();">
+        <body style="font-family:sans-serif;padding:2rem;">
           <h2>SSC College Junnar — Faculty Credentials</h2>
           <hr/>
           <p><strong>Name:</strong> ${name}</p>
@@ -1950,8 +1950,8 @@
           <p style="font-size:0.9rem;color:#555;margin-top:2rem;">Note: Keep these credentials secure. Please change your password upon first login.</p>
         </body>
         </html>
-      `);
-      win.document.close();
+      `;
+      setTimeout(() => { win.print(); win.close(); }, 250);
     });
   }
 

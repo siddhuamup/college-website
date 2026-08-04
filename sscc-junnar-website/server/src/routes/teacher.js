@@ -393,10 +393,10 @@ export function teacherRouter({ jwtSecret, jwtExpiresIn }) {
     return R * c;
   }
 
-  // College Campus Coordinates (SSCC Junnar Campus)
-  const COLLEGE_LAT = 19.2085;
-  const COLLEGE_LON = 73.8777;
-  const MAX_ALLOWED_DISTANCE_METERS = 500; // 500 meters campus boundary
+  // College Campus Coordinates (SSCC Junnar Campus — configurable via process.env)
+  const COLLEGE_LAT = Number(process.env.CAMPUS_LAT) || 19.2085;
+  const COLLEGE_LON = Number(process.env.CAMPUS_LON) || 73.8777;
+  const MAX_ALLOWED_DISTANCE_METERS = Number(process.env.CAMPUS_MAX_DISTANCE_METERS) || 500;
 
   // Teacher Self Attendance — Anti-Fraud Geolocation Verified
   r.post('/self-attendance', async (req, res) => {

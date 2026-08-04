@@ -200,6 +200,7 @@ model Mark {
 
   @@index([studentId, subject, examName])
   @@index([examName])
+  @@index([createdAt])
 }
 
 model Attendance {
