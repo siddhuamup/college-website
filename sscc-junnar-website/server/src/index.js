@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import express from 'express';
 import 'express-async-errors';
+import os from 'os';
 import cors from 'cors';
 import helmet from 'helmet';
 import path from 'path';
@@ -141,38 +142,22 @@ app.use('/uploads/admissions', authGuardForUploads, express.static(path.join(upl
 app.use('/uploads', authGuardForUploads, express.static(uploadsRoot));
 
 app.get('/api/health', async (_req, res) => {
-  let dbOk = false;
   try {
     await prisma.$queryRaw`SELECT 1`;
-    dbOk = true;
-  } catch {
-    dbOk = false;
+    const mem = process.memoryUsage();
+    res.json({
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      database: 'connected',
+      memory: {
+        usedMB: Math.round(mem.heapUsed / 1024 / 1024),
+        totalMB: Math.round(mem.heapTotal / 1024 / 1024),
+      },
+      uptime: process.uptime(),
+    });
+  } catch (e) {
+    res.status(503).json({ status: 'error', error: e.message });
   }
-
-  let redisOk = false;
-  try {
-    const redis = await initRedis();
-    if (redis) {
-      const ping = await redis.ping();
-      redisOk = ping === 'PONG';
-    }
-  } catch {
-    redisOk = false;
-  }
-
-  const mem = process.memoryUsage();
-  res.json({
-    ok: dbOk,
-    database: dbOk ? 'connected' : 'error',
-    redis: process.env.REDIS_URL ? (redisOk ? 'connected' : 'error') : 'disabled',
-    memory: {
-      heapUsedMb: Math.round(mem.heapUsed / 1024 / 1024),
-      heapTotalMb: Math.round(mem.heapTotal / 1024 / 1024),
-      rssMb: Math.round(mem.rss / 1024 / 1024),
-    },
-    uptimeSec: Math.round(process.uptime()),
-    timestamp: new Date().toISOString(),
-  });
 });
 
 app.get('/api/docs', (_req, res) => {
@@ -232,6 +217,7 @@ async function boot() {
       console.log(`Health: http://localhost:${PORT}/api/health`);
       console.log(`Security: helmet ✓ | rate-limit ✓ | CORS: ${CORS_ORIGIN}`);
     });
+    server.timeout = 30000; // 30 second request timeout
 
     const shutdown = async (signal) => {
       console.log(`\nReceived ${signal}. Starting graceful shutdown...`);
