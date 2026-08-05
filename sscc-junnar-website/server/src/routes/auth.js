@@ -81,8 +81,8 @@ export function authRouter({ jwtSecret, jwtExpiresIn }) {
         role: admin.role,
         name: admin.name,
         phone: admin.phone,
-        teacherProfile: admin.teacherProfile,
-        studentProfile: admin.studentProfile,
+        teacherProfile: typeof admin.teacherProfile === 'string' ? safeJsonParse(admin.teacherProfile, null) : admin.teacherProfile,
+        studentProfile: typeof admin.studentProfile === 'string' ? safeJsonParse(admin.studentProfile, null) : admin.studentProfile,
       }),
     });
   });
@@ -167,6 +167,7 @@ export function authRouter({ jwtSecret, jwtExpiresIn }) {
       data: {
         passwordHash: await hashPassword(newPassword),
         mustChangePassword: false,
+        passwordChangedAt: new Date(),
       },
     });
 
@@ -202,7 +203,12 @@ export function authRouter({ jwtSecret, jwtExpiresIn }) {
         },
       });
       if (!user || !user.isActive) return res.status(401).json({ error: 'Invalid user' });
-      res.json({ user: withMongoId(user) });
+      const userObj = {
+        ...user,
+        teacherProfile: typeof user.teacherProfile === 'string' ? safeJsonParse(user.teacherProfile, null) : user.teacherProfile,
+        studentProfile: typeof user.studentProfile === 'string' ? safeJsonParse(user.studentProfile, null) : user.studentProfile,
+      };
+      res.json({ user: withMongoId(userObj) });
     } catch {
       res.status(401).json({ error: 'Invalid token' });
     }
@@ -213,7 +219,7 @@ export function authRouter({ jwtSecret, jwtExpiresIn }) {
     const user = await prisma.user.findUnique({ where: { email: String(email).toLowerCase().trim() } });
     if (!user || !user.isActive || user.isDeleted) {
       // Return 200 generic message with timing equalization to prevent email enumeration
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 1500));
       return res.json({ message: 'If the email exists, a reset link has been sent.' });
     }
 
@@ -284,6 +290,7 @@ export function authRouter({ jwtSecret, jwtExpiresIn }) {
         data: {
           passwordHash: newHash,
           mustChangePassword: false,
+          passwordChangedAt: new Date(),
         },
       }),
       prisma.passwordResetToken.delete({ where: { id: record.id } }),

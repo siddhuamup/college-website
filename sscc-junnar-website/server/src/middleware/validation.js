@@ -61,7 +61,7 @@ export const createCourseSchema = z.object({
   duration: z.string().optional(),
   eligibility: z.string().optional(),
   description: z.string().optional(),
-  seatsApprox: z.coerce.number().min(0).optional(),
+  seatsApprox: z.union([z.number(), z.string()]).transform(v => Number(v)).refine(v => !isNaN(v) && v >= 0, 'Must be a non-negative number').optional(),
   departmentId: z.string().optional()
 });
 
@@ -70,8 +70,8 @@ export const createNoticeSchema = z.object({
   body: z.string().optional(),
   priority: z.string().optional(),
   audience: z.string().optional(),
-  publishDate: z.string().optional().transform(val => val ? new Date(val) : undefined),
-  expiryDate: z.string().optional().nullable().transform(val => val ? new Date(val) : undefined),
+  publishDate: z.string().optional().refine(val => !val || !isNaN(Date.parse(val)), "Invalid date").transform(val => val ? new Date(val) : undefined),
+  expiryDate: z.string().optional().nullable().refine(val => !val || !isNaN(Date.parse(val)), "Invalid date").transform(val => val ? new Date(val) : undefined),
   isPublished: z.union([z.boolean(), z.string()]).transform(val => !(val === false || val === 'false')).optional()
 });
 
@@ -120,7 +120,7 @@ export const decisionAdmissionSchema = z.object({
 // Teacher Schemas
 export const markAttendanceSchema = z.object({
   subject: z.string().min(1, 'Subject is required'),
-  date: z.string().transform(val => new Date(val)),
+  date: z.string().refine(val => !isNaN(Date.parse(val)), "Invalid date").transform(val => new Date(val)),
   entries: z.array(z.object({
     studentId: z.string().min(1, 'Student ID is required'),
     status: z.enum(['present', 'absent'])

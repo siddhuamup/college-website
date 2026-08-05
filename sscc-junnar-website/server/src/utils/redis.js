@@ -71,7 +71,7 @@ export function getRedis() {
 /**
  * Disconnect Redis gracefully.
  */
-export async function disconnectRedis() {
+export const disconnectRedis = async () => {
   if (redisClient) {
     try {
       await redisClient.quit();

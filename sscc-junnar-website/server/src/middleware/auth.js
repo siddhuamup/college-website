@@ -31,10 +31,14 @@ export function createAuthMiddleware(jwtSecret) {
       // This ensures deactivation takes effect immediately, not after token expiry.
       const dbUser = await prisma.user.findUnique({
         where: { id: payload.sub },
-        select: { isActive: true, isDeleted: true, mustChangePassword: true },
+        select: { isActive: true, isDeleted: true, mustChangePassword: true, passwordChangedAt: true },
       });
       if (!dbUser || !dbUser.isActive || dbUser.isDeleted) {
         return res.status(401).json({ error: 'Account deactivated or not found' });
+      }
+
+      if (dbUser.passwordChangedAt && payload.iat && (payload.iat * 1000 < dbUser.passwordChangedAt.getTime())) {
+        return res.status(401).json({ error: 'Token invalidated by password change' });
       }
 
       req.user = {

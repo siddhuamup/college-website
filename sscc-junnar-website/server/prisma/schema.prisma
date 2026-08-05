@@ -33,6 +33,7 @@ model User {
   deletedAt          DateTime?
   deletedBy          String   @default("")
   mustChangePassword Boolean  @default(false)
+  passwordChangedAt  DateTime?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 

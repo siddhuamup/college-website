@@ -1,7 +1,6 @@
 import 'dotenv/config';
 import express from 'express';
 import 'express-async-errors';
-import os from 'os';
 import cors from 'cors';
 import helmet from 'helmet';
 import path from 'path';
@@ -33,12 +32,16 @@ import { createAuditLogger } from './middleware/audit.js';
 
 const auditLog = createAuditLogger(prisma);
 
-// ... existing code ...
-
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const siteRoot = path.join(__dirname, '..', '..');
 const PORT = Number(process.env.PORT) || 3000;
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
+const JWT_SECRET = process.env.JWT_SECRET;
+
+if (!JWT_SECRET) {
+  console.error('FATAL: JWT_SECRET environment variable is required');
+  process.exit(1);
+}
 
 ensureUploadDirs();
 const uploadsRoot = uploadsPath();
@@ -102,9 +105,15 @@ app.use((req, res, next) => {
     
     let isAllowed = false;
     if (origin) {
-      isAllowed = allowedOrigins.some(ao => origin.toLowerCase().startsWith(ao));
+      isAllowed = allowedOrigins.some(ao => {
+        const o = origin.toLowerCase();
+        return o === ao || o === `${ao}/`;
+      });
     } else if (referer) {
-      isAllowed = allowedOrigins.some(ao => referer.toLowerCase().startsWith(ao));
+      isAllowed = allowedOrigins.some(ao => {
+        const r = referer.toLowerCase();
+        return r === ao || r.startsWith(`${ao}/`);
+      });
     } else {
       // Programmatic requests (not from browser sandbox) are safe from browser-based CSRF
       isAllowed = true;
@@ -129,10 +138,10 @@ app.use('/api', globalApiLimiter);
 // Public uploads: gallery, materials, avatars, notices — accessible without auth
 // Protected uploads: admissions — require valid JWT (sensitive PII: marksheets, photos)
 
-app.use('/uploads/gallery', express.static(path.join(uploadsRoot, 'gallery')));
-app.use('/uploads/materials', express.static(path.join(uploadsRoot, 'materials')));
-app.use('/uploads/avatars', express.static(path.join(uploadsRoot, 'avatars')));
-app.use('/uploads/notices', express.static(path.join(uploadsRoot, 'notices')));
+app.use('/uploads/gallery', globalApiLimiter, express.static(path.join(uploadsRoot, 'gallery')));
+app.use('/uploads/materials', globalApiLimiter, express.static(path.join(uploadsRoot, 'materials')));
+app.use('/uploads/avatars', globalApiLimiter, express.static(path.join(uploadsRoot, 'avatars')));
+app.use('/uploads/notices', globalApiLimiter, express.static(path.join(uploadsRoot, 'notices')));
 
 // Protected: admission documents require authentication
 const authGuardForUploads = createAuthMiddleware(JWT_SECRET);
@@ -195,7 +204,21 @@ app.use((req, res, next) => {
 app.get(['/admin', '/admin/'], (req, res) => {
   res.sendFile(path.join(siteRoot, 'admin', 'index.html'));
 });
-
+app.use((req, res, next) => {
+  const p = req.path.toLowerCase();
+  if (
+    p.startsWith('/server') ||
+    p.startsWith('/.git') ||
+    p.startsWith('/node_modules') ||
+    p.includes('.env') ||
+    p.endsWith('.json') ||
+    p.endsWith('.yml') ||
+    p.endsWith('.md')
+  ) {
+    return res.status(403).json({ error: 'Access denied' });
+  }
+  next();
+});
 app.use(express.static(siteRoot));
 
 // Catch-all: serve 404 page for unmatched non-API routes

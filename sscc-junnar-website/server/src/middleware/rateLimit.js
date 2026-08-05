@@ -197,6 +197,10 @@ export async function recordFailedLogin(email) {
   const key = String(email).toLowerCase().trim();
   const now = Date.now();
   
+  if (loginAttempts.size > 5000) {
+    loginAttempts.clear();
+  }
+  
   let entry = loginAttempts.get(key);
   if (!entry) {
     try {
