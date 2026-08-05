@@ -23,11 +23,9 @@ function storage(subdir) {
       cb(null, path.join(uploadsRoot, subdir));
     },
     filename: (_req, file, cb) => {
-      const safeBasename = path.basename(file.originalname).replace(/[^a-zA-Z0-9._-]/g, '_');
-      const ext = path.extname(safeBasename) || '';
-      const nameWithoutExt = path.basename(safeBasename, ext);
-      const rand = crypto.randomBytes(6).toString('hex');
-      cb(null, `${Date.now()}_${rand}_${nameWithoutExt.slice(0, 50)}${ext}`);
+      const uniqueSuffix = Date.now() + '-' + crypto.randomBytes(4).toString('hex');
+      const safeName = path.basename(file.originalname).replace(/[^a-zA-Z0-9._-]/g, '');
+      cb(null, uniqueSuffix + '-' + safeName);
     },
   });
 }

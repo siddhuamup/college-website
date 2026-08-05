@@ -2528,7 +2528,8 @@
     try {
       const stored = localStorage.getItem('ssc_read_notifs_student');
       readNotifications = stored ? JSON.parse(stored) : [];
-    } catch {
+    } catch (err) {
+      console.error('[student-app]', err);
       readNotifications = [];
     }
     

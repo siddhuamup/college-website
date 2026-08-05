@@ -47,19 +47,17 @@ export function studentRouter({ jwtSecret, jwtExpiresIn }) {
       where: { email: searchId },
     });
     if (!user) {
-      // Search by studentProfile JSON fields (cross-database compatible)
-      const candidates = await prisma.user.findMany({
-        where: { role: 'student', isDeleted: false, isActive: true },
-        take: 50,
+      user = await prisma.user.findFirst({
+        where: {
+          role: 'student',
+          isDeleted: false,
+          OR: [
+            { studentId: { equals: searchId, mode: 'insensitive' } },
+            { personalEmail: { equals: searchId, mode: 'insensitive' } },
+            { collegeEmail: { equals: searchId, mode: 'insensitive' } }
+          ]
+        }
       });
-      user = candidates.find(u => {
-        const sp = typeof u.studentProfile === 'string' ? safeJsonParse(u.studentProfile, {}) : (u.studentProfile || {});
-        return (
-          String(sp.studentId || '').toLowerCase() === searchId ||
-          String(sp.personalEmail || '').toLowerCase() === searchId ||
-          String(sp.collegeEmail || '').toLowerCase() === searchId
-        );
-      }) || null;
     }
     if (!user || !user.isActive || user.isDeleted || user.role !== Role.student) {
       return res.status(401).json({ error: 'Invalid credentials' });

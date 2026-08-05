@@ -94,20 +94,17 @@ export function authRouter({ jwtSecret, jwtExpiresIn }) {
       where: { email: searchId },
     });
     if (!user) {
-      // Search by studentProfile JSON fields (cross-database compatible)
-      const candidates = await prisma.user.findMany({
-        where: { role: 'student', isDeleted: false, isActive: true },
-        select: { id: true, email: true, passwordHash: true, role: true, name: true, phone: true, isActive: true, isDeleted: true, mustChangePassword: true, teacherProfile: true, studentProfile: true },
-        take: 50,
+      user = await prisma.user.findFirst({
+        where: {
+          role: 'student',
+          isDeleted: false,
+          OR: [
+            { studentId: { equals: searchId, mode: 'insensitive' } },
+            { personalEmail: { equals: searchId, mode: 'insensitive' } },
+            { collegeEmail: { equals: searchId, mode: 'insensitive' } }
+          ]
+        }
       });
-      user = candidates.find(u => {
-        const sp = typeof u.studentProfile === 'string' ? safeJsonParse(u.studentProfile, {}) : (u.studentProfile || {});
-        return (
-          String(sp.studentId || '').toLowerCase() === searchId ||
-          String(sp.personalEmail || '').toLowerCase() === searchId ||
-          String(sp.collegeEmail || '').toLowerCase() === searchId
-        );
-      }) || null;
     }
     if (!user || !user.isActive || user.isDeleted) {
       recordFailedLogin(searchId);
