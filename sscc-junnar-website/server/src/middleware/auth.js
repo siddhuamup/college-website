@@ -37,8 +37,11 @@ export function createAuthMiddleware(jwtSecret) {
         return res.status(401).json({ error: 'Account deactivated or not found' });
       }
 
-      if (dbUser.passwordChangedAt && payload.iat && (payload.iat * 1000 < dbUser.passwordChangedAt.getTime())) {
-        return res.status(401).json({ error: 'Token invalidated by password change' });
+      if (dbUser.passwordChangedAt && payload.iat) {
+        const pwdChangedSeconds = Math.floor(dbUser.passwordChangedAt.getTime() / 1000);
+        if (payload.iat < pwdChangedSeconds) {
+          return res.status(401).json({ error: 'Token invalidated by password change' });
+        }
       }
 
       req.user = {

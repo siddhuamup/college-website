@@ -198,7 +198,11 @@ export async function recordFailedLogin(email) {
   const now = Date.now();
   
   if (loginAttempts.size > 5000) {
-    loginAttempts.clear();
+    let evicted = 0;
+    for (const k of loginAttempts.keys()) {
+      loginAttempts.delete(k);
+      if (++evicted > 1000) break;
+    }
   }
   
   let entry = loginAttempts.get(key);

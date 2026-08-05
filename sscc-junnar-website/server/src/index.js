@@ -104,16 +104,20 @@ app.use((req, res, next) => {
     const allowedOrigins = expected.split(',').map(s => s.trim().toLowerCase());
     
     let isAllowed = false;
-    if (origin) {
-      isAllowed = allowedOrigins.some(ao => {
-        const o = origin.toLowerCase();
-        return o === ao || o === `${ao}/`;
-      });
-    } else if (referer) {
-      isAllowed = allowedOrigins.some(ao => {
-        const r = referer.toLowerCase();
-        return r === ao || r.startsWith(`${ao}/`);
-      });
+    const requestSource = origin || referer;
+    if (requestSource) {
+      try {
+        const sourceUrl = new URL(requestSource);
+        isAllowed = allowedOrigins.some(ao => {
+          try {
+            return new URL(ao).origin === sourceUrl.origin;
+          } catch {
+            return false;
+          }
+        });
+      } catch {
+        isAllowed = false;
+      }
     } else {
       // Programmatic requests (not from browser sandbox) are safe from browser-based CSRF
       isAllowed = true;
@@ -204,17 +208,21 @@ app.use((req, res, next) => {
 app.get(['/admin', '/admin/'], (req, res) => {
   res.sendFile(path.join(siteRoot, 'admin', 'index.html'));
 });
+const allowedFrontendPaths = [
+  '/', '/index.html', '/about.html', '/admissions.html', '/contact.html', '/courses.html',
+  '/departments.html', '/downloads.html', '/facilities.html', '/faculty.html', '/gallery.html',
+  '/login.html', '/notices.html', '/reset-password.html', '/students.html',
+  '/404.html', '/500.html', '/favicon.svg', '/manifest.json', '/sw.js'
+];
+const allowedFrontendDirs = ['/admin', '/assets', '/css', '/docs', '/js', '/partials', '/student', '/teacher'];
+
 app.use((req, res, next) => {
-  const p = req.path.toLowerCase();
-  if (
-    p.startsWith('/server') ||
-    p.startsWith('/.git') ||
-    p.startsWith('/node_modules') ||
-    p.includes('.env') ||
-    p.endsWith('.json') ||
-    p.endsWith('.yml') ||
-    p.endsWith('.md')
-  ) {
+  if (req.method !== 'GET' && req.method !== 'HEAD') return next();
+  const p = req.path;
+  const isAllowedFile = allowedFrontendPaths.includes(p);
+  const isAllowedDir = allowedFrontendDirs.some(dir => p.startsWith(dir + '/') || p === dir);
+  
+  if (!isAllowedFile && !isAllowedDir) {
     return res.status(403).json({ error: 'Access denied' });
   }
   next();
