@@ -198,10 +198,23 @@ export async function recordFailedLogin(email) {
   const now = Date.now();
   
   if (loginAttempts.size > 5000) {
-    let evicted = 0;
-    for (const k of loginAttempts.keys()) {
-      loginAttempts.delete(k);
-      if (++evicted > 1000) break;
+    let dropped = 0;
+    for (const [k, e] of loginAttempts.entries()) {
+      const expired = e.lockedUntil && e.lockedUntil <= now;
+      const windowExpired = now - e.firstFailure > LOCKOUT_DURATION_MS * 2;
+      if (expired || windowExpired) {
+        loginAttempts.delete(k);
+        dropped++;
+      }
+      if (dropped >= 1000) break;
+    }
+    // Fallback: If map is still full of active non-expired locks, force evict to prevent OOM
+    if (loginAttempts.size > 5000) {
+      let forced = 0;
+      for (const k of loginAttempts.keys()) {
+        loginAttempts.delete(k);
+        if (++forced > 500) break;
+      }
     }
   }
   
